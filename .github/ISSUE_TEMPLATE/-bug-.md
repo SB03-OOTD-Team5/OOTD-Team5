@@ -1,6 +1,6 @@
 ---
-name: "\U0001F41B[Bug]"
-about: 트러블 슈팅을 위한 이슈
+name: "[Bug]"
+about: "\U0001F41B트러블슈팅 관련 이슈"
 title: ''
 labels: ''
 assignees: ''

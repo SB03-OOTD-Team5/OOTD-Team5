@@ -1,6 +1,6 @@
 ---
-name: "\U0001F6E0️[Feature]"
-about: 새로운 기능 개발을 위한 이슈
+name: "[Feature]"
+about: "\U0001F6E0️ 기능 개발 관련 이슈"
 title: ''
 labels: ''
 assignees: ''
