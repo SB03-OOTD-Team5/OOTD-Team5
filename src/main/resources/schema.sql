@@ -1,0 +1,212 @@
+
+/****** 사용자 & 인증 ******/
+-- 사용자 테이블
+CREATE TABLE IF NOT EXISTS tbl_users
+(
+    id                       UUID                     PRIMARY KEY,
+    name                     VARCHAR(50)              NOT NULL,
+    email                    VARCHAR(100)             UNIQUE NOT NULL,
+    password                 VARCHAR(100)             NULL,
+    role                     VARCHAR(10)              NOT NULL,
+    is_locked                BOOLEAN                  NOT NULL,
+    created_at               TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at               TIMESTAMP WITH TIME ZONE,
+    -- constraints
+    CONSTRAINT check_role CHECK (role IN ('ROLE_USER', 'ROLE_ADMIN'))
+);
+
+-- 인증 테이블
+CREATE TABLE IF NOT EXISTS tbl_oauth_users
+(
+    id                       UUID         PRIMARY KEY,
+    user_id                  UUID         NOT NULL,
+    provider                 VARCHAR(20)  NOT NULL,
+    provider_id              VARCHAR(300) NOT NULL,
+    -- constraints
+    CONSTRAINT fk_oauth_user_user FOREIGN KEY (user_id) REFERENCES tbl_users (id),
+    CONSTRAINT check_provider CHECK (provider IN ('GOOGLE', 'KAKAO'))
+
+);
+
+-- 프로필 테이블
+CREATE TABLE IF NOT EXISTS tbl_profiles
+(
+    id                       UUID                     PRIMARY KEY,
+    user_id                  UUID                     NOT NULL,
+    gender                   VARCHAR(10),
+    birth_date               DATE,
+    profile_image_url        TEXT,
+    latitude                 NUMERIC(8, 4),
+    longitude                NUMERIC(8, 4),
+    x_coord                  INTEGER,
+    y_coord                  INTEGER,
+    location_names           VARCHAR(100),
+    temperature_sensitivity  INT                      NOT NULL DEFAULT 2,
+    created_at               TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at               TIMESTAMP WITH TIME ZONE,
+    -- constraints
+    CONSTRAINT check_gender CHECK (gender IN ('MALE', 'FEMALE', 'OTHER')),
+    CONSTRAINT check_temperature_sensitivity CHECK (temperature_sensitivity BETWEEN 1 AND 5),
+    CONSTRAINT fk_profiles_user FOREIGN KEY (user_id) REFERENCES tbl_users (id) ON DELETE CASCADE
+);
+
+/****** 의상 ******/
+-- 의상 테이블
+CREATE TABLE IF NOT EXISTS tbl_clothes
+(
+    id                       UUID                     PRIMARY KEY,
+    owner_id                 UUID                     NOT NULL,
+    name                     VARCHAR(100)             NOT NULL,
+    type                     VARCHAR(20)              NOT NULL,
+    image_url                TEXT,
+    created_at               TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at               TIMESTAMP WITH TIME ZONE,
+    -- constraints
+    CONSTRAINT check_type CHECK (type IN ('TOP', 'BOTTOM', 'DRESS', 'OUTER', 'UNDERWEAR',
+                                          'ACCESSORY', 'SHOES', 'SOCKS', 'HAT', 'BAG', 'SCARF', 'ETC')),
+    CONSTRAINT fk_user_clothes FOREIGN KEY (owner_id) REFERENCES tbl_users (id) ON DELETE CASCADE
+);
+
+-- 의상 속성 테이블
+CREATE TABLE IF NOT EXISTS tbl_cloth_attributes
+(
+    id                        UUID                     PRIMARY KEY,
+    name                      VARCHAR(50)              NOT NULL,
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- 의상 선택적 하위 속성 테이블
+CREATE TABLE IF NOT EXISTS tbl_cloth_attributes_defs
+(
+    id                        UUID                     PRIMARY KEY,
+    attribute_id              UUID                     NOT NULL,
+    values                    VARCHAR(50),
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    -- constraints
+    CONSTRAINT fk_attributes_defs_attr FOREIGN KEY (attribute_id) REFERENCES tbl_cloth_attributes (id) ON DELETE CASCADE
+);
+
+-- 의상 속성 값 연결 테이블
+CREATE TABLE IF NOT EXISTS tbl_cloth_attributes_values
+(
+    id                        UUID PRIMARY KEY,
+    clothes_id                UUID NOT NULL,
+    attributes_id             UUID NOT NULL,
+    def_value          VARCHAR(50),
+    -- constraints
+    CONSTRAINT fk_attr_values_clothes FOREIGN KEY (clothes_id) REFERENCES tbl_clothes (id) ON DELETE CASCADE,
+    CONSTRAINT fk_attr_values_attr FOREIGN KEY (attributes_id) REFERENCES tbl_cloth_attributes (id) ON DELETE CASCADE
+);
+
+/****** 피드 ******/
+-- 피드 테이블
+CREATE TABLE IF NOT EXISTS tbl_feeds
+(
+    id                        UUID                     PRIMARY KEY,
+    author_id                 UUID                     NOT NULL,
+    weather_id                UUID                     NOT NULL,
+    content                   TEXT                     NOT NULL,
+    comment_count             BIGINT                   NOT NULL DEFAULT 0,
+    like_count                BIGINT                   NOT NULL DEFAULT 0,
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at                TIMESTAMP WITH TIME ZONE
+);
+
+-- 피드 의상 연결 테이블
+CREATE TABLE IF NOT EXISTS tbl_feed_clothes
+(
+    id                        UUID                     PRIMARY KEY,
+    feed_id                   UUID                     NOT NULL,
+    clothes_id                UUID                     NOT NULL,
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
+    -- constraints
+    CONSTRAINT fk_feed_clothes_feed FOREIGN KEY (feed_id) REFERENCES tbl_feeds (id) ON DELETE CASCADE,
+    CONSTRAINT fk_feed_clothes_clothes FOREIGN KEY (clothes_id) REFERENCES tbl_clothes (id) ON DELETE CASCADE
+);
+
+-- 피드 댓글 테이블
+CREATE TABLE IF NOT EXISTS tbl_feed_comments
+(
+    id                        UUID                     PRIMARY KEY,
+    author_id                 UUID                     NOT NULL,
+    feed_id                   UUID                     NOT NULL,
+    content                   TEXT                     NOT NULL,
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at                TIMESTAMP WITH TIME ZONE,
+    -- constraints
+    CONSTRAINT fk_feed_comments_feed FOREIGN KEY (feed_id) REFERENCES tbl_feeds (id) ON DELETE CASCADE
+);
+
+-- 피드 댓글 좋아요 테이블
+CREATE TABLE IF NOT EXISTS tbl_feed_likes
+(
+    id                        UUID                     PRIMARY KEY,
+    feed_id                   UUID                     NOT NULL,
+    user_id                   UUID                     NOT NULL,
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
+    -- constraints
+    CONSTRAINT fk_feed_likes_feed FOREIGN KEY (feed_id) REFERENCES tbl_feeds (id) ON DELETE CASCADE,
+    CONSTRAINT uq_feed_like UNIQUE (feed_id, user_id)
+);
+
+/****** 날씨 ******/
+-- 날씨 테이블
+CREATE TABLE IF NOT EXISTS tbl_weathers
+(
+    id                        UUID                     PRIMARY KEY,
+    profile_id                UUID                     NOT NULL,
+    forecasted_at             TIMESTAMP WITH TIME ZONE NOT NULL, -- 예보 산출 시각
+    forecast_at               TIMESTAMP WITH TIME ZONE NOT NULL, -- 예보 대상 시각
+    sky_status                VARCHAR(10)              NOT NULL,
+    latitude                  NUMERIC(8, 4)            NOT NULL,
+    longitude                 NUMERIC(8, 4)            NOT NULL,
+    x_coord                   INTEGER,
+    y_coord                   INTEGER,
+    location_names            VARCHAR(100),
+    precipitation_type        VARCHAR(10),
+    precipitation_amount      DOUBLE PRECISION,
+    precipitation_probability DOUBLE PRECISION,
+    humidity                  DOUBLE PRECISION,
+    humidity_compared         DOUBLE PRECISION,
+    temperature               DOUBLE PRECISION,
+    temperature_compared      DOUBLE PRECISION,
+    temperature_min           DOUBLE PRECISION,
+    temperature_max           DOUBLE PRECISION,
+    windspeed                 DOUBLE PRECISION,
+    windspeed_level           VARCHAR(10),
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
+    -- constraints
+    CONSTRAINT check_sky_status CHECK (sky_status IN ('CLEAR','MOSTLY_CLOUDY','CLOUDY')),
+    CONSTRAINT check_precipitation_type CHECK (precipitation_type IN ('NONE','RAIN','RAIN_SNOW','SNOW','SHOWER')),
+    CONSTRAINT check_windspeed_level CHECK (windspeed_level IN ('WEAK','MODERATE','STRONG')),
+    CONSTRAINT fk_tbl_weathers_profile FOREIGN KEY (profile_id) REFERENCES tbl_profiles (id) ON DELETE CASCADE
+);
+/****** 위치 ******/
+-- 위치 테이블
+CREATE TABLE IF NOT EXISTS tbl_locations
+(
+    id                        UUID                     PRIMARY KEY,
+    latitude                  NUMERIC(8, 4)            NOT NULL,
+    longitude                 NUMERIC(8, 4)            NOT NULL,
+    x_coord                   INTEGER,
+    y_coord                   INTEGER,
+    location_names            VARCHAR(100),
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL
+
+);
+
+/* 인덱스 설정 */
+-- tbl_weathers index
+CREATE INDEX idx_tbl_weathers_profile_forecasted_at
+    ON tbl_weathers (profile_id, forecasted_at);
+
+CREATE INDEX idx_tbl_weathers_lat_lon
+    ON tbl_weathers (latitude, longitude);
+
+-- tbl_locations index
+CREATE INDEX idx_tbl_locations_lat_lon
+    ON tbl_locations (latitude, longitude);
+
+-- tbl_clothes index
+CREATE INDEX idx_tbl_clothes_owner_id
+    ON tbl_clothes (owner_id);
