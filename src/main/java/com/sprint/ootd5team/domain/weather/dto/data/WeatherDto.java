@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.weather.dto.data;
 
+import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
 import com.sprint.ootd5team.domain.weather.enums.SkyStatus;
 import java.time.Instant;
 import java.util.UUID;

@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.domain.weather.dto.data;
+package com.sprint.ootd5team.domain.location.dto.data;
 
 import java.math.BigDecimal;
 

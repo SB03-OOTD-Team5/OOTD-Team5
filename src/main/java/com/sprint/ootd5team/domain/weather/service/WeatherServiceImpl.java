@@ -1,5 +1,8 @@
 package com.sprint.ootd5team.domain.weather.service;
 
-public class WeatherServiceImpl {
+import org.springframework.stereotype.Service;
+
+@Service
+public class WeatherServiceImpl implements WeatherService{
 
 }
