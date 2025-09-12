@@ -12,7 +12,7 @@ public record FeedDto(
     Instant updatedAt,
     AuthorDto author,
     WeatherSummaryDto weather,
-    List<OotdDto> oodts,
+    List<OotdDto> ootds,
     String content,
     long likeCount,
     long commentCount,
