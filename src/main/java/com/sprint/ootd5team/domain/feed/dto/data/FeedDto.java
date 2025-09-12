@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.domain.feed.dto.data;
 
 import com.sprint.ootd5team.domain.user.dto.AuthorDto;
+import com.sprint.ootd5team.domain.weather.dto.data.WeatherSummaryDto;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -10,7 +11,7 @@ public record FeedDto(
     Instant createdAt,
     Instant updatedAt,
     AuthorDto author,
-//    WeatherSummaryDto weather,
+    WeatherSummaryDto weather,
     List<OotdDto> oodts,
     String content,
     long likeCount,
