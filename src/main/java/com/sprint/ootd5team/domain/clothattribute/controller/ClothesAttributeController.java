@@ -1,16 +1,23 @@
 package com.sprint.ootd5team.domain.clothattribute.controller;
 
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefCreateRequest;
+import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothAttribute;
 import com.sprint.ootd5team.domain.clothattribute.service.ClothAttributeService;
+import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -23,19 +30,24 @@ public class ClothesAttributeController {
 	 * 입력 :
 	 * ClothesAttributeDefCreateRequest
 	 */
-	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<ClothAttribute> register(ClothesAttributeDefCreateRequest request)
-	{
-		ClothAttribute saved = clothAttributeService.create(request);
-		return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+	@PostMapping
+	public ResponseEntity<ClothesAttributeDefDto> register(
+			@RequestBody ClothesAttributeDefCreateRequest request){
+		ClothesAttributeDefDto result = clothAttributeService.create(request);
+		return ResponseEntity.status(HttpStatus.CREATED).body(result);
 	}
 
-	@GetMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<List<ClothAttribute>> getAll()
-	{
-		List<ClothAttribute> result = clothAttributeService.findAll();
-		return ResponseEntity.status(HttpStatus.OK).body(result);
+	/**
+	 * 의상 속성 정의 목록 조회
+	 */
+	@GetMapping
+	public ResponseEntity<List<ClothesAttributeDefDto>> list(
+		@RequestParam(defaultValue = "createdAt") String sortBy,
+		@RequestParam(defaultValue = "ASCENDING") String sortDirection,
+		@RequestParam(required = false) String keywordLike) {
+
+		return ResponseEntity.ok(
+			clothAttributeService.findAll(sortBy, sortDirection, keywordLike)
+		);
 	}
-
-
 }
