@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ClothesAttributeValueService {
-	ClothesAttributeWithDefDto create(UUID clothesId, UUID attributeId, String value);
+//	ClothesAttributeWithDefDto create(UUID clothesId, UUID attributeId, String value);
 	List<ClothesAttributeWithDefDto> getByClothesId(UUID clothesId);
 
 }

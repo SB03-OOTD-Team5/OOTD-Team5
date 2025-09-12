@@ -20,7 +20,7 @@ import lombok.*;
 	})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ClothAttributeValue extends BaseEntity {
+public class ClothesAttributeValue extends BaseEntity {
 
 	/**
 	 * 어떤 의상인지
@@ -28,13 +28,12 @@ public class ClothAttributeValue extends BaseEntity {
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "clothes_id", nullable = false)
 	private Clothes clothes;
-
 	/**
 	 * 어떤 속성인지 (예: 소재, 계절)
 	 */
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "attributes_id", nullable = false)
-	private ClothAttribute attribute;
+	private ClothesAttribute attribute;
 
 	/**
 	 * 선택된 값 (문자열로 저장: 면, 나일론, 여름, 겨울 등)
@@ -44,7 +43,7 @@ public class ClothAttributeValue extends BaseEntity {
 	@Setter
 	private String selectableValue; // 선택된 값(문자열) → FK는 DB에서 강제
 
-	public ClothAttributeValue(Clothes cloths, ClothAttribute attribute, String value){
+	public ClothesAttributeValue(Clothes cloths, ClothesAttribute attribute, String value){
 		this.clothes = cloths;
 		this.attribute = attribute;
 		this.selectableValue = value;

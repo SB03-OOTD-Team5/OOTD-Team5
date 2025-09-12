@@ -3,10 +3,10 @@ package com.sprint.ootd5team.domain.clothattribute.service;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefCreateRequest;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefDto;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothAttribute;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothAttributeDef;
+import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
+import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
 import com.sprint.ootd5team.domain.clothattribute.mapper.ClothesAttributeMapper;
-import com.sprint.ootd5team.domain.clothattribute.repository.ClothAttributeRepository;
+import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -19,9 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @Slf4j
 @RequiredArgsConstructor
-public class BasicClothAttributeService implements ClothAttributeService {
+public class BasicClothesAttributeService implements ClothesAttributeService {
 
-	private final ClothAttributeRepository clothAttributeRepository;
+	private final ClothesAttributeRepository clothesAttributeRepository;
 	private final ClothesAttributeMapper mapper;
 
 	@Override
@@ -30,17 +30,17 @@ public class BasicClothAttributeService implements ClothAttributeService {
 		log.debug("의상 속성,하위속성 생성 시작.");
 
 		// 속성 엔티티 생성(부모 엔티티)
-		ClothAttribute createdAttribute = new ClothAttribute(request.name());
+		ClothesAttribute createdAttribute = new ClothesAttribute(request.name());
 
 		// 하위속성 엔티티 목록 생성(자식 엔티티)
-		List<ClothAttributeDef> attributeDefs = request.selectableValues().stream()
-			.map(def -> new ClothAttributeDef(createdAttribute, def))
+		List<ClothesAttributeDef> attributeDefs = request.selectableValues().stream()
+			.map(def -> new ClothesAttributeDef(createdAttribute, def))
 			.toList();
 
 		// 속성-하위속성 연결
 		createdAttribute.setDefs(attributeDefs);
 
-		ClothAttribute saved = clothAttributeRepository.save(createdAttribute);
+		ClothesAttribute saved = clothesAttributeRepository.save(createdAttribute);
 		log.info("의상 속성 생성됨 : 속성명={}, 하위속성 수={}", saved.getName(), saved.getDefs().size());
 		return mapper.toDto(saved);
 	}
@@ -48,7 +48,7 @@ public class BasicClothAttributeService implements ClothAttributeService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<ClothesAttributeDefDto> findAll(String sortBy, String sortDirection, String keywordLike) {
-		List<ClothesAttributeDefDto> all = clothAttributeRepository.findAll().stream()
+		List<ClothesAttributeDefDto> all = clothesAttributeRepository.findAll().stream()
 			.map(mapper::toDto)
 			.toList();
 
@@ -75,7 +75,7 @@ public class BasicClothAttributeService implements ClothAttributeService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<ClothesAttributeDto> getValuesByAttributeId(UUID attributeId) {
-		ClothAttribute attribute = clothAttributeRepository.findById(attributeId)
+		ClothesAttribute attribute = clothesAttributeRepository.findById(attributeId)
 			.orElseThrow(() -> new IllegalArgumentException("속성을 찾을 수 없음: " + attributeId));
 
 		// 자식 엔티티 → DTO 변환

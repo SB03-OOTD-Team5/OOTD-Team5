@@ -2,7 +2,7 @@ package com.sprint.ootd5team.domain.clothattribute.controller;
 
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefCreateRequest;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefDto;
-import com.sprint.ootd5team.domain.clothattribute.service.ClothAttributeService;
+import com.sprint.ootd5team.domain.clothattribute.service.ClothesAttributeService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("api/clothes/attribute-defs")
 @RequiredArgsConstructor
 public class ClothesAttributeController {
-	private final ClothAttributeService clothAttributeService;
+	private final ClothesAttributeService clothesAttributeService;
 
 	/** 속성 등록
 	 * 입력:
@@ -27,7 +27,7 @@ public class ClothesAttributeController {
 	@PostMapping
 	public ResponseEntity<ClothesAttributeDefDto> register(
 			@RequestBody ClothesAttributeDefCreateRequest request){
-		ClothesAttributeDefDto result = clothAttributeService.create(request);
+		ClothesAttributeDefDto result = clothesAttributeService.create(request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(result);
 	}
 
@@ -41,7 +41,7 @@ public class ClothesAttributeController {
 		@RequestParam(required = false) String keywordLike) {
 
 		return ResponseEntity.ok(
-			clothAttributeService.findAll(sortBy, sortDirection, keywordLike)
+			clothesAttributeService.findAll(sortBy, sortDirection, keywordLike)
 		);
 	}
 }
