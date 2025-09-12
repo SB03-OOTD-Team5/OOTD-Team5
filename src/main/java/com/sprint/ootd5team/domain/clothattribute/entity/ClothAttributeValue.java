@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.domain.clothattribute.entity;
 
 import com.sprint.ootd5team.base.entity.BaseEntity;
+import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -22,6 +22,6 @@ public class ClothAttribute extends BaseEntity {
 	private String name;            //속성명
 
 	@OneToMany
-	private List<SelectableValue> selectableValues = new ArrayList<>();
+	private List<ClothAttributeDefs> clothAttributeDefs = new ArrayList<>();
 
 }
