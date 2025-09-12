@@ -1,1 +1,26 @@
-spring.application.name=OOTD-5Team
+spring:
+  application:
+    name: OOTD-5Team
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+#외부 API key 설정
+weather:
+  naver:
+    client-id: ${NAVER_CLIENT_ID}
+    client-secret: ${NAVER_CLIENT_SECRET}
+  kma: #기상청
+    client-id: ${KMA_CLIENT_ID}
+    client-secret: ${KMA_CLIENT_SECRET}
+
+# Swagger UI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    display-request-duration: true
+    operations-sorter: method
+
+swagger:
+  server-url: http://localhost:${server.port}
