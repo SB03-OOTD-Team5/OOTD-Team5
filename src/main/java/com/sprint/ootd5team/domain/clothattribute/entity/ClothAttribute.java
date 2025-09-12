@@ -14,14 +14,17 @@ import lombok.*;
 @Table(name = "tbl_cloth_attributes")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 public class ClothAttribute extends BaseEntity {
 
 	@Column(name = "name", length = 50, nullable = false)
 	private String name;            //속성명
 
-	@OneToMany
-	private List<ClothAttributeDefs> clothAttributeDefs = new ArrayList<>();
+	@Setter
+	@OneToMany(mappedBy = "attribute", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+	private List<ClothAttributeDef> defs; // 카테고리의 허용값 목록
 
+	public ClothAttribute(String name) {
+		this.name = name;
+		this.defs = new ArrayList<>();
+	}
 }
