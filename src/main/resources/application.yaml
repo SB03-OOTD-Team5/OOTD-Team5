@@ -6,9 +6,9 @@ spring:
 
 #외부 API key 설정
 weather:
-  naver:
-    client-id: ${NAVER_CLIENT_ID}
-    client-secret: ${NAVER_CLIENT_SECRET}
+  kakao:
+    client-id: ${KAKAO_CLIENT_ID}
+    client-secret: ${KAKAO_CLIENT_SECRET}
   kma: #기상청
     client-id: ${KMA_CLIENT_ID}
     client-secret: ${KMA_CLIENT_SECRET}
