@@ -3,6 +3,7 @@ package com.sprint.ootd5team.domain.profile.entity;
 import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -45,6 +46,13 @@ public class Profile extends BaseUpdatableEntity {
     @Column(name = "location_names", length = 100)
     private String locationNames;
 
-    @Column(name = "temperature_sensitivity", nullable = false, columnDefinition = "INT DEFAULT 2")
+    @Column(name = "temperature_sensitivity", nullable = false)
     private Integer temperatureSensitivity;
+
+    @PrePersist
+    void prePersist() {
+        if (temperatureSensitivity == null) {
+            temperatureSensitivity = 2;
+        }
+    }
 }
