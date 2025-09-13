@@ -1,6 +1,6 @@
-package com.sprint.ootd5team.domain.feed.dto.response;
+package com.sprint.ootd5team.domain.comment.dto.response;
 
-import com.sprint.ootd5team.domain.feed.dto.data.CommentDto;
+import com.sprint.ootd5team.domain.comment.dto.data.CommentDto;
 import java.util.List;
 import java.util.UUID;
 
