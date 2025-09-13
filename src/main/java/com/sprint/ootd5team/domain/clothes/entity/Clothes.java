@@ -2,7 +2,11 @@ package com.sprint.ootd5team.domain.clothes.entity;
 
 import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
+import com.sprint.ootd5team.domain.user.entity.User;
 import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -18,16 +22,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Table(name = "tbl_clothes")
+@Entity
 public class Clothes extends BaseUpdatableEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-//    private User user;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;
 
     @Column(nullable = false)
     private String name;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private ClothesType type;
 
     @Column(name = "image_url")
