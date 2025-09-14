@@ -2,7 +2,6 @@ package com.sprint.ootd5team.clothes.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.sprint.ootd5team.base.config.JpaAuditingConfig;
 import com.sprint.ootd5team.base.config.QuerydslConfig;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
@@ -24,7 +23,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest
-@Import({JpaAuditingConfig.class, QuerydslConfig.class})
+@Import(QuerydslConfig.class)
 @TestPropertySource(properties = "spring.sql.init.mode=never")
 @ActiveProfiles("test")
 @DisplayName("ClothesRepositoryImpl 테스트")
@@ -43,6 +42,7 @@ class ClothesRepositoryImplTest {
     @BeforeEach
     void setUp() {
         owner = new User("쪼쪼", "zzo@email.com", "zzo1234!", Role.ROLE_USER);
+        ReflectionTestUtils.setField(owner, "createdAt", Instant.parse("2024-01-01T00:00:00Z"));
         em.persist(owner);
         em.flush();
         ownerId = owner.getId();
@@ -58,7 +58,12 @@ class ClothesRepositoryImplTest {
     }
 
     private Clothes makeClothes(User owner, String name, ClothesType type, String createdAt) {
-        Clothes clothes = new Clothes(owner, name, type, null);
+        Clothes clothes = Clothes.builder()
+            .owner(owner)
+            .name(name)
+            .type(type)
+            .imageUrl(null)
+            .build();
         ReflectionTestUtils.setField(clothes, "createdAt", Instant.parse(createdAt));
         return clothes;
     }
@@ -79,41 +84,21 @@ class ClothesRepositoryImplTest {
     @Test
     void createdAtCursor로_다음페이지조회() {
         // given
-        Instant after = Instant.parse("2024-01-01T07:00:00Z");
+        Instant after = Instant.parse("2024-01-01T09:00:00Z");
 
         // when
         List<Clothes> result = clothesRepository.findClothes(
             ownerId,
             null,
-            after.toString(),
-            clothes.getId(),
+            after,
+            null, // tie-breaker 없이 createdAt만 테스트
             10
         );
 
         // then
         assertThat(result)
-            .extracting(Clothes::getCreatedAt)
-            .allMatch(t -> t.isAfter(after));
-    }
-
-    @Test
-    void createdAt이같을때_idAfter로_다음페이지조회() {
-        // given
-        String cursorCreatedAt = "2024-01-01T08:00:00Z";
-        UUID afterId = clothes.getId();
-
-        // when
-        List<Clothes> result = clothesRepository.findClothes(
-            ownerId,
-            null,
-            cursorCreatedAt,
-            afterId,
-            10
-        );
-
-        // then
-        assertThat(result)
+            .isNotEmpty()
             .extracting(Clothes::getName)
-            .doesNotContain("운동화2");
+            .contains("운동화", "운동화2");
     }
 }

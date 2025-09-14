@@ -101,7 +101,12 @@ class ClothesServiceTest {
         // given
         List<Clothes> clothesList = IntStream.range(0, 11) // limit(10)보다 1개 더
             .mapToObj(i -> {
-                Clothes c = new Clothes(owner, "옷" + i, ClothesType.TOP, null);
+                Clothes c = Clothes.builder()
+                    .owner(owner)
+                    .name("옷" + i)
+                    .type(ClothesType.TOP)
+                    .imageUrl(null)
+                    .build();
                 String second = String.format("%02d", i);
                 ReflectionTestUtils.setField(c, "createdAt", Instant.parse("2024-01-01T10:00:" + second + "Z"));
                 ReflectionTestUtils.setField(c, "id", UUID.randomUUID());
