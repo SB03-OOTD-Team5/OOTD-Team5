@@ -6,6 +6,7 @@ import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothes.mapper.ClothesMapper;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -48,9 +49,10 @@ public class ClothesServiceImpl implements ClothesService {
         log.info("[ClothesService] 옷 목록 조회 시작: ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
             ownerId, type, cursor, idAfter, limit);
 
+        Instant cursorInstant = cursor != null ? Instant.parse(cursor) : null;
         // 다음 페이지 여부 확인
         List<Clothes> result = clothesRepository.findClothes(
-            ownerId, type, cursor, idAfter, limit + 1
+            ownerId, type, cursorInstant, idAfter, limit + 1
         );
 
         boolean hasNext = result.size() > limit;

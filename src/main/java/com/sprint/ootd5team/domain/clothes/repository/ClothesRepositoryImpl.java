@@ -37,7 +37,7 @@ public class ClothesRepositoryImpl implements ClothesRepositoryCustom {
      * @return 조회된 옷 목록
      */
     @Override
-    public List<Clothes> findClothes(UUID ownerId, ClothesType type, String cursor, UUID idAfter,
+    public List<Clothes> findClothes(UUID ownerId, ClothesType type, Instant cursor, UUID idAfter,
         int limit) {
         QClothes clothes = QClothes.clothes;
 
@@ -50,19 +50,17 @@ public class ClothesRepositoryImpl implements ClothesRepositoryCustom {
         }
 
         if (cursor != null) {
-            Instant cursorTime = Instant.parse(cursor);
-
-            BooleanBuilder cursorCondition = new BooleanBuilder();
-            cursorCondition.or(clothes.createdAt.lt(cursorTime));
+            BooleanBuilder cursorCondition = new BooleanBuilder()
+                .or(clothes.createdAt.lt(cursor));
 
             if (idAfter != null) {
-                cursorCondition.or(clothes.createdAt.eq(cursorTime)
+                cursorCondition.or(clothes.createdAt.eq(cursor)
                     .and(clothes.id.lt(idAfter)));
                 log.debug("[ClothesRepository] idAfter 필터 적용: id < {}", idAfter);
             }
-
             where.and(cursorCondition);
-            log.debug("[ClothesRepository] cursor 필터 적용: createdAt < {}", cursorTime);
+
+            log.debug("[ClothesRepository] cursor 필터 적용: createdAt < {}", cursor);
         }
 
         log.info("[ClothesRepository] 옷 목록 조회 실행: ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
