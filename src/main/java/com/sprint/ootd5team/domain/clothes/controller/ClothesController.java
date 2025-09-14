@@ -50,22 +50,22 @@ public class ClothesController implements ClothesApi {
     @Override
     public ResponseEntity<ClothesDto> createClothes(ClothesCreateRequest request,
         MultipartFile image) {
-        return null;
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
     }
 
     @Override
     public ResponseEntity<Void> deleteClothes(UUID clothesId) {
-        return null;
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
     }
 
     @Override
     public ResponseEntity<ClothesDto> updateClothes(UUID clothesId, ClothesUpdateRequest request,
         MultipartFile image) {
-        return null;
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
     }
 
     @Override
     public ResponseEntity<ClothesDto> extractByUrl(String url) {
-        return null;
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
     }
 }
