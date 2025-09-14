@@ -4,12 +4,17 @@ import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface ClothesMapper {
 
+    @Mapping(target = "owner", ignore = true)
+    @Mapping(target = "imageUrl", ignore = true)
     Clothes toEntity(ClothesCreateRequest request);
 
+    @Mapping(source = "owner.id", target = "ownerId")
+    @Mapping(target = "attributes", expression = "java(java.util.List.of())")
     ClothesDto toDto(Clothes entity);
 //
 //    default ClothesDto toDto(Clothes clothes, @Context S3Storage s3Storage) {
