@@ -41,7 +41,7 @@ public class BasicClothesAttributeValueService implements ClothesAttributeValueS
 
 		// 선택 가능한 하위값(Def) 검사
 		boolean allowed = attribute.getDefs().stream()
-			.anyMatch(def -> def.getValue().equals(value));
+			.anyMatch(def -> def.getAttDef().equals(value));
 		if (!allowed) {
 			throw new IllegalArgumentException("허용되지 않은 속성값입니다: " + value);
 		}
