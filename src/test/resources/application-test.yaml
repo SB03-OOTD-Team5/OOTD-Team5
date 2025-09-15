@@ -18,3 +18,21 @@ spring:
       initialize-schema: never
     job:
       enabled: false
+
+
+# Admin 설정
+ootd:
+  admin:
+    username: ${OOTD_ADMIN_USERNAME:admin}
+    password: ${OOTD_ADMIN_PASSWORD:qwe123}
+    email: ${OOTD_ADMIN_EMAIL:admin@test.com}
+
+  # Access Token 및 Refresh Token 비밀키, 만료시간 설정
+  jwt:
+    access-token:
+      expiration-ms: 1800000 # 30분
+      secret: ${JWT_ACCESS_TOKEN_SECRET:test-access-secret-32-bytes-minimum-1234567890abcd}
+
+    refresh-token:
+      expiration-ms: 604800000 # 7일
+      secret: ${JWT_REFRESH_TOKEN_SECRET:test-refresh-secret-32-bytes-minimum-abcdef1234567890}
