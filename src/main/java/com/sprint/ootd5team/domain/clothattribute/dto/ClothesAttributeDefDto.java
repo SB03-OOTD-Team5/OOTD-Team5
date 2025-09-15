@@ -7,6 +7,6 @@ import java.util.UUID;
 public record ClothesAttributeDefDto(
 	UUID id,
 	String name,
-	List<String> selectabelValues,
+	List<String> selectableValues,
 	Instant createdAt
 ) {}
