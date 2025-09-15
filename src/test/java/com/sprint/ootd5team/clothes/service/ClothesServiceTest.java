@@ -5,8 +5,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
+import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.clothes.fixture.ClothesFixture;
+import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
+import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
+import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
+import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
@@ -14,8 +21,11 @@ import com.sprint.ootd5team.domain.clothes.mapper.ClothesMapper;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
 import com.sprint.ootd5team.domain.clothes.service.ClothesServiceImpl;
 import com.sprint.ootd5team.domain.user.entity.User;
+import com.sprint.ootd5team.domain.user.repository.UserRepository;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +35,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ClothesService 단위 테스트")
@@ -33,8 +45,19 @@ class ClothesServiceTest {
 
     @Mock
     private ClothesRepository clothesRepository;
+
     @Mock
     private ClothesMapper clothesMapper;
+
+    @Mock
+    private ClothesAttributeRepository clothesAttributeRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private FileStorage fileStorage;
+
     @InjectMocks
     private ClothesServiceImpl clothesService;
 
@@ -127,4 +150,44 @@ class ClothesServiceTest {
         assertThat(response.data()).hasSize(10);
     }
 
+    @Test
+    void 의상_생성_성공_이미지와_속성값_존재() {
+        // given
+        UUID attributeId = UUID.randomUUID();
+        ClothesCreateRequest request = new ClothesCreateRequest(
+            ownerId,
+            "멋쟁이패딩",
+            ClothesType.OUTER,
+            List.of(
+                new ClothesAttributeWithDefDto(attributeId, "계절",List.of("봄","여름","가을","겨울"), "겨울")
+            )
+        );
+        MultipartFile mockImage = new MockMultipartFile(
+            "image", "coat.png", "image/png", "fake-image".getBytes()
+        );
+        ClothesAttribute attribute = new ClothesAttribute("계절");
+        ReflectionTestUtils.setField(attribute, "id", attributeId);
+        Clothes clothes = Clothes.builder()
+            .owner(owner)
+            .name("멋쟁이패딩")
+            .type(ClothesType.OUTER)
+            .imageUrl("clothes/uuid_coat.png")
+            .build();
+        ClothesDto expectedDto = ClothesFixture.toDto(clothes);
+        given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
+        given(clothesAttributeRepository.findById(attributeId)).willReturn(Optional.of(attribute));
+        given(fileStorage.upload(eq("coat.png"), any(InputStream.class)))
+            .willReturn("clothes/uuid_coat.png");
+        given(clothesMapper.toDto(any(Clothes.class))).willReturn(expectedDto);
+
+        // when
+        ClothesDto result = clothesService.create(request, mockImage);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.name()).isEqualTo("멋쟁이패딩");
+        assertThat(result.type()).isEqualTo(ClothesType.OUTER);
+        assertThat(result.imageUrl()).contains("clothes/uuid_coat.png");
+        verify(clothesRepository).save(any(Clothes.class));
+    }
 }
