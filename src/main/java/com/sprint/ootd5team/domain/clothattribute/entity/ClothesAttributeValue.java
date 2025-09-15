@@ -26,7 +26,7 @@ import lombok.Setter;
 	uniqueConstraints = {
 		@UniqueConstraint(
 			name = "uk_cav_clothes_attribute",
-			columnNames = {"clothes_id", "attributes_id"}
+			columnNames = {"clothes_id", "attribute_id"}
 		)
 	},
 	indexes = {
@@ -48,7 +48,7 @@ public class ClothesAttributeValue extends BaseUpdatableEntity {
 	 * 어떤 속성인지 (예: 소재, 계절)
 	 */
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "attributes_id", nullable = false)
+	@JoinColumn(name = "attribute_id", nullable = false)
 	private ClothesAttribute attribute;
 
 	/**
