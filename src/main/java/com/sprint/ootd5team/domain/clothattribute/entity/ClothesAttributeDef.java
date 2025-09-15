@@ -5,7 +5,12 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "tbl_cloth_attributes_defs")
+@Table(	name = "tbl_cloth_attributes_defs",
+	uniqueConstraints =
+	{@UniqueConstraint
+		(name = "ux_attrdef_attr_attdef",columnNames = {"attribute_id", "att_def"})
+	}
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ClothesAttributeDef extends BaseEntity {
@@ -14,7 +19,7 @@ public class ClothesAttributeDef extends BaseEntity {
 	@JoinColumn(name = "attribute_id", nullable = false)
 	private ClothesAttribute attribute; // 어떤 상위 속성 카테고리에 속하는지
 
-	@Column(name = "values", length = 50,nullable = false)
+	@Column(name = "att_def", length = 50,nullable = false)
 	private String value; // 실제 하위 속성값 (예: 면, 나일론)
 
 	public ClothesAttributeDef(ClothesAttribute attribute, String value) {

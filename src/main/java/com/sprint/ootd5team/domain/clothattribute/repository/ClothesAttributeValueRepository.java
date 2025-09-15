@@ -10,7 +10,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface ClothesAttributeValueRepository extends JpaRepository<ClothesAttributeValue, UUID> {
 
-	// 옷 ID로 모든 속성-값을 가져오되, 속성과 선택지까지 한 번에 패치 (N+1 방지)
 	@Query("""
         select distinct cav from ClothesAttributeValue cav
         join fetch cav.attribute a
@@ -19,7 +18,6 @@ public interface ClothesAttributeValueRepository extends JpaRepository<ClothesAt
         """)
 	List<ClothesAttributeValue> findAllByClothesId(@Param("clothesId") UUID clothesId);
 
-	// 옷 + 속성 조합으로 단일 값 조회 (덮어쓰기 정책용)
 	@Query("select cav from ClothesAttributeValue cav where cav.clothes.id = :clothesId and cav.attribute.id = :attributeId")
 	Optional<ClothesAttributeValue> findByClothesIdAndAttributeId(@Param("clothesId") UUID clothesId, @Param("attributeId")UUID attributeId);
 }

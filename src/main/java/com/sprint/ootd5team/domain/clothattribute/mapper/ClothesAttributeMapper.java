@@ -10,35 +10,34 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
 @Mapper(componentModel = "spring")
 public interface ClothesAttributeMapper {
 
-	// ClothAttributeDef -> ClothesAttributeDto 변환
-	@Mapping(source = "attribute.id", target = "definitionId")
-	@Mapping(source = "value", target = "value")
-	ClothesAttributeDto toDto(ClothesAttributeDef clothesAttributeDef);
+	// 1) 허용값 정의 -> 단일 값 DTO
+	@Mapping(source = "attribute.id", target = "definitionId") // 부모 카테고리 ID
+	@Mapping(source = "value",        target = "value")        // att_def 문자열
+	ClothesAttributeDto toDto(ClothesAttributeDef def);
 
-	// ClothAttribute -> ClothesAttributeDefDto 변환
-	@Mapping(source = "id", target = "id")
-	@Mapping(source = "name", target = "name")
+	// 2) 카테고리 -> 카테고리+허용값 목록 DTO
+	@Mapping(source = "id",        target = "id")
+	@Mapping(source = "name",      target = "name")
 	@Mapping(source = "createdAt", target = "createdAt")
-	@Mapping(target = "selectableValues", expression = "java(toValues(clothAttribute))")
-	ClothesAttributeDefDto toDto(ClothesAttribute clothesAttribute);
+	@Mapping(target = "selectableValues", source = "defs", qualifiedByName = "defsToStrings")
+	ClothesAttributeDefDto toDto(ClothesAttribute attr);
 
-
-	// ClothAttributeValue -> ClothesAttributeWithDefDto 변환
-	@Mapping(source = "attribute.id", target = "definitionId")
+	// 3) 실제 값 -> 카테고리/허용값 목록/선택값 DTO
+	@Mapping(source = "attribute.id",   target = "definitionId")
 	@Mapping(source = "attribute.name", target = "definitionName")
 	@Mapping(source = "selectableValue", target = "value")
-	@Mapping(target = "selectableValues", expression = "java(toSelectableValues(value.getAttribute()))")
-	ClothesAttributeWithDefDto toDto(ClothesAttributeValue value);
+	@Mapping(target = "selectableValues", source = "attribute.defs", qualifiedByName = "defsToStrings")
+	ClothesAttributeWithDefDto toDto(ClothesAttributeValue val);
 
-	// 속성 String 리스트로 추출,변환
-	default List<String> extractValues(ClothesAttribute attribute) {
-		if (attribute == null || attribute.getDefs() == null) return List.of();
-		return attribute.getDefs().stream()
-			.map(ClothesAttributeDef::getValue)
-			.collect(Collectors.toList());
+	// ===== 공용 헬퍼=====
+	@Named("defsToStrings")
+	default List<String> defsToStrings(List<ClothesAttributeDef> defs) {
+		if (defs == null) return List.of();
+		return defs.stream().map(ClothesAttributeDef::getValue).collect(Collectors.toList());
 	}
 }

@@ -11,7 +11,12 @@ import lombok.*;
  * 예: 소재, 사이즈, 계절
  */
 @Entity
-@Table(name = "tbl_cloth_attributes")
+@Table(
+	name = "tbl_cloth_attributes",
+	uniqueConstraints = {
+		@UniqueConstraint(name = "ux_attr_name", columnNames = {"name"})
+	}
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ClothesAttribute extends BaseEntity {
@@ -21,10 +26,9 @@ public class ClothesAttribute extends BaseEntity {
 
 	@Setter
 	@OneToMany(mappedBy = "attribute", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-	private List<ClothesAttributeDef> defs; // 카테고리의 허용값 목록
+	private List<ClothesAttributeDef> defs = new ArrayList<>(); // 카테고리의 허용값 목록
 
 	public ClothesAttribute(String name) {
 		this.name = name;
-		this.defs = new ArrayList<>();
 	}
 }

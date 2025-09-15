@@ -11,13 +11,19 @@ import lombok.*;
  * 어떤 값(selectable_value 문자열)으로 지정되었는지 저장하는 엔티티
  */
 @Entity
-@Table(name = "tbl_cloth_attributes_values",
+@Table(
+	name = "tbl_cloth_attributes_values",
 	uniqueConstraints = {
-		@UniqueConstraint(name = "uk_clothes_attributes_one_value", columnNames = {"clothes_id", "attributes_id"})
+		@UniqueConstraint(
+			name = "uk_cav_clothes_attribute",
+			columnNames = {"clothes_id", "attributes_id"}
+		)
 	},
 	indexes = {
-		@Index(name = "idx_cav_clothes_attribute", columnList = "clothes_id, attribute_id")
-	})
+		@Index(name = "ix_cav_cloth_attr", columnList = "clothes_id, attributes_id"),
+		@Index(name = "ix_cav_attr_defvalue", columnList = "attributes_id, def_value")
+	}
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ClothesAttributeValue extends BaseEntity {
