@@ -36,7 +36,7 @@ public class S3FileStorage implements FileStorage{
     @Value("${ootd.storage.s3.bucket}")
     private String bucket;
 
-    @Value("${ootd.storage.s3.presigned-expiration-seconds:600}")
+    @Value("${ootd.storage.s3.presigned-url-expiration:600}")
     private int presignedUrlExpiration;
 
     /**
