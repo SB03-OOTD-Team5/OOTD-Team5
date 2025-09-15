@@ -50,7 +50,7 @@ public class BasicClothesAttributeValueService implements ClothesAttributeValueS
 			.findByClothesIdAndAttributeId(clothesId, attributeId)
 			.orElse(new ClothesAttributeValue(clothes, attribute, value));
 
-		cav.setSelectableValue(value);
+		cav.setDefValue(value);
 
 		try {
 			ClothesAttributeValue saved = cavRepository.save(cav);
@@ -61,7 +61,7 @@ public class BasicClothesAttributeValueService implements ClothesAttributeValueS
 			ClothesAttributeValue existed = cavRepository
 				.findByClothesIdAndAttributeId(clothesId, attributeId)
 				.orElseThrow(() -> e);
-			existed.setSelectableValue(value);
+			existed.setDefValue(value);
 			return mapper.toDto(cavRepository.save(existed));
 		}
 	}
