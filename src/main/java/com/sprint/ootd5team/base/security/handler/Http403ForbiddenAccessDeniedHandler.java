@@ -17,14 +17,13 @@ public class Http403ForbiddenAccessDeniedHandler implements AccessDeniedHandler 
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
-        AccessDeniedException accessDeniedException) throws IOException, ServletException {
+        AccessDeniedException accessDeniedException) throws IOException {
 
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        ErrorResponse errorResponse = new ErrorResponse(accessDeniedException,
-            HttpServletResponse.SC_FORBIDDEN);
+        ErrorResponse errorResponse = new ErrorResponse(accessDeniedException);
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
 
     }

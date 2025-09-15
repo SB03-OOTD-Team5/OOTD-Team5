@@ -38,7 +38,7 @@ public class JwtLoginSuccessHandler implements
         }else{
             //없을경우 오류 반환
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            ErrorResponse errorResponse = new ErrorResponse(new RuntimeException("Authentication failed: Invalid user details"), HttpServletResponse.SC_UNAUTHORIZED);
+            ErrorResponse errorResponse = new ErrorResponse(new RuntimeException("Authentication failed: Invalid user details"));
             response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
         }
     }
