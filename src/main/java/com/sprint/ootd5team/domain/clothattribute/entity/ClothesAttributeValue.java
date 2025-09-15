@@ -1,9 +1,19 @@
 package com.sprint.ootd5team.domain.clothattribute.entity;
 
-import com.sprint.ootd5team.base.entity.BaseEntity;
+import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * 특정 옷(tbl_clothes)에 대해
@@ -12,7 +22,7 @@ import lombok.*;
  */
 @Entity
 @Table(
-	name = "tbl_cloth_attributes_values",
+	name = "tbl_clothes_attributes_values",
 	uniqueConstraints = {
 		@UniqueConstraint(
 			name = "uk_cav_clothes_attribute",
@@ -26,7 +36,7 @@ import lombok.*;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ClothesAttributeValue extends BaseEntity {
+public class ClothesAttributeValue extends BaseUpdatableEntity {
 
 	/**
 	 * 어떤 의상인지
