@@ -40,6 +40,12 @@ public class BasicClothesAttributeService implements ClothesAttributeService {
 		// 속성-하위속성 연결
 		createdAttribute.setDefs(attributeDefs);
 
+		if (request.name() == null || request.name().isBlank()) {
+			throw new IllegalArgumentException("속성명은 비어 있을 수 없습니다.");
+		}
+		if (clothesAttributeRepository.existsByNameIgnoreCase(request.name())) {
+			throw new IllegalStateException("이미 존재하는 속성명입니다: " + request.name());
+		}
 		ClothesAttribute saved = clothesAttributeRepository.save(createdAttribute);
 		log.info("의상 속성 생성됨 : 속성명={}, 하위속성 수={}", saved.getName(), saved.getDefs().size());
 		return mapper.toDto(saved);
