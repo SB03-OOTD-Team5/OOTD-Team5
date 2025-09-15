@@ -41,7 +41,7 @@ class ClothesRepositoryImplTest {
 
     @BeforeEach
     void setUp() {
-        owner = new User("쪼쪼", "zzo@email.com", "zzo1234!", Role.ROLE_USER);
+        owner = new User("쪼쪼", "zzo@email.com", "zzo1234!", Role.USER);
         ReflectionTestUtils.setField(owner, "createdAt", Instant.parse("2024-01-01T00:00:00Z"));
         em.persist(owner);
         em.flush();
