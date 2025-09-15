@@ -1,17 +1,27 @@
 package com.sprint.ootd5team.domain.clothes.service;
 
+import com.sprint.ootd5team.base.storage.FileStorage;
+import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
+import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeValue;
+import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
+import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothes.mapper.ClothesMapper;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
+import com.sprint.ootd5team.domain.user.entity.User;
+import com.sprint.ootd5team.domain.user.repository.UserRepository;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 의상 목록 조회 서비스 구현체
@@ -27,6 +37,9 @@ public class ClothesServiceImpl implements ClothesService {
 
     private final ClothesRepository clothesRepository;
     private final ClothesMapper clothesMapper;
+    private final FileStorage fileStorage;
+    private final UserRepository userRepository;
+    private final ClothesAttributeRepository clothesAttributeRepository;
 
     /**
      * 특정 사용자의 의상 목록을 조회한다.
@@ -88,5 +101,49 @@ public class ClothesServiceImpl implements ClothesService {
             dtoList.size(), hasNext);
 
         return response;
+    }
+
+    @Override
+    public ClothesDto create(ClothesCreateRequest request, MultipartFile image) {
+        // 1. 이미지 업로드
+        String imageUrl = (image != null && !image.isEmpty()) ? uploadClothesImage(image) : null;
+
+        // 2. 유저 확인
+        UUID ownerId = request.ownerId();
+        User owner = userRepository.findById(ownerId)
+            .orElseThrow(() -> new IllegalArgumentException("해당 유저 없음"));
+        // TODO: UserNotFoundException(ownerId) 로 치환 가능
+
+        // 3. Clothes 엔티티 생성
+        Clothes clothes = Clothes.builder()
+            .owner(owner)
+            .name(request.name())
+            .type(request.type())
+            .imageUrl(imageUrl)
+            .build();
+
+        // 4. 속성 값 매핑 (값이 있을 때만)
+        request.attributes().forEach(dto -> {
+            ClothesAttribute attribute = clothesAttributeRepository.findById(dto.definitionId())
+                .orElseThrow(() -> new IllegalArgumentException("없는 속성: " + dto.definitionId()));
+
+            ClothesAttributeValue value = new ClothesAttributeValue(clothes, attribute, dto.value());
+            clothes.addClothesAttributeValue(value);
+        });
+
+
+        // 5. 저장
+        clothesRepository.save(clothes);
+
+        // 6. DTO 변환 후 반환
+        return clothesMapper.toDto(clothes);
+    }
+
+    private String uploadClothesImage(MultipartFile image) {
+        try (InputStream in = image.getInputStream()) {
+            return fileStorage.upload(image.getOriginalFilename(), in);
+        } catch (IOException e) {
+            throw new RuntimeException("이미지 업로드 실패", e);
+        }
     }
 }

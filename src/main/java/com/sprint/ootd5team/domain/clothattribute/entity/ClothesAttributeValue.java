@@ -41,6 +41,7 @@ public class ClothesAttributeValue extends BaseUpdatableEntity {
 	/**
 	 * 어떤 의상인지
 	 */
+	@Setter
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "clothes_id", nullable = false)
 	private Clothes clothes;

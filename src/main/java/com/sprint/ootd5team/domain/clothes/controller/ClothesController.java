@@ -50,7 +50,11 @@ public class ClothesController implements ClothesApi {
     @Override
     public ResponseEntity<ClothesDto> createClothes(ClothesCreateRequest request,
         MultipartFile image) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        ClothesDto clothesDto = clothesService.create(request, image);
+
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(clothesDto);
     }
 
     @Override
