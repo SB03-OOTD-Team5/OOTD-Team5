@@ -45,6 +45,7 @@ public class Clothes extends BaseUpdatableEntity {
     private String imageUrl;
 
     @OneToMany(mappedBy = "clothes", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ClothesAttributeValue> clothesAttributeValues = new ArrayList<>();
 
     public void updateClothesName(String name) {
