@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS tbl_profiles
 (
     id                       UUID                     PRIMARY KEY,
     user_id                  UUID                     NOT NULL,
+    name                     VARCHAR(50)              NOT NULL, -- 추후 멀티프로필용 이름 추가
     gender                   VARCHAR(10),
     birth_date               DATE,
     profile_image_url        TEXT,
@@ -210,3 +211,20 @@ CREATE INDEX idx_tbl_locations_lat_lon
 -- tbl_clothes index
 CREATE INDEX idx_tbl_clothes_owner_id
     ON tbl_clothes (owner_id);
+
+/* tbl_profiles - name 컬럼 추가 & 수정 */
+
+-- 컬럼 없으면 추가
+ALTER TABLE tbl_profiles ADD COLUMN IF NOT EXISTS name VARCHAR(50);
+
+--  NULL인 행만 데이터 채우기
+UPDATE tbl_profiles p
+SET name = (
+    SELECT u.name
+    FROM tbl_users u
+    WHERE u.id = p.user_id
+)
+WHERE p.name IS NULL;
+
+ALTER TABLE tbl_profiles ALTER COLUMN name SET NOT NULL;
+
