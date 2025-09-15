@@ -131,7 +131,6 @@ public class ClothesServiceImpl implements ClothesService {
             clothes.addClothesAttributeValue(value);
         });
 
-
         // 5. 저장
         clothesRepository.save(clothes);
 
