@@ -31,6 +31,6 @@ public class UserService {
      * 유저 생성 로직 (임시)
      */
     public UserDto create(UserCreateRequest request){
-
+        return null;
     }
 }

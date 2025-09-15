@@ -19,11 +19,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class AdminInitializer implements ApplicationRunner {
 
-    @Value("${OOTD_ADMIN_USERNAME:admin}")
+    @Value("${ootd.admin.username}")
     private String username;
-    @Value("${OOTD_ADMIN_PASSWORD:}")
+    @Value("${ootd.admin.password}")
     private String password;
-    @Value("${OOTD_ADMIN_EMAIL:}")
+    @Value("${ootd.admin.email}")
     private String email;
 
     private final UserService userService;
