@@ -2,25 +2,29 @@ package com.sprint.ootd5team.security;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
+import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
+import com.sprint.ootd5team.base.security.RedisLockProvider;
 import com.sprint.ootd5team.base.security.service.AuthService;
+import com.sprint.ootd5team.domain.user.dto.request.UserLockUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
-import com.sprint.ootd5team.domain.user.service.UserService;
+import jakarta.persistence.Column;
+import jakarta.persistence.PrePersist;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * 메서드 보안(@PreAuthorize) 검증 테스트: 서비스 레이어의 보안 어노테이션이 실제로 동작하는지 확인한다.
@@ -37,26 +41,31 @@ public class MethodSecurityTest {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    JwtTokenProvider jwtTokenProvider;
+    @MockitoBean
+    private JwtRegistry jwtRegistry;
 
-    private UUID userId;
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private RedisLockProvider redisLockProvider;
 
 
-
-    @BeforeEach
-    void setUpData(){
-        // 테스트용 유저 1건 저장 후 생성된 ID를 보관
-        User saved = userRepository.save(new User("테스트유저", "test@test.com", "qwe123", Role.USER));
-        userId = saved.getId();
+    @Test
+    @WithMockUser(roles = {"USER"})
+    @DisplayName("USER 권한으로 역할 업데이트 메서드 호출시 접근 거부")
+    void user_cannot_access_admin_method1() {
+        assertThatThrownBy(() ->
+           authService.updateRoleInternal(new UserRoleUpdateRequest(Role.ADMIN.name()))
+        ).isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
     @WithMockUser(roles = {"USER"})
-    @DisplayName("USER 권한으로 관리자 전용 메서드 호출시 접근 거부")
-    void user_cannot_access_admin_method() {
+    @DisplayName("USER 권한으로 계정 잠금 메서드 호출시 접근 거부")
+    void user_cannot_access_admin_method2() {
         assertThatThrownBy(() ->
-           authService.updateRoleInternal(new UserRoleUpdateRequest(Role.ADMIN.name()))
+           authService.lockUser(UUID userId,new UserLockUpdateRequest(true)))
         ).isInstanceOf(AccessDeniedException.class);
     }
 }
