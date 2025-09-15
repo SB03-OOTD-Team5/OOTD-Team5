@@ -32,10 +32,10 @@ public class ClothesAttributeDef extends BaseUpdatableEntity {
 	@Column(name = "att_def", length = 50,nullable = false)
 	@NotBlank
 	@Size(max = 50)
-	private String value; // 실제 하위 속성값 (예: 면, 나일론)
+	private String attDef; // 실제 하위 속성값 (예: 면, 나일론)
 
-	public ClothesAttributeDef(ClothesAttribute attribute, String value) {
+	public ClothesAttributeDef(ClothesAttribute attribute, String attDef) {
 		this.attribute = attribute;
-		this.value = value;
+		this.attDef = attDef;
 	}
 }

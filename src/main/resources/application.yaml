@@ -24,3 +24,20 @@ springdoc:
 
 swagger:
   server-url: http://localhost:${server.port}
+
+# Admin 설정
+ootd:
+  admin:
+    username: ${OOTD_ADMIN_USERNAME}
+    password: ${OOTD_ADMIN_PASSWORD}
+    email: ${OOTD_ADMIN_EMAIL}
+
+  # Access Token 및 Refresh Token 비밀키, 만료시간 설정
+  jwt:
+    access-token:
+      expiration-ms: 1800000 # 30분
+      secret: ${JWT_ACCESS_TOKEN_SECRET}
+
+    refresh-token:
+      expiration-ms: 604800000 # 7일
+      secret: ${JWT_REFRESH_TOKEN_SECRET}

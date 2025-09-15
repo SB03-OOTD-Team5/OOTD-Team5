@@ -30,8 +30,8 @@ import lombok.Setter;
 		)
 	},
 	indexes = {
-		@Index(name = "ix_cav_cloth_attr", columnList = "clothes_id, attributes_id"),
-		@Index(name = "ix_cav_attr_defvalue", columnList = "attributes_id, def_value")
+		@Index(name = "ix_cav_cloth_attr", columnList = "clothes_id, attribute_id"),
+		@Index(name = "ix_cav_attr_defvalue", columnList = "attribute_id, def_value")
 	}
 )
 @Getter
@@ -57,11 +57,11 @@ public class ClothesAttributeValue extends BaseUpdatableEntity {
 	 */
 	@Column(name = "def_value", length = 50, nullable = false)
 	@Setter
-	private String selectableValue; // 선택된 값(문자열) → FK는 DB에서 강제
+	private String defValue; // 선택된 값(문자열) → FK는 DB에서 강제
 
 	public ClothesAttributeValue(Clothes cloths, ClothesAttribute attribute, String value){
 		this.clothes = cloths;
 		this.attribute = attribute;
-		this.selectableValue = value;
+		this.defValue = value;
 	}
 }
