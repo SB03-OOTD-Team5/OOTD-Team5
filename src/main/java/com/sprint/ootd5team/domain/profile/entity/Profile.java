@@ -22,6 +22,9 @@ public class Profile extends BaseUpdatableEntity {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(length = 50, nullable = false)
+    private String name;
+
     @Column(name = "gender", length = 10)
     private String gender;
 
