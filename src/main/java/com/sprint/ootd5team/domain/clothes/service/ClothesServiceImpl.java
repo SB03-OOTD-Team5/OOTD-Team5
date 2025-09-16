@@ -41,7 +41,7 @@ public class ClothesServiceImpl implements ClothesService {
     private final ClothesMapper clothesMapper;
     private final FileStorage fileStorage;
     private final UserRepository userRepository;
-    private final ClothesAttributeRepository clothesAttributeRepository;
+    private final ClothesAttributeRepository attributeRepository;
 
     /**
      * 특정 사용자의 의상 목록을 조회한다.
@@ -107,21 +107,33 @@ public class ClothesServiceImpl implements ClothesService {
 
     /**
      * 새로운 의상을 등록
+     *
      * @param request 의상 생성 요청 DTO (이름, 타입, 속성, 소유자 ID)
-     * @param image 업로드할 의상 이미지 (null 가능)
+     * @param image   업로드할 의상 이미지 (null 가능)
      * @return 생성된 의상을 담은 ClothesDto
-     * @throws UserNotFoundException 주어진 ownerId 에 해당하는 사용자가 없는 경우
+     * @throws UserNotFoundException   주어진 ownerId 에 해당하는 사용자가 없는 경우
      * @throws FileSaveFailedException 이미지 업로드에 실패한 경우
      */
     @Override
     public ClothesDto create(ClothesCreateRequest request, MultipartFile image) {
+        log.info("[ClothesService] 새 의상 등록 요청: ownerId={}, name={}, type={}, imagePresent={}",
+            request.ownerId(), request.name(), request.type(), image != null && !image.isEmpty());
+
         // 1. 이미지 업로드
-        String imageUrl = (image != null && !image.isEmpty()) ? uploadClothesImage(image) : null;
+        String imageUrl = null;
+        if (image != null && !image.isEmpty()) {
+            imageUrl = uploadClothesImage(image);
+            log.debug("[ClothesService] 이미지 업로드 완료: url={}", imageUrl);
+        }
 
         // 2. 유저 확인
         UUID ownerId = request.ownerId();
         User owner = userRepository.findById(ownerId)
-            .orElseThrow(() -> UserNotFoundException.withId(ownerId));
+            .orElseThrow(() -> {
+                log.error("[ClothesService] 존재하지 않는 사용자: ownerId={}", ownerId);
+                return UserNotFoundException.withId(ownerId);
+            });
+
 
         // 3. Clothes 엔티티 생성
         Clothes clothes = Clothes.builder()
@@ -131,41 +143,64 @@ public class ClothesServiceImpl implements ClothesService {
             .imageUrl(imageUrl)
             .build();
 
-        // 4. 속성 값 (값이 있을 때만)
-        request.attributes().forEach(dto -> {
-            ClothesAttribute attribute = clothesAttributeRepository.findById(dto.definitionId())
-                // TODO: ClothesAttributeNotFoundException 커스텀 예외로 교체 예정
-                .orElseThrow(() -> new IllegalArgumentException("없는 속성: " + dto.definitionId()));
+        log.debug("[ClothesService] Clothes 엔티티 생성: name={}, type={}, imageUrl={}",
+            clothes.getName(), clothes.getType(), clothes.getImageUrl());
 
-            // 허용된 값 검증
-            boolean valid = attribute.getDefs().stream()
-                .anyMatch(def -> def.getAttDef().equals(dto.value()));
-            if (!valid) {
-                // TODO: InvalidClothesAttributeValueException 커스텀 예외로 교체 예정
-                throw new IllegalArgumentException(
-                    "허용되지 않은 값: " + dto.value() + " (속성명=" + attribute.getName() + ")"
-                );
-            }
-            ClothesAttributeValue value = new ClothesAttributeValue(clothes, attribute, dto.value());
-            clothes.addClothesAttributeValue(value);
-        });
+        // 4. 속성 값 (값이 있을 때만)
+        if (request.attributes() != null) {
+            request.attributes().forEach(dto -> {
+                    ClothesAttribute attr = attributeRepository.findById(dto.definitionId())
+                        .orElseThrow(() -> {
+                        log.error("[ClothesService] 속성 정의 없음: definitionId={}", dto.definitionId());
+                        return new IllegalArgumentException("속성값 못찾음");
+                       // TODO: 커스텀 예외 (예: new ClothesAttributeNotFoundException(dto.definitionId()))
+                        });
+
+                // 허용값 검증
+                validateAttributeValue(attr, dto.value());
+
+                // Clothes는 생성자에서 안 넘김
+                ClothesAttributeValue cav = new ClothesAttributeValue(attr, dto.value());
+
+                // Clothes에 연결 (이때 ClothesAttributeValue에도 clothes 세팅됨)
+                clothes.addClothesAttributeValue(cav);
+                log.debug("[ClothesService] 속성 값 연결 완료: definitionId={}, value={}",
+                    attr.getId(), dto.value());
+            });
+        }
 
         // 5. 저장
         clothesRepository.save(clothes);
+        log.info("[ClothesService] Clothes 저장 완료: clothesId={}, ownerId={}",
+            clothes.getId(), ownerId);
 
         // 6. DTO 변환 후 반환
         return clothesMapper.toDto(clothes);
     }
 
+    private void validateAttributeValue(ClothesAttribute attribute, String value) {
+        boolean allowed = attribute.getDefs().stream()
+            .anyMatch(def -> def.getAttDef().equals(value));
+        if (!allowed) {
+            // TODO: 커스텀 예외 (예: ClothesAttributeValueNotAllowedException)로 교체
+            throw new IllegalArgumentException("허용되지 않은 속성값: " + value);
+        }
+    }
+
     /**
      * MultipartFile 형태의 이미지를 입력받아 파일 스토리지에 업로드
+     *
      * @param image 업로드할 이미지 파일
      * @return 업로드된 이미지의 접근 가능 경로/url
      * @throws FileSaveFailedException 이미지 업로드 도중 I/O 오류가 발생한 경우
      */
     private String uploadClothesImage(MultipartFile image) {
         try (InputStream in = image.getInputStream()) {
-            return fileStorage.upload(image.getOriginalFilename(), in);
+            return fileStorage.upload(
+                image.getOriginalFilename(),
+                in,
+                image.getContentType()
+            );
         } catch (IOException e) {
             throw FileSaveFailedException.withFileName(image.getOriginalFilename());
         }

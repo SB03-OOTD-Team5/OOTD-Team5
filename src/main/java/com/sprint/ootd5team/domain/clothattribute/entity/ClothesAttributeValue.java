@@ -1,15 +1,18 @@
 package com.sprint.ootd5team.domain.clothattribute.entity;
 
-import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,8 +39,12 @@ import lombok.Setter;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ClothesAttributeValue extends BaseUpdatableEntity {
+public class ClothesAttributeValue {
 
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	@Column(columnDefinition = "uuid",updatable = false,nullable = false)
+	UUID id;
 	/**
 	 * 어떤 의상인지
 	 */
@@ -62,6 +69,11 @@ public class ClothesAttributeValue extends BaseUpdatableEntity {
 
 	public ClothesAttributeValue(Clothes cloths, ClothesAttribute attribute, String value){
 		this.clothes = cloths;
+		this.attribute = attribute;
+		this.defValue = value;
+	}
+
+	public ClothesAttributeValue(ClothesAttribute attribute, String value) {
 		this.attribute = attribute;
 		this.defValue = value;
 	}
