@@ -44,7 +44,7 @@ class ClothesAttributeValueRepositoryTest{
 
 	@BeforeEach
 	void setUpOwner() {
-		owner = new User("유저","test@test.com","password", Role.ROLE_USER);
+		owner = new User("유저","test@test.com","password", Role.USER);
 		// User 엔티티의 NOT NULL 필드들(예: email, nickname 등)이 있다면 반드시 채워주세요.
 		// ReflectionTestUtils.setField(owner, "id", ownerId); // 필요하면 수동 ID도 가능
 		owner = userRepo.save(owner); // 영속화

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
+import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
@@ -25,7 +26,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -34,8 +41,19 @@ import org.springframework.transaction.annotation.Transactional;
 @DisplayName("ClothesAttributeValueService 테스트")
 class BasicClothesAttributeValueServiceTest{
 
-	@Autowired
-	BasicClothesAttributeValueService service;
+	@TestConfiguration
+	static class TestSecurityConfig {
+		@Bean
+		PasswordEncoder passwordEncoder() {
+			return new BCryptPasswordEncoder();
+		}
+	}
+	@MockitoBean
+	private JwtRegistry jwtRegistry;
+	@MockitoBean
+	private RedisTemplate<String, Object> redisTemplate;
+
+	@Autowired BasicClothesAttributeValueService service;
 	@Autowired ClothesRepository clothesRepo;
 	@Autowired ClothesAttributeRepository attrRepo;
 	@Autowired ClothesAttributeValueRepository cavRepo;
@@ -45,11 +63,8 @@ class BasicClothesAttributeValueServiceTest{
 
 	@BeforeEach
 	void setUpOwner() {
-		owner = userRepo.findByEmail("test@test.com");
-		if (owner == null) {
-			owner = userRepo.save(new User("유저","test@test.com","password", Role.ROLE_USER));
-		}
-		owner = userRepo.save(owner); // merge/update 안전
+		owner = userRepo.findByEmail("test@test.com").orElse(userRepo.save(new User("유저","test@test.com","password", Role.USER)));
+
 	}
 
 	@Test
