@@ -5,7 +5,9 @@ import java.math.BigDecimal;
 public record WeatherAPILocationDto(
     BigDecimal latitude,
     BigDecimal longitude,
-    Integer xCoord,
-    Integer yCoord,
-    String locationNames
-) { }
+    Integer x,
+    Integer y,
+    String[] locationNames
+) {
+
+}
