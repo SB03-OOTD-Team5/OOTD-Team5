@@ -15,6 +15,7 @@ import com.sprint.ootd5team.domain.user.entity.Role;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +30,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -41,6 +43,7 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@ConditionalOnProperty(name = "app.security.enabled", matchIfMissing = true, havingValue = "true")
 public class SecurityConfig {
 
     /**
@@ -160,6 +163,13 @@ public class SecurityConfig {
         DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
         handler.setRoleHierarchy(roleHierarchy);
         return handler;
+    }
+
+    @Bean
+    JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider tokenProvider,
+        UserDetailsService userDetailsService, JwtRegistry registry,
+        ObjectMapper objectMapper) {
+        return new JwtAuthenticationFilter(tokenProvider,userDetailsService,registry,objectMapper);
     }
 
     @Bean
