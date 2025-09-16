@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
-import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
@@ -18,6 +17,7 @@ import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
+import com.sprint.ootd5team.testconfig.TestConfig;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,32 +26,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @Transactional
 @ActiveProfiles("test")
 @DisplayName("ClothesAttributeValueService 테스트")
+@Import(TestConfig.class)
 class BasicClothesAttributeValueServiceTest{
-
-	@TestConfiguration
-	static class TestSecurityConfig {
-		@Bean
-		PasswordEncoder passwordEncoder() {
-			return new BCryptPasswordEncoder();
-		}
-	}
-	@MockitoBean
-	private JwtRegistry jwtRegistry;
-	@MockitoBean
-	private RedisTemplate<String, Object> redisTemplate;
 
 	@Autowired BasicClothesAttributeValueService service;
 	@Autowired ClothesRepository clothesRepo;

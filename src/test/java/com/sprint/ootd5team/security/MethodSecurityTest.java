@@ -8,19 +8,16 @@ import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
-import com.sprint.ootd5team.domain.user.service.UserService;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * 메서드 보안(@PreAuthorize) 검증 테스트: 서비스 레이어의 보안 어노테이션이 실제로 동작하는지 확인한다.
@@ -28,7 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
  *  *  - ADMIN 역할로 호출 -> 정상 실행 (여기서는 예외 미발생까지만 확인)
  */
 @SpringBootTest
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "securitytest"})
 public class MethodSecurityTest {
 
     @Autowired
@@ -41,6 +38,11 @@ public class MethodSecurityTest {
     JwtTokenProvider jwtTokenProvider;
 
     private UUID userId;
+    @MockitoBean
+    private org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
+
+    @MockitoBean
+    private com.sprint.ootd5team.base.security.RedisLockProvider redisLockProvider;
 
 
 

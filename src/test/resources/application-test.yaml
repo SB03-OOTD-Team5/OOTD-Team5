@@ -18,6 +18,10 @@ spring:
     job:
       enabled: false
       #Redis 비활성화
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
   data:
     redis:
       repositories:
@@ -27,8 +31,6 @@ spring:
 app:
   security:
     enabled: false
-
-
 
 # Admin 설정
 ootd:

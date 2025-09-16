@@ -1,7 +1,6 @@
 package com.sprint.ootd5team.testconfig;
 
 
-import com.sprint.ootd5team.base.security.JwtRegistry;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -12,12 +11,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @TestConfiguration
 public class TestConfig {
-
-	@Bean
-	@Primary
-	public JwtRegistry jwtRegistry() {
-		return Mockito.mock(JwtRegistry.class);
-	}
 
 	@Bean
 	@Primary

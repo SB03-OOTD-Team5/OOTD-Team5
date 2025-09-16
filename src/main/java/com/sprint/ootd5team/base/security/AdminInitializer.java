@@ -15,7 +15,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Profile("!test")
+@Profile("!test | securitytest")
 @Slf4j
 @RequiredArgsConstructor
 @Component
