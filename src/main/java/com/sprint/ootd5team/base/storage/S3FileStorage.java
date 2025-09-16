@@ -1,5 +1,7 @@
 package com.sprint.ootd5team.base.storage;
 
+import com.sprint.ootd5team.base.exception.file.FilePermanentSaveFailedException;
+import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import java.io.InputStream;
 import java.net.URI;
 import java.time.Duration;
@@ -63,8 +65,7 @@ public class S3FileStorage implements FileStorage{
             return key;
         } catch (Exception e) {
             log.error("[S3] 업로드 실패: file={}, ex={}", filename, e.toString(), e);
-            throw new IllegalArgumentException("파일 업로드 실패");
-            //TODO: throw new FileSaveFailedException(key, e);
+            throw FileSaveFailedException.withFileName(key);
         }
     }
 
@@ -126,7 +127,7 @@ public class S3FileStorage implements FileStorage{
         log.error("[S3] 업로드 모든 재시도 실패 - filename={}, requestId={}, cause={}",
             filename, requestId, e.toString(), e);
 
-        throw new RuntimeException("S3 업로드 영구 실패 - filename=" + filename, e);
+        throw FilePermanentSaveFailedException.withFileName(filename);
     }
 
 }

@@ -1,5 +1,7 @@
 package com.sprint.ootd5team.base.storage;
 
+import com.sprint.ootd5team.base.exception.file.FileDeleteFailedException;
+import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -30,7 +32,7 @@ public class LocalFileStorage implements FileStorage {
             Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
             return target.toAbsolutePath().toString();
         } catch (IOException e) {
-            throw new RuntimeException("로컬 업로드 실패", e);
+            throw FileSaveFailedException.withFileName(filename);
         }
     }
 
@@ -44,7 +46,7 @@ public class LocalFileStorage implements FileStorage {
         try {
             Files.deleteIfExists(Paths.get(path));
         } catch (IOException e) {
-            throw new RuntimeException("로컬 삭제 실패", e);
+            throw new FileDeleteFailedException(path);
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.sprint.ootd5team.domain.clothes.service;
 
+import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
+import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeValue;
@@ -103,6 +105,14 @@ public class ClothesServiceImpl implements ClothesService {
         return response;
     }
 
+    /**
+     * 새로운 의상을 등록
+     * @param request 의상 생성 요청 DTO (이름, 타입, 속성, 소유자 ID)
+     * @param image 업로드할 의상 이미지 (null 가능)
+     * @return 생성된 의상을 담은 ClothesDto
+     * @throws UserNotFoundException 주어진 ownerId 에 해당하는 사용자가 없는 경우
+     * @throws FileSaveFailedException 이미지 업로드에 실패한 경우
+     */
     @Override
     public ClothesDto create(ClothesCreateRequest request, MultipartFile image) {
         // 1. 이미지 업로드
@@ -111,8 +121,7 @@ public class ClothesServiceImpl implements ClothesService {
         // 2. 유저 확인
         UUID ownerId = request.ownerId();
         User owner = userRepository.findById(ownerId)
-            .orElseThrow(() -> new IllegalArgumentException("해당 유저 없음"));
-        // TODO: UserNotFoundException(ownerId) 로 치환 가능
+            .orElseThrow(() -> UserNotFoundException.withId(ownerId));
 
         // 3. Clothes 엔티티 생성
         Clothes clothes = Clothes.builder()
@@ -122,10 +131,12 @@ public class ClothesServiceImpl implements ClothesService {
             .imageUrl(imageUrl)
             .build();
 
+        //TODO: 인규님 코드 확인 예정
         // 4. 속성 값 매핑 (값이 있을 때만)
         request.attributes().forEach(dto -> {
             ClothesAttribute attribute = clothesAttributeRepository.findById(dto.definitionId())
                 .orElseThrow(() -> new IllegalArgumentException("없는 속성: " + dto.definitionId()));
+            //TODO: ClothesAttributeNotFoundException
 
             ClothesAttributeValue value = new ClothesAttributeValue(clothes, attribute, dto.value());
             clothes.addClothesAttributeValue(value);
@@ -138,11 +149,17 @@ public class ClothesServiceImpl implements ClothesService {
         return clothesMapper.toDto(clothes);
     }
 
+    /**
+     * MultipartFile 형태의 이미지를 입력받아 파일 스토리지에 업로드
+     * @param image 업로드할 이미지 파일
+     * @return 업로드된 이미지의 접근 가능 경로/url
+     * @throws FileSaveFailedException 이미지 업로드 도중 I/O 오류가 발생한 경우
+     */
     private String uploadClothesImage(MultipartFile image) {
         try (InputStream in = image.getInputStream()) {
             return fileStorage.upload(image.getOriginalFilename(), in);
         } catch (IOException e) {
-            throw new RuntimeException("이미지 업로드 실패", e);
+            throw FileSaveFailedException.withFileName(image.getOriginalFilename());
         }
     }
 }

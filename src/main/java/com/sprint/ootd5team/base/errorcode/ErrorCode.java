@@ -10,11 +10,18 @@ public enum ErrorCode {
 
     // User 관련 에러코드
     USER_NOT_FOUND("존재하지 않는 사용자 입니다."),
-    USER_ALREADY_EXIST("이미 존재하는 사용자 입니다.");
+    USER_ALREADY_EXIST("이미 존재하는 사용자 입니다."),
+
+    // Clothes 관련 에러코드
+    CLOTHES_NOT_FOUND("존재하지 않는 의상 입니다."),
+
+    // File 관련 에러코드
+    FILE_SAVE_FAILED("파일 업로드 실패 - 재시도 가능"),
+    FILE_PERMANENT_SAVE_FAILED("파일 업로드 실패 - 모든 재시도 소진"),
+    FILE_DELETE_FAILED("파일 삭제 실패"),
 
 
-
-
+    ;
     private final String message;
 
     ErrorCode(String message) {
