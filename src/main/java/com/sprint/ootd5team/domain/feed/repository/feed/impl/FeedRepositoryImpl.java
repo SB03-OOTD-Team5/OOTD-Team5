@@ -9,9 +9,11 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
+import com.sprint.ootd5team.domain.feed.dto.data.SortSpecDto;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
 import com.sprint.ootd5team.domain.feed.entity.QFeed;
+import com.sprint.ootd5team.domain.feed.exception.InvalidSortOptionException;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepositoryCustom;
 import com.sprint.ootd5team.domain.like.entity.QFeedLike;
 import com.sprint.ootd5team.domain.profile.entity.QProfile;
@@ -60,6 +62,8 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
         QProfile profile = QProfile.profile;
         QWeather weather = QWeather.weather;
 
+        SortSpecDto sortSpec = buildSortSpec(request);
+
         return queryFactory
             .select(feedProjection(currentUserId))
             .from(feed)
@@ -71,10 +75,9 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                 skyStatusEq(request.skyStatusEqual()),
                 precipitationEq(request.precipitationTypeEqual()),
                 authorIdEq(request.authorIdEqual()),
-                cursorAfter(request)
+                sortSpec.cursorCondition()
             )
-            .orderBy(feedSort(request.sortBy(), request.sortDirection())
-                .toArray(OrderSpecifier[]::new))
+            .orderBy(sortSpec.orderSpecifiers().toArray(OrderSpecifier[]::new))
             .limit(request.limit() + 1)
             .fetch();
     }
@@ -104,53 +107,6 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             .join(weather).on(feed.weatherId.eq(weather.id))
             .where(feed.id.eq(feedId))
             .fetchOne();
-    }
-
-    /**
-     * 공통 FeedDto projection
-     */
-    private Expression<FeedDto> feedProjection(UUID currentUserId) {
-        QFeed feed = QFeed.feed;
-        QFeedLike feedLike = QFeedLike.feedLike;
-        QUser user = QUser.user;
-        QProfile profile = QProfile.profile;
-        QWeather weather = QWeather.weather;
-
-        return Projections.constructor(
-            FeedDto.class,
-            feed.id,
-            feed.createdAt,
-            feed.updatedAt,
-            Projections.constructor(AuthorDto.class,
-                user.id,
-                user.name,
-                profile.profileImageUrl
-            ),
-            Projections.constructor(WeatherSummaryDto.class,
-                weather.id,
-                weather.skyStatus,
-                Projections.constructor(PrecipitationDto.class,
-                    weather.precipitationType,
-                    weather.precipitationAmount,
-                    weather.precipitationProbability
-                ),
-                Projections.constructor(TemperatureDto.class,
-                    weather.temperature,
-                    weather.temperatureCompared,
-                    weather.temperatureMin,
-                    weather.temperatureMax
-                )
-            ),
-            Expressions.constant(Collections.emptyList()),
-            feed.content,
-            feed.likeCount,
-            feed.commentCount,
-            JPAExpressions.selectOne()
-                .from(feedLike)
-                .where(feedLike.feedId.eq(feed.id)
-                    .and(feedLike.userId.eq(currentUserId)))
-                .exists()
-        );
     }
 
     /**
@@ -205,54 +161,91 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
     }
 
     /**
-     * 커서 기반 페이지네이션 조건
-     *
-     * <p>정렬 기준(createdAt 또는 likeCount)과 cursor/idAfter 값을 조합해
-     * 다음 페이지 조회를 위한 조건식을 만든다.</p>
-     *
-     * @param request FeedListRequest (cursor, idAfter 포함)
-     * @return 커서 조건식, cursor나 idAfter가 null이면 null 반환
+     * 공통 FeedDto projection
      */
-    private BooleanExpression cursorAfter(FeedListRequest request) {
+    private Expression<FeedDto> feedProjection(UUID currentUserId) {
         QFeed feed = QFeed.feed;
-        if (request.cursor() == null || request.idAfter() == null) {
-            return null;
-        }
-        return switch (request.sortBy()) {
-            case "createdAt" -> feed.createdAt.lt(Instant.parse(request.cursor()))
-                .or(feed.createdAt.eq(Instant.parse(request.cursor()))
-                    .and(feed.id.lt(request.idAfter())));
-            case "likeCount" -> feed.likeCount.lt(Long.parseLong(request.cursor()))
-                .or(feed.likeCount.eq(Long.parseLong(request.cursor()))
-                    .and(feed.id.lt(request.idAfter())));
-            default -> throw new IllegalArgumentException("유효하지 않은 sortBy: " + request.sortBy());
-        };
+        QFeedLike feedLike = QFeedLike.feedLike;
+        QUser user = QUser.user;
+        QProfile profile = QProfile.profile;
+        QWeather weather = QWeather.weather;
+
+        return Projections.constructor(
+            FeedDto.class,
+            feed.id,
+            feed.createdAt,
+            feed.updatedAt,
+            Projections.constructor(AuthorDto.class,
+                user.id,
+                user.name,
+                profile.profileImageUrl
+            ),
+            Projections.constructor(WeatherSummaryDto.class,
+                weather.id,
+                weather.skyStatus,
+                Projections.constructor(PrecipitationDto.class,
+                    weather.precipitationType,
+                    weather.precipitationAmount,
+                    weather.precipitationProbability
+                ),
+                Projections.constructor(TemperatureDto.class,
+                    weather.temperature,
+                    weather.temperatureCompared,
+                    weather.temperatureMin,
+                    weather.temperatureMax
+                )
+            ),
+            Expressions.constant(Collections.emptyList()),
+            feed.content,
+            feed.likeCount,
+            feed.commentCount,
+            JPAExpressions.selectOne()
+                .from(feedLike)
+                .where(feedLike.feedId.eq(feed.id)
+                    .and(feedLike.userId.eq(currentUserId)))
+                .exists()
+        );
     }
 
     /**
-     * 정렬 조건 생성
-     *
-     * <p>정렬 기준(sortBy)와 정렬 방향(dir)을 기반으로 OrderSpecifier 배열을 만든다.
-     * tie-breaker로 항상 feed.id DESC를 추가한다.</p>
-     *
-     * @param sortBy 정렬 기준 (createdAt, likeCount)
-     * @param sortDirection    정렬 방향 (ASCENDING, DESCENDING)
-     * @return OrderSpecifier 리스트
+     * 정렬 조건과 커서 조건을 한 번에 생성
      */
-    private List<OrderSpecifier<?>> feedSort(String sortBy, SortDirection sortDirection) {
+    private SortSpecDto buildSortSpec(FeedListRequest request) {
         QFeed feed = QFeed.feed;
-        Order order = sortDirection == SortDirection.ASCENDING ? Order.ASC : Order.DESC;
+        boolean asc = request.sortDirection() == SortDirection.ASCENDING;
+        String cursor = request.cursor();
+        UUID idAfter = request.idAfter();
 
-        return switch (sortBy) {
-            case "createdAt" -> List.of(
-                new OrderSpecifier<>(order, feed.createdAt),
-                new OrderSpecifier<>(Order.DESC, feed.id)
-            );
-            case "likeCount" -> List.of(
-                new OrderSpecifier<>(order, feed.likeCount),
-                new OrderSpecifier<>(Order.DESC, feed.id)
-            );
-            default -> throw new IllegalArgumentException("유효하지 않은 sortBy: " + sortBy);
+        return switch (request.sortBy()) {
+            case "createdAt" -> {
+                List<OrderSpecifier<?>> orders = List.of(
+                    new OrderSpecifier<>(asc ? Order.ASC : Order.DESC, feed.createdAt),
+                    new OrderSpecifier<>(Order.DESC, feed.id)
+                );
+                BooleanExpression cursorCondition = (cursor != null && idAfter != null)
+                    ? (asc
+                    ? feed.createdAt.gt(Instant.parse(cursor))
+                    .or(feed.createdAt.eq(Instant.parse(cursor)).and(feed.id.gt(idAfter)))
+                    : feed.createdAt.lt(Instant.parse(cursor))
+                        .or(feed.createdAt.eq(Instant.parse(cursor)).and(feed.id.lt(idAfter))))
+                    : null;
+                yield new SortSpecDto(orders, cursorCondition);
+            }
+            case "likeCount" -> {
+                List<OrderSpecifier<?>> orders = List.of(
+                    new OrderSpecifier<>(asc ? Order.ASC : Order.DESC, feed.likeCount),
+                    new OrderSpecifier<>(Order.DESC, feed.id)
+                );
+                BooleanExpression cursorCondition = (cursor != null && idAfter != null)
+                    ? (asc
+                    ? feed.likeCount.gt(Long.parseLong(cursor))
+                    .or(feed.likeCount.eq(Long.parseLong(cursor)).and(feed.id.gt(idAfter)))
+                    : feed.likeCount.lt(Long.parseLong(cursor))
+                        .or(feed.likeCount.eq(Long.parseLong(cursor)).and(feed.id.lt(idAfter))))
+                    : null;
+                yield new SortSpecDto(orders, cursorCondition);
+            }
+            default -> throw new InvalidSortOptionException(request.sortBy());
         };
     }
 }
