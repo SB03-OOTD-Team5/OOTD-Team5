@@ -2,6 +2,7 @@ package com.sprint.ootd5team.clothAttribute.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS;
 
 import com.sprint.ootd5team.base.config.JpaAuditingConfig;
 import com.sprint.ootd5team.base.config.QuerydslConfig;
@@ -26,6 +27,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
@@ -33,6 +35,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 @DisplayName("ClothesAttributeValueRepository 테스트")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
+@DirtiesContext(classMode = AFTER_CLASS)
 class ClothesAttributeValueRepositoryTest{
 
 	@Autowired ClothesAttributeRepository attributeRepo;
