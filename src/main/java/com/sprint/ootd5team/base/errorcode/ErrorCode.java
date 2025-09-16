@@ -7,12 +7,17 @@ public enum ErrorCode {
     // Security 관련 에러 코드
     UNAUTHORIZED("권한이 없는 사용자 입니다."),
     INVALID_USER_CREDENTIALS("잘못된 사용자 인증 정보입니다."),
+    INVALID_TOKEN("잘못된 토큰 입니다."),
+    INVALID_USER_DETAILS("잘못된 유저 Details 입니다."),
 
     // User 관련 에러코드
     USER_NOT_FOUND("존재하지 않는 사용자 입니다."),
-    USER_ALREADY_EXIST("이미 존재하는 사용자 입니다.");
+    USER_ALREADY_EXIST("이미 존재하는 사용자 입니다."),
 
 
+
+    //기타 에러코드
+    INTERNAL_SERVER_ERROR("알수없는 오류가 발생했습니다.");
 
 
     private final String message;

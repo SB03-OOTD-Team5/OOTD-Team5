@@ -250,5 +250,4 @@ public class JwtTokenProvider {
         refreshCookie.setMaxAge(0);
         return refreshCookie;
     }
-
 }

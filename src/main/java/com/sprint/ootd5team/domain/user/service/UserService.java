@@ -18,16 +18,6 @@ public class UserService {
 
 
     /**
-     * 이메일을 통해 비밀번호를 리셋한다.
-     * 3분동안만 임시 비밀번호가 발급된다.
-     * @param email 비밀번호 리셋을 원하는 이메일
-     */
-    public void resetPassword(String email) {
-        User user = userRepository.findByEmail(email).orElseThrow((UserNotFoundException::new));
-        user.resetPassword();
-    }
-
-    /**
      * 유저 생성 로직 (임시)
      */
     public UserDto create(UserCreateRequest request){
