@@ -10,7 +10,7 @@ weather:
     client-id: ${KAKAO_CLIENT_ID}
     client-secret: ${KAKAO_CLIENT_SECRET}
   kma: #기상청
-    client-id: ${KMA_CLIENT_ID}
+    base-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst
     client-secret: ${KMA_CLIENT_SECRET}
 
 # Swagger UI
