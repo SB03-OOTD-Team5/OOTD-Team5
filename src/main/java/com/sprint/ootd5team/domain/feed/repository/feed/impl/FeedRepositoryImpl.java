@@ -220,7 +220,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             case "createdAt" -> {
                 List<OrderSpecifier<?>> orders = List.of(
                     new OrderSpecifier<>(asc ? Order.ASC : Order.DESC, feed.createdAt),
-                    new OrderSpecifier<>(Order.DESC, feed.id)
+                    new OrderSpecifier<>(asc ? Order.ASC : Order.DESC, feed.id)
                 );
                 BooleanExpression cursorCondition = (cursor != null && idAfter != null)
                     ? (asc
@@ -234,7 +234,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             case "likeCount" -> {
                 List<OrderSpecifier<?>> orders = List.of(
                     new OrderSpecifier<>(asc ? Order.ASC : Order.DESC, feed.likeCount),
-                    new OrderSpecifier<>(Order.DESC, feed.id)
+                    new OrderSpecifier<>(asc ? Order.ASC : Order.DESC, feed.id)
                 );
                 BooleanExpression cursorCondition = (cursor != null && idAfter != null)
                     ? (asc
