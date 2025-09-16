@@ -6,6 +6,7 @@ import com.sprint.ootd5team.domain.weather.service.WeatherService;
 import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,8 +23,14 @@ public class WeatherController implements WeatherApi {
     @Override
     public ResponseEntity<List<WeatherDto>> getWeatherByLocation(BigDecimal longitude,
         BigDecimal latitude) {
-        List<WeatherDto> weatherDtos = weatherService.fetchWeatherByLocation(longitude, latitude);
-        return ResponseEntity.ok().body(weatherDtos);
+        try {
+            List<WeatherDto> weatherDtos = weatherService.fetchWeatherByLocation(longitude,
+                latitude);
+            return ResponseEntity.status(HttpStatus.OK).body(weatherDtos);
+        } catch (Exception e) {
+            //TODO: body에 ErrorResponse 넣기
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
     }
 
 }
