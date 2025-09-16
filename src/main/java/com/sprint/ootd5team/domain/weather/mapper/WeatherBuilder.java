@@ -5,6 +5,7 @@ import com.sprint.ootd5team.domain.weather.entity.Weather;
 import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.enums.SkyStatus;
 import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
+import com.sprint.ootd5team.domain.weather.exception.WeatherNotFoundException;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaCategoryType;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto.WeatherItem;
 import java.math.BigDecimal;
@@ -22,14 +23,12 @@ public class WeatherBuilder {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(
         "yyyyMMddHHmm");
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     public Weather build(Profile profile, List<WeatherItem> weatherItems, BigDecimal latitude,
         BigDecimal longitude) {
         log.debug("[weather builder] 진입, weatherItems.size(): {}", weatherItems.size());
-
-        if (weatherItems == null || weatherItems.isEmpty()) {
-            throw new RuntimeException("데이터 없음");
+        if (weatherItems.isEmpty()) {
+            throw new WeatherNotFoundException();
         }
 
         // 공통값 추출
@@ -40,7 +39,7 @@ public class WeatherBuilder {
         Integer yCoord = any.ny();
 
         // 기본 값 셋팅
-        String locationNames = "서울시 중구";
+        String locationNames = "서울시 중구"; // TODO: kakao api에서 로드
         SkyStatus skyStatus = SkyStatus.CLEAR;
         PrecipitationType precipitationType = PrecipitationType.NONE;
         double precipitationAmount = 0d;
@@ -57,7 +56,6 @@ public class WeatherBuilder {
         //카테고리별 데이터 추출
         for (WeatherItem item : weatherItems) {
             String value = item.fcstValue();
-            log.debug("item: {}", item.toString());
             KmaCategoryType categoryType = KmaCategoryType.of(item.category());
             switch (categoryType) {
                 case SKY -> skyStatus = toSkyStatus(value);
@@ -78,7 +76,7 @@ public class WeatherBuilder {
                     windspeedLevel = toWindSpeedLevel(windspeed);
                 }
                 default -> {
-                    log.info("tracing 되지않는 카테고리 들어옴 : {}", item.category());
+                    log.info("tracing 되지않는 카테고리 들어옴: {}", item.category());
                 }
             }
         }
@@ -148,7 +146,7 @@ public class WeatherBuilder {
         }
     }
 
-    private Instant toInstantWithZone(String date, String time) {
+    public Instant toInstantWithZone(String date, String time) {
         LocalDateTime ldt = LocalDateTime.parse(date + time, DATE_TIME_FORMATTER);
         return ldt.atZone(ZoneId.of("Asia/Seoul")).toInstant();
     }
