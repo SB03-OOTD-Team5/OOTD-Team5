@@ -9,6 +9,7 @@ public enum ErrorCode {
     // Security 관련 에러 코드
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "권한이 없는 사용자 입니다."),
     INVALID_USER_CREDENTIALS(HttpStatus.UNAUTHORIZED, "잘못된 사용자 인증 정보입니다."),
+    UNSUPPORTED_PRINCIPAL(HttpStatus.UNAUTHORIZED, "지원하지 않는 사용자 인증 타입입니다."),
 
     // User 관련 에러코드
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자 입니다."),

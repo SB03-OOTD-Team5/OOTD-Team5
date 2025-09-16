@@ -1,5 +1,7 @@
 package com.sprint.ootd5team.base.security.service;
 
+import com.sprint.ootd5team.base.errorcode.ErrorCode;
+import com.sprint.ootd5team.base.exception.OotdException;
 import com.sprint.ootd5team.base.security.OotdUserDetails;
 import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
 import java.util.UUID;
@@ -26,8 +28,15 @@ public class AuthService {
      */
     public UUID getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        OotdUserDetails userDetails = (OotdUserDetails) authentication.getPrincipal();
-
-        return userDetails.getUserId();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new OotdException(ErrorCode.UNAUTHORIZED);
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof OotdUserDetails userDetails) {
+            return userDetails.getUserId();
+        }
+        OotdException ex = new OotdException(ErrorCode.UNSUPPORTED_PRINCIPAL);
+        ex.addDetail("principalType", principal.getClass().getName());
+        throw ex;
     }
 }
