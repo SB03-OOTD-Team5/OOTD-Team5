@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,6 +18,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+@ConditionalOnProperty(name = "app.security.enabled", havingValue = "true")
 @Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -32,20 +34,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      */
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
         FilterChain filterChain) throws ServletException, IOException {
-        try{
+        try {
             // 요청 헤더에서 Jwt token 추출
             String token = resolveToken(request);
 
             // 토큰이 존재할경우
-            if(StringUtils.hasText(token)){
+            if (StringUtils.hasText(token)) {
                 // 토큰이 유효하고, 현재 활성화 상태인지 검증
-                if(jwtTokenProvider.validateAccessToken(token)&&jwtRegistry.hasActiveJwtInformationByAccessToken(token)){
+                if (jwtTokenProvider.validateAccessToken(token)
+                    && jwtRegistry.hasActiveJwtInformationByAccessToken(token)) {
 
                     // Token에서 이메일 추출
                     String email = jwtTokenProvider.getEmailFromToken(token);
 
                     // 추출한 이메일을 통해 UserDto를 불러오고, userDetails로 변환하여 저장
-                    OotdUserDetails userDetails = (OotdUserDetails) userDetailsService.loadUserByUsername(email);
+                    OotdUserDetails userDetails = (OotdUserDetails) userDetailsService.loadUserByUsername(
+                        email);
 
                     // 스프링 시큐리티 인증객체 생성
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
@@ -61,17 +65,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     // SecurityContext에 인증정보 저장
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    }else {
-                        //토큰이 잘못됐을때 401에러
-                        sendErrorResponse(response, "Invalid JWT token: ", HttpServletResponse.SC_UNAUTHORIZED);
+                } else {
+                    //토큰이 잘못됐을때 401에러
+                    sendErrorResponse(response, "Invalid JWT token: ",
+                        HttpServletResponse.SC_UNAUTHORIZED);
 
-                    }
                 }
-        }catch (Exception e){
+            }
+        } catch (Exception e) {
             // 예외 발생 시 → 인증 컨텍스트 초기화 + 에러 응답
             log.debug("JWT authentication failed: {}", e.getMessage());
             SecurityContextHolder.clearContext();
-            sendErrorResponse(response, "JWT authentication failed", HttpServletResponse.SC_UNAUTHORIZED);
+            sendErrorResponse(response, "JWT authentication failed",
+                HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
         filterChain.doFilter(request, response);
@@ -80,9 +86,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     /**
      * Authorization 헤더에서 Bearer 토큰 추출
      */
-    private String resolveToken(HttpServletRequest request){
+    private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
-        if(bearerToken != null && bearerToken.startsWith("Bearer ")){
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
         return null;
@@ -91,7 +97,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     /**
      * 인증 실패 시 JSON 형식의 에러 응답 반환
      */
-    private void sendErrorResponse(HttpServletResponse response, String message,int status)
+    private void sendErrorResponse(HttpServletResponse response, String message, int status)
         throws IOException {
         // 커스텀 ErrorResponse 객체 생성
         ErrorResponse errorResponse = new ErrorResponse(new RuntimeException(message));
