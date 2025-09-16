@@ -3,10 +3,12 @@ package com.sprint.ootd5team.base.security;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Component;
 
+@ConditionalOnProperty(name = "app.security.enabled", havingValue = "true")
 @Slf4j
 @RequiredArgsConstructor
 @Component
@@ -42,6 +44,7 @@ public class RedisLockProvider {
             log.warn("분산 락 해제 실패: {}", lockKey, e);
         }
     }
+
     public static class RedisLockAcquisitionException extends RuntimeException {
 
         public RedisLockAcquisitionException(String message) {

@@ -1,5 +1,9 @@
 package com.sprint.ootd5team.domain.clothes.service;
 
+import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
+import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.clothattribute.service.ClothesAttributeValueService;
+import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
@@ -7,6 +11,7 @@ import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothes.mapper.ClothesMapper;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +32,7 @@ public class ClothesServiceImpl implements ClothesService {
 
     private final ClothesRepository clothesRepository;
     private final ClothesMapper clothesMapper;
+    private final ClothesAttributeValueService cavService;
 
     /**
      * 특정 사용자의 의상 목록을 조회한다.
@@ -88,5 +94,18 @@ public class ClothesServiceImpl implements ClothesService {
             dtoList.size(), hasNext);
 
         return response;
+    }
+
+    private List<ClothesAttributeWithDefDto> convertAttributeWithDefs(ClothesCreateRequest request) {
+
+        UUID ownerId = request.ownerId(); // request로부터 ownerId 추출
+        List<ClothesAttributeDto> reqAttributes = request.attributes(); // request로부터 attributes(ClothesAttributeDto)추출
+
+        // ClothesAttributeDto 리스트 -> ClothesAttributeWithDef 리스트로 변환
+        List<ClothesAttributeWithDefDto> attributes = reqAttributes.stream()
+            .map(reqAttr -> cavService.create(ownerId,reqAttr.definitionId(),
+            reqAttr.value())).toList();
+
+        return attributes;
     }
 }
