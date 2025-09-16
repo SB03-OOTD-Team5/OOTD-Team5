@@ -16,20 +16,20 @@ import lombok.NoArgsConstructor;
 @Getter
 public class User extends BaseUpdatableEntity {
 
-    @Column(length = 50, nullable = false)
+    @Column(name = "name", length = 50, nullable = false)
     private String name;
 
-    @Column(length = 100, nullable = false, unique = true)
+    @Column(name = "email", length = 100, nullable = false, unique = true)
     private String email;
 
-    @Column(length = 100, nullable = false)
+    @Column(name="password",length = 100, nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name="role", nullable = false)
     private Role role;
 
-    @Column(nullable = false)
+    @Column(name="is_locked",nullable = false)
     private Boolean locked;
 
     public User(String name, String email, String password, Role role) {
@@ -46,6 +46,10 @@ public class User extends BaseUpdatableEntity {
 
     public void resetPassword(){
         this.password = UUID.randomUUID().toString().replaceAll("-", "").substring(0, 10);
+    }
+
+    public void updateRole(Role role){
+        this.role = role;
     }
 
     @Override

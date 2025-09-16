@@ -33,10 +33,9 @@ public class AdminInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         // 관리자 계정 초기화 로직
         UserCreateRequest request = new UserCreateRequest(username,email,password);
-
         try {
             UserDto admin = userService.create(request);
-            authService.updateRoleInternal(new UserRoleUpdateRequest(Role.ADMIN.name()));
+            authService.updateRoleInternal(admin.id(),new UserRoleUpdateRequest(Role.ADMIN.name()));
             log.info("관리자 계정이 성공적으로 생성되었습니다.");
         } catch (UserAlreadyExistException e) {
             log.warn("관리자 계정이 이미 존재합니다");

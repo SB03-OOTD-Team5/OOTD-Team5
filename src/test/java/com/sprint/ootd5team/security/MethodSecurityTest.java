@@ -50,13 +50,21 @@ public class MethodSecurityTest {
     @MockitoBean
     private RedisLockProvider redisLockProvider;
 
+    private UUID userId;
+
+    @BeforeEach
+    void init(){
+        User user = new User("test", "test@test.com", "qwe123", Role.USER);
+        userId = userRepository.save(user).getId();
+    }
+
 
     @Test
     @WithMockUser(roles = {"USER"})
     @DisplayName("USER 권한으로 역할 업데이트 메서드 호출시 접근 거부")
     void user_cannot_access_admin_method1() {
         assertThatThrownBy(() ->
-           authService.updateRoleInternal(new UserRoleUpdateRequest(Role.ADMIN.name()))
+           authService.updateRoleInternal(userId,new UserRoleUpdateRequest(Role.ADMIN.name()))
         ).isInstanceOf(AccessDeniedException.class);
     }
 
@@ -65,7 +73,7 @@ public class MethodSecurityTest {
     @DisplayName("USER 권한으로 계정 잠금 메서드 호출시 접근 거부")
     void user_cannot_access_admin_method2() {
         assertThatThrownBy(() ->
-           authService.lockUser(UUID userId,new UserLockUpdateRequest(true)))
+           authService.lockUser(userId,new UserLockUpdateRequest(true))
         ).isInstanceOf(AccessDeniedException.class);
     }
 }
