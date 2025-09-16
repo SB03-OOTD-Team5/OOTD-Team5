@@ -20,6 +20,7 @@ import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import com.sprint.ootd5team.testconfig.TestConfig;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +29,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -47,8 +50,8 @@ class BasicClothesAttributeValueServiceTest{
 
 	@BeforeEach
 	void setUpOwner() {
-		owner = userRepo.findByEmail("test@test.com").orElse(userRepo.save(new User("유저","test@test.com","password", Role.USER)));
-
+		owner = userRepo.findByEmail("test@test.com").
+			orElse(userRepo.save(new User("유저","test@test.com","password", Role.USER)));
 	}
 
 	@Test
@@ -195,5 +198,13 @@ class BasicClothesAttributeValueServiceTest{
 	/* 테스트 내에서 간단히 유니크 이름 생성 */
 	private static String unique(String base) {
 		return base + "_" + System.nanoTime();
+	}
+
+	// h2 테스트시 DB 고유id 부여
+	@DynamicPropertySource
+	static void h2(DynamicPropertyRegistry r) {
+		r.add("spring.datasource.url",
+			() -> "jdbc:h2:mem:ootd-" + UUID.randomUUID()
+				+ ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
 	}
 }

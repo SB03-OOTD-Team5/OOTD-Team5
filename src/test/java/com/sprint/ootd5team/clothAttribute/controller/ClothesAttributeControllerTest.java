@@ -2,6 +2,7 @@ package com.sprint.ootd5team.clothAttribute.controller;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -24,6 +25,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
@@ -36,6 +38,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 @ActiveProfiles("test")
 @DisplayName("ClothesAttributeController 테스트")
 @Import(TestConfig.class)
+@DirtiesContext(classMode = AFTER_CLASS)
 class ClothesAttributeControllerTest{
 
 	private static final Logger log = LoggerFactory.getLogger(ClothesAttributeControllerTest.class);
@@ -51,6 +54,7 @@ class ClothesAttributeControllerTest{
 		owner = new User("유저", "test@test.com", "password", Role.USER);
 		owner = userRepo.save(owner); // 영속화(컨트롤러에서 owner 참조 시 대비)
 	}
+
 
 	private RequestPostProcessor auth() {
 		return user(owner.getId().toString()).roles("USER"); // ROLE_USER 부여
