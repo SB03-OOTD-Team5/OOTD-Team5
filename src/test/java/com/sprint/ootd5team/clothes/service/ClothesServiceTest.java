@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.clothes.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -9,8 +10,9 @@ import static org.mockito.Mockito.verify;
 
 import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.clothes.fixture.ClothesFixture;
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
+import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
@@ -122,7 +124,7 @@ class ClothesServiceTest {
     @Test
     void 옷_목록_다음페이지가_존재하면_커서값을_반환한다() {
         // given
-        List<Clothes> clothesList = IntStream.range(0, 11) // limit(10)보다 1개 더
+        List<Clothes> clothesList = IntStream.range(0, 11)
             .mapToObj(i -> {
                 Clothes c = Clothes.builder()
                     .owner(owner)
@@ -131,7 +133,8 @@ class ClothesServiceTest {
                     .imageUrl(null)
                     .build();
                 String second = String.format("%02d", i);
-                ReflectionTestUtils.setField(c, "createdAt", Instant.parse("2024-01-01T10:00:" + second + "Z"));
+                ReflectionTestUtils.setField(c, "createdAt",
+                    Instant.parse("2024-01-01T10:00:" + second + "Z"));
                 ReflectionTestUtils.setField(c, "id", UUID.randomUUID());
                 return c;
             })
@@ -141,7 +144,8 @@ class ClothesServiceTest {
             .willReturn(clothesList);
 
         // when
-        ClothesDtoCursorResponse response = clothesService.getClothes(ownerId, null, null, null, 10);
+        ClothesDtoCursorResponse response = clothesService.getClothes(ownerId, null, null, null,
+            10);
 
         // then
         assertThat(response.hasNext()).isTrue();
@@ -159,14 +163,13 @@ class ClothesServiceTest {
             "멋쟁이패딩",
             ClothesType.OUTER,
             List.of(
-                new ClothesAttributeWithDefDto(attributeId, "계절",List.of("봄","여름","가을","겨울"), "겨울")
+                new ClothesAttributeDto(attributeId, "겨울")
             )
         );
         MultipartFile mockImage = new MockMultipartFile(
             "image", "coat.png", "image/png", "fake-image".getBytes()
         );
-        ClothesAttribute attribute = new ClothesAttribute("계절");
-        ReflectionTestUtils.setField(attribute, "id", attributeId);
+        ClothesAttribute attribute = ClothesFixture.createSeasonAttribute(attributeId);
         Clothes clothes = Clothes.builder()
             .owner(owner)
             .name("멋쟁이패딩")
@@ -176,7 +179,7 @@ class ClothesServiceTest {
         ClothesDto expectedDto = ClothesFixture.toDto(clothes);
         given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
         given(clothesAttributeRepository.findById(attributeId)).willReturn(Optional.of(attribute));
-        given(fileStorage.upload(eq("coat.png"), any(InputStream.class)))
+        given(fileStorage.upload(eq("coat.png"), any(InputStream.class), eq("image/png")))
             .willReturn("clothes/uuid_coat.png");
         given(clothesMapper.toDto(any(Clothes.class))).willReturn(expectedDto);
 
@@ -189,5 +192,63 @@ class ClothesServiceTest {
         assertThat(result.type()).isEqualTo(ClothesType.OUTER);
         assertThat(result.imageUrl()).contains("clothes/uuid_coat.png");
         verify(clothesRepository).save(any(Clothes.class));
+    }
+
+    @Test
+    void 이미지_없이_의상을_생성할_수_있다() {
+        // given
+        ClothesCreateRequest request = new ClothesCreateRequest(ownerId, "멋진티셔츠", ClothesType.TOP,
+            null);
+        ClothesDto expected = new ClothesDto(UUID.randomUUID(), ownerId, "멋진티셔츠", null,
+            ClothesType.TOP, List.of(), Instant.now(), null);
+
+        given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
+        given(clothesMapper.toDto(any(Clothes.class))).willReturn(expected);
+
+        // when
+        ClothesDto result = clothesService.create(request, null);
+
+        // then
+        assertThat(result.imageUrl()).isNull();
+        verify(clothesRepository).save(any(Clothes.class));
+    }
+
+    @Test
+    void 의상_생성시_허용되지않은_속성값이면_예외를_발생시킨다() {
+        // given
+        UUID attrId = UUID.randomUUID();
+        ClothesCreateRequest request = new ClothesCreateRequest(
+            ownerId, "셔츠", ClothesType.TOP, List.of(new ClothesAttributeDto(attrId, "한여름"))
+        );
+
+        ClothesAttribute attr = new ClothesAttribute("계절");
+        ReflectionTestUtils.setField(attr, "id", attrId);
+        attr.getDefs().add(new ClothesAttributeDef(attr, "봄"));
+        attr.getDefs().add(new ClothesAttributeDef(attr, "여름"));
+        attr.getDefs().add(new ClothesAttributeDef(attr, "가을"));
+        attr.getDefs().add(new ClothesAttributeDef(attr, "겨울"));
+
+        given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
+        given(clothesAttributeRepository.findById(attrId)).willReturn(Optional.of(attr));
+
+        // when & then
+        assertThatThrownBy(() -> clothesService.create(request, null))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void 의상_생성시_속성값을_찾지못하면_예외를_던진다() {
+        // given
+        UUID attrId = UUID.randomUUID();
+        ClothesCreateRequest request = new ClothesCreateRequest(
+            ownerId, "셔츠", ClothesType.TOP, List.of(new ClothesAttributeDto(attrId, "겨울"))
+        );
+
+        given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
+        given(clothesAttributeRepository.findById(attrId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> clothesService.create(request, null))
+            .isInstanceOf(IllegalArgumentException.class);
     }
 }

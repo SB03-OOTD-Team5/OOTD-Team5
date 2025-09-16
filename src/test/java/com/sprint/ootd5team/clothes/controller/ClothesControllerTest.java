@@ -17,6 +17,7 @@ import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothes.service.ClothesService;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -134,7 +135,7 @@ class ClothesControllerTest {
 
         // Mock MultipartFile → 실제로는 MockMvc에서 body만 전달
         MockMultipartFile requestPart = new MockMultipartFile(
-            "request", "", "application/json", requestJson.getBytes()
+            "request", "", "application/json", requestJson.getBytes(StandardCharsets.UTF_8)
         );
         MockMultipartFile imagePart = new MockMultipartFile(
             "image", "coat.png", "image/png", "fake-image".getBytes()
@@ -146,7 +147,8 @@ class ClothesControllerTest {
             "clothes/uuid_coat.png",
             ClothesType.OUTER,
             List.of(
-                new ClothesAttributeWithDefDto(attributeId, "계절", List.of("봄","여름","가을","겨울"), "겨울")
+                new ClothesAttributeWithDefDto(attributeId, "계절", List.of("봄", "여름", "가을", "겨울"),
+                    "겨울")
             ),
             Instant.now(),
             null
@@ -156,8 +158,9 @@ class ClothesControllerTest {
 
         // when
         ResultActions result = mockMvc.perform(multipart("/api/clothes")
-                .file(requestPart)
-                .file(imagePart));
+            .file(requestPart)
+            .file(imagePart)
+            .contentType(MediaType.MULTIPART_FORM_DATA));
 
         // then
         result.andExpect(status().isCreated())

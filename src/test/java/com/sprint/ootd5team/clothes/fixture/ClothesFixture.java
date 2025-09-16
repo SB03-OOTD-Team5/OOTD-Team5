@@ -1,5 +1,7 @@
 package com.sprint.ootd5team.clothes.fixture;
 
+import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
+import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
@@ -72,5 +74,15 @@ public class ClothesFixture {
             createClothesDto(UUID.randomUUID(), ownerId, "운동화", ClothesType.SHOES, null,
                 now.minusSeconds(10800), now.minusSeconds(5400))
         );
+    }
+
+    public static ClothesAttribute createSeasonAttribute(UUID id) {
+        ClothesAttribute attribute = new ClothesAttribute("계절");
+        attribute.getDefs().add(new ClothesAttributeDef(attribute, "봄"));
+        attribute.getDefs().add(new ClothesAttributeDef(attribute, "여름"));
+        attribute.getDefs().add(new ClothesAttributeDef(attribute, "가을"));
+        attribute.getDefs().add(new ClothesAttributeDef(attribute, "겨울"));
+        ReflectionTestUtils.setField(attribute, "id", id);
+        return attribute;
     }
 }
