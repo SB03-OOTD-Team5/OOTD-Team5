@@ -43,6 +43,8 @@ public class FeedServiceImpl implements FeedService {
      */
     @Override
     public FeedDtoCursorResponse getFeeds(FeedListRequest request,  UUID currentUserId) {
+        log.info("[FeedService] 피드 목록 조회 시작 - userId:{}", currentUserId);
+
         List<FeedDto> feedDtos = feedRepository.findFeedDtos(request, currentUserId);
 
         boolean hasNext = feedDtos.size() > request.limit();
@@ -58,10 +60,11 @@ public class FeedServiceImpl implements FeedService {
             switch (request.sortBy()) {
                 case "createdAt" -> nextCursor = lastFeedDto.createdAt().toString();
                 case "likeCount" -> nextCursor = String.valueOf(lastFeedDto.likeCount());
-                default -> throw new IllegalArgumentException("유효하지 않은 sortBy: " + request.sortBy());
+                default -> throw new InvalidSortOptionException(request.sortBy());
             }
             nextIdAfter = lastFeedDto.id();
         }
+        log.debug("[FeedService] nextCursor:{}, nextIdAfter:{}", nextCursor, nextIdAfter);
 
         long totalCount = feedRepository.countFeeds(
             request.keywordLike(),
@@ -69,6 +72,7 @@ public class FeedServiceImpl implements FeedService {
             request.precipitationTypeEqual(),
             request.authorIdEqual()
         );
+        log.debug("[FeedService] totalCount:{}", totalCount);
 
         List<FeedDto> data = enrichWithOotds(feedDtos);
 
@@ -97,7 +101,26 @@ public class FeedServiceImpl implements FeedService {
             feedClothesRepository.findOotdsByFeedIds(feedDtos.stream().map(FeedDto::id).toList());
 
         return feedDtos.stream()
-            .map(f -> f.withOotds(ootdsMap.getOrDefault(f.id(), List.of())))
+            .map(feed -> feed.withOotds(ootdsMap.getOrDefault(feed.id(), List.of())))
             .toList();
+    }
+
+    /**
+     * 단건 FeedDto에 OOTD 데이터를 매핑한다.
+     *
+     * <p>내부적으로 enrichWithOotds를 재사용.</p>
+     */
+    private FeedDto enrichSingleFeed(FeedDto feedDto) {
+        return enrichWithOotds(List.of(feedDto)).get(0);
+    }
+
+    private Feed getFeedOrThrow(UUID feedId) {
+        log.debug("[FeedService] 피드 조회 feedId:{}", feedId);
+
+        return feedRepository.findById(feedId)
+            .orElseThrow(() -> {
+                log.warn("[FeedService] 유효하지 않은 피드 - feedId:{}", feedId);
+                return new FeedNotFoundException(feedId);
+            });
     }
 }
