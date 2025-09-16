@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.feed.repository.feed.impl;
 
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
@@ -55,48 +56,12 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
     @Override
     public List<FeedDto> findFeedDtos(FeedListRequest request, UUID currentUserId) {
         QFeed feed = QFeed.feed;
-        QFeedLike feedLike = QFeedLike.feedLike;
         QUser user = QUser.user;
         QProfile profile = QProfile.profile;
         QWeather weather = QWeather.weather;
 
         return queryFactory
-            .select(Projections.constructor(
-                FeedDto.class,
-                feed.id,
-                feed.createdAt,
-                feed.updatedAt,
-                Projections.constructor(AuthorDto.class,
-                    user.id,
-                    user.name,
-                    profile.profileImageUrl
-                ),
-                Projections.constructor(WeatherSummaryDto.class,
-                    weather.id,
-                    weather.skyStatus,
-                    Projections.constructor(PrecipitationDto.class,
-                        weather.precipitationType,
-                        weather.precipitationAmount,
-                        weather.precipitationProbability
-                    ),
-                    Projections.constructor(TemperatureDto.class,
-                        weather.temperature,
-                        weather.temperatureCompared,
-                        weather.temperatureMin,
-                        weather.temperatureMax
-                    )
-                ),
-                Expressions.constant(Collections.emptyList()),
-                feed.content,
-                feed.likeCount,
-                feed.commentCount,
-                JPAExpressions
-                    .selectOne()
-                    .from(feedLike)
-                    .where(feedLike.feedId.eq(feed.id)
-                        .and(feedLike.userId.eq(currentUserId)))
-                    .exists()
-            ))
+            .select(feedProjection(currentUserId))
             .from(feed)
             .join(user).on(feed.authorId.eq(user.id))
             .leftJoin(profile).on(profile.userId.eq(user.id))
@@ -130,40 +95,62 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
         QUser user = QUser.user;
         QProfile profile = QProfile.profile;
         QWeather weather = QWeather.weather;
-        QFeedLike feedLike = QFeedLike.feedLike;
 
         return queryFactory
-            .select(Projections.constructor(
-                FeedDto.class,
-                feed.id,
-                feed.createdAt,
-                feed.updatedAt,
-                Projections.constructor(AuthorDto.class,
-                    user.id,
-                    user.name,
-                    profile.profileImageUrl
-                ),
-                Projections.constructor(WeatherSummaryDto.class,
-                    weather.id,
-                    weather.skyStatus,
-                    weather.precipitationType
-                ),
-                Expressions.constant(null), // 서비스 계층에서 추가
-                feed.content,
-                feed.likeCount,
-                feed.commentCount,
-                JPAExpressions.selectOne()
-                    .from(feedLike)
-                    .where(feedLike.feedId.eq(feed.id)
-                        .and(feedLike.userId.eq(currentUserId)))
-                    .exists()
-            ))
+            .select(feedProjection(currentUserId))
             .from(feed)
             .join(user).on(feed.authorId.eq(user.id))
             .leftJoin(profile).on(profile.userId.eq(user.id))
             .join(weather).on(feed.weatherId.eq(weather.id))
             .where(feed.id.eq(feedId))
             .fetchOne();
+    }
+
+    /**
+     * 공통 FeedDto projection
+     */
+    private Expression<FeedDto> feedProjection(UUID currentUserId) {
+        QFeed feed = QFeed.feed;
+        QFeedLike feedLike = QFeedLike.feedLike;
+        QUser user = QUser.user;
+        QProfile profile = QProfile.profile;
+        QWeather weather = QWeather.weather;
+
+        return Projections.constructor(
+            FeedDto.class,
+            feed.id,
+            feed.createdAt,
+            feed.updatedAt,
+            Projections.constructor(AuthorDto.class,
+                user.id,
+                user.name,
+                profile.profileImageUrl
+            ),
+            Projections.constructor(WeatherSummaryDto.class,
+                weather.id,
+                weather.skyStatus,
+                Projections.constructor(PrecipitationDto.class,
+                    weather.precipitationType,
+                    weather.precipitationAmount,
+                    weather.precipitationProbability
+                ),
+                Projections.constructor(TemperatureDto.class,
+                    weather.temperature,
+                    weather.temperatureCompared,
+                    weather.temperatureMin,
+                    weather.temperatureMax
+                )
+            ),
+            Expressions.constant(Collections.emptyList()),
+            feed.content,
+            feed.likeCount,
+            feed.commentCount,
+            JPAExpressions.selectOne()
+                .from(feedLike)
+                .where(feedLike.feedId.eq(feed.id)
+                    .and(feedLike.userId.eq(currentUserId)))
+                .exists()
+        );
     }
 
     /**
