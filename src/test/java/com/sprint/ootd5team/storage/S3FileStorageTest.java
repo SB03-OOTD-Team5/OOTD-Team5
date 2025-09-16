@@ -6,8 +6,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
+import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.storage.S3FileStorage;
 import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URL;
 
@@ -51,7 +53,7 @@ class S3FileStorageTest {
         InputStream inputStream = new ByteArrayInputStream("test".getBytes());
 
         // when
-        String key = s3FileStorage.upload("test.jpg", inputStream);
+        String key = s3FileStorage.upload("test.jpg", inputStream, "image/jpeg");
 
         // then
         ArgumentCaptor<PutObjectRequest> captor = ArgumentCaptor.forClass(PutObjectRequest.class);
@@ -70,12 +72,14 @@ class S3FileStorageTest {
             .putObject(any(PutObjectRequest.class), any(RequestBody.class));
 
         // when
-        Throwable thrown = catchThrowable(() -> s3FileStorage.upload("bad.jpg", inputStream));
+        Throwable thrown = catchThrowable(
+            () -> s3FileStorage.upload("bad.jpg", inputStream, "image/jpeg")
+        );
 
         // then
-        assertThat(thrown).isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("파일 업로드 실패");
+        assertThat(thrown).isInstanceOf(FileSaveFailedException.class);
     }
+
 
     @Test
     void presigned_url_생성() {
