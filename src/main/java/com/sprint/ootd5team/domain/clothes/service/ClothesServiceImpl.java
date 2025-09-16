@@ -131,13 +131,21 @@ public class ClothesServiceImpl implements ClothesService {
             .imageUrl(imageUrl)
             .build();
 
-        //TODO: 인규님 코드 확인 예정
-        // 4. 속성 값 매핑 (값이 있을 때만)
+        // 4. 속성 값 (값이 있을 때만)
         request.attributes().forEach(dto -> {
             ClothesAttribute attribute = clothesAttributeRepository.findById(dto.definitionId())
+                // TODO: ClothesAttributeNotFoundException 커스텀 예외로 교체 예정
                 .orElseThrow(() -> new IllegalArgumentException("없는 속성: " + dto.definitionId()));
-            //TODO: ClothesAttributeNotFoundException
 
+            // 허용된 값 검증
+            boolean valid = attribute.getDefs().stream()
+                .anyMatch(def -> def.getAttDef().equals(dto.value()));
+            if (!valid) {
+                // TODO: InvalidClothesAttributeValueException 커스텀 예외로 교체 예정
+                throw new IllegalArgumentException(
+                    "허용되지 않은 값: " + dto.value() + " (속성명=" + attribute.getName() + ")"
+                );
+            }
             ClothesAttributeValue value = new ClothesAttributeValue(clothes, attribute, dto.value());
             clothes.addClothesAttributeValue(value);
         });
