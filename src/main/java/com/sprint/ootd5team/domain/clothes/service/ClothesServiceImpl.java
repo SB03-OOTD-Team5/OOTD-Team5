@@ -1,13 +1,18 @@
 package com.sprint.ootd5team.domain.clothes.service;
 
+import static org.springframework.util.StringUtils.hasText;
+
+import com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
+import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeValue;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
+import com.sprint.ootd5team.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
@@ -208,7 +213,58 @@ public class ClothesServiceImpl implements ClothesService {
                 image.getContentType()
             );
         } catch (IOException e) {
+            log.warn("[clothes] 이미지 업로드 실패 {}", e.getMessage());
             throw FileSaveFailedException.withFileName(image.getOriginalFilename());
         }
     }
+
+    @Override
+    public ClothesDto update(UUID clothesId, ClothesUpdateRequest request, MultipartFile image) {
+        Clothes clothes = clothesRepository.findById(clothesId)
+            .orElseThrow(() -> ClothesNotFoundException.withId(clothesId));
+
+        UUID ownerId = clothes.getOwner().getId();
+        log.info("[clothes] 수정 요청 - clothesId: {}, ownerId: {}", clothesId, ownerId);
+
+        User user = userRepository.findById(ownerId)
+            .orElseThrow(() -> {
+                log.warn("[clothes] 수정 실패 - 존재하지 않는 userId: {}", ownerId);
+                return new IllegalArgumentException("존재하지 않는 사용자");
+            });
+
+        String newName = request.name();
+        ClothesType newType = request.type();
+        List<ClothesAttributeWithDefDto> newAttributes = request.attributes();
+
+        // 이름 수정
+        if (hasText(newName) && !newName.equals(clothes.getName())) {
+            clothes.updateClothesName(newName);
+        }
+
+        // 타입 수정
+        if (newType != null && !newType.equals(clothes.getType())) {
+            clothes.updateClothesType(newType);
+        }
+
+        // 이미지 수정
+        if (image != null && !image.isEmpty()) {
+            if (clothes.getImageUrl() != null) {
+                fileStorage.delete(clothes.getImageUrl());
+            }
+            String uploadedUrl = uploadClothesImage(image);
+            clothes.updateClothesImageUrl(uploadedUrl);
+        }
+
+//        // 속성 수정
+//        if (request.attributes() != null) {
+//            clothes.updateAttributes(request.attributes());
+//        }
+
+        log.info("[clothes] 수정 완료 - clothesId: {}, name: {}, type: {}, imageUrl: {}",
+            clothesId, clothes.getName(), clothes.getType(), clothes.getImageUrl());
+        return clothesMapper.toDto(clothes);
+
+    }
+
+
 }

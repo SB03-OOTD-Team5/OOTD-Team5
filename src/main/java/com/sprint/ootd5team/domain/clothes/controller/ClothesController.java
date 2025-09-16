@@ -67,7 +67,13 @@ public class ClothesController implements ClothesApi {
     @Override
     public ResponseEntity<ClothesDto> updateClothes(UUID clothesId, ClothesUpdateRequest request,
         MultipartFile image) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        log.info("[ClothesController] 수정 요청 수신: clothesId={}, request={}, image={}", clothesId, request, image);
+        ClothesDto clothesDto = clothesService.update(clothesId, request, image);
+
+        log.info("ClothesController] 수정 응답 반환: name={}, image={}", clothesDto.name(), clothesDto.imageUrl());
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(clothesDto);
     }
 
     @Override

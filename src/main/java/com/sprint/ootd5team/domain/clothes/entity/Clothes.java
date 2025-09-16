@@ -65,4 +65,13 @@ public class Clothes extends BaseUpdatableEntity {
         this.imageUrl = imageUrl;
     }
 
+//    public void updateAttributes(List<ClothesAttributeWithDefDto> newAttributes) {
+//        this.clothesAttributeValues.clear();
+//        if (newAttributes != null) {
+//            newAttributes.forEach(attrDto -> {
+//                ClothesAttribute attr = ClothesAttribute.createFromDto(attrDto, this);
+//                this.clothesAttributeValues.add(attr);
+//            });
+//        }
+//    }
 }
