@@ -15,6 +15,7 @@ import com.sprint.ootd5team.domain.user.entity.Role;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,6 +42,7 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@ConditionalOnProperty(name = "app.security.enabled", matchIfMissing = true, havingValue = "true")
 public class SecurityConfig {
 
     /**

@@ -12,6 +12,11 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
 
+# 테스트환경에서 SecurityConfig 비활성화
+app:
+  security:
+    enabled: false
+
 # 배치 임시 제외
   batch:
     jdbc:
