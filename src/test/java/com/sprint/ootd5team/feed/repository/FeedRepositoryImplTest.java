@@ -15,6 +15,7 @@ import com.sprint.ootd5team.domain.feed.repository.feedClothes.FeedClothesReposi
 import com.sprint.ootd5team.domain.feed.repository.feedClothes.impl.FeedClothesRepositoryImpl;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import com.sprint.ootd5team.domain.user.entity.User;
+import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -23,7 +24,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -37,7 +37,7 @@ public class FeedRepositoryImplTest {
     private FeedClothesRepository feedClothesRepository;
 
     @Autowired
-    private TestEntityManager em;
+    private EntityManager em;
 
     private UUID feedId;
 
@@ -78,6 +78,7 @@ public class FeedRepositoryImplTest {
     }
 
     @Test
+    @DisplayName("피드 Id 리스트로 ootds 목록 조회 성공")
     void findOotdsByFeedIds_success() {
         // when
         Map<UUID, List<OotdDto>> result = feedClothesRepository.findOotdsByFeedIds(List.of(feedId));

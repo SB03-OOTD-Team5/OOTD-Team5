@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class FeedController implements FeedApi {
     private final FeedService feedService;
 
+    @Override
     @GetMapping
     public ResponseEntity<FeedDtoCursorResponse> getFeeds(
         @Valid @ModelAttribute FeedListRequest feedListRequest,
