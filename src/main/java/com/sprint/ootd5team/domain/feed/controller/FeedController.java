@@ -1,6 +1,6 @@
 package com.sprint.ootd5team.domain.feed.controller;
 
-import com.sprint.ootd5team.base.security.OotdUserDetails;
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.feed.controller.api.FeedApi;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
 import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
@@ -25,7 +25,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/feeds")
 @RestController
 public class FeedController implements FeedApi {
+
     private final FeedService feedService;
+    private final AuthService authService;
 
     @Override
     @GetMapping
@@ -33,9 +35,8 @@ public class FeedController implements FeedApi {
         @Valid @ModelAttribute FeedListRequest feedListRequest,
         Authentication authentication
     ) {
-        OotdUserDetails user = (OotdUserDetails) authentication.getPrincipal();
-        UUID userid = user.getUserDto().id();
-        FeedDtoCursorResponse feeds = feedService.getFeeds(feedListRequest, userid);
+        UUID userId = authService.getCurrentUserId();
+        FeedDtoCursorResponse feeds = feedService.getFeeds(feedListRequest, userId);
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(feeds);

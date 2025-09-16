@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.config.SecurityConfig;
 import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
 import com.sprint.ootd5team.base.security.OotdUserDetails;
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.feed.controller.FeedController;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
 import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
@@ -55,6 +56,9 @@ public class FeedControllerTest {
 
     @MockitoBean
     private FeedService feedService;
+
+    @MockitoBean
+    private AuthService authService;
 
     @Autowired
     private ObjectMapper objectMapper;
