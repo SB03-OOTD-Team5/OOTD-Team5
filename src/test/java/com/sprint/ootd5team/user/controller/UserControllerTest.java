@@ -9,7 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 @WebMvcTest(UserController.class)
 @DisplayName("UserController 테스트")
 @AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "securitytest"})
 public class UserControllerTest {
 
 }

@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS tbl_users
     created_at               TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at               TIMESTAMP WITH TIME ZONE,
     -- constraints
-    CONSTRAINT check_role CHECK (role IN ('ROLE_USER', 'ROLE_ADMIN'))
+    CONSTRAINT check_role CHECK (role IN ('USER', 'ADMIN'))
 );
 
 -- 인증 테이블

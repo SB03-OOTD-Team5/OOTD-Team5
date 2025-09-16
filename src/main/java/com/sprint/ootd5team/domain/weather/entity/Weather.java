@@ -7,8 +7,6 @@ import com.sprint.ootd5team.domain.weather.enums.SkyStatus;
 import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -26,14 +24,13 @@ import lombok.NoArgsConstructor;
 @Table(name = "tbl_weathers")
 public class Weather extends BaseEntity {
 
-    @Column(name = "forecasted_at",nullable = false)  // 예보 산출 시각
+    @Column(name = "forecasted_at", nullable = false)  // 예보 산출 시각
     private Instant forecastedAt;
 
     @Column(name = "forecast_at", nullable = false) // 예보 대상 시각
     private Instant forecastAt;
 
     @Column(name = "sky_status")
-    @Enumerated(EnumType.STRING)
     private SkyStatus SkyStatus;
 
     @Column(nullable = false)
@@ -52,7 +49,6 @@ public class Weather extends BaseEntity {
     private String locationNames;
 
     @Column(name = "precipitation_type")
-    @Enumerated(EnumType.STRING)
     private PrecipitationType precipitationType;
 
     @Column(name = "precipitation_amount")
@@ -83,7 +79,6 @@ public class Weather extends BaseEntity {
     private Double windspeed;
 
     @Column(name = "windspeed_level")
-    @Enumerated(EnumType.STRING)
     private WindspeedLevel windspeedLevel;
 
 //    @ManyToOne(fetch = FetchType.LAZY )
