@@ -15,9 +15,16 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "ootd.storage.type", havingValue = "local")
 public class LocalFileStorage implements FileStorage {
 
-    private final Path root = Paths.get("uploads");
+    private final Path root;
 
+    // 기본 생성자 "uploads" 폴더 사용
     public LocalFileStorage() {
+        this(Paths.get("uploads"));
+    }
+
+    // 테스트/특수 환경에서는 root를 직접 지정 가능
+    public LocalFileStorage(Path root) {
+        this.root = root;
         try {
             Files.createDirectories(root);
         } catch (IOException e) {
@@ -26,7 +33,7 @@ public class LocalFileStorage implements FileStorage {
     }
 
     @Override
-    public String upload(String filename, InputStream input) {
+    public String upload(String filename, InputStream input, String contentType) {
         try {
             Path target = root.resolve(filename);
             Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
@@ -48,5 +55,10 @@ public class LocalFileStorage implements FileStorage {
         } catch (IOException e) {
             throw new FileDeleteFailedException(path);
         }
+    }
+
+    @Override
+    public String resolveUrl(String path) {
+        return path != null ? "/local-files/" + path : null;
     }
 }

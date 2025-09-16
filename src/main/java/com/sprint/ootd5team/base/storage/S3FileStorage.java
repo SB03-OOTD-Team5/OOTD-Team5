@@ -50,18 +50,19 @@ public class S3FileStorage implements FileStorage{
         backoff = @Backoff(delay = 2000, multiplier = 2)
     )
     @Override
-    public String upload(String filename, InputStream inputStream) {
+    public String upload(String filename, InputStream inputStream, String contentType) {
         String key = "clothes/" + UUID.randomUUID() + "_" + filename;
         try {
             PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
+                .contentType(contentType)
                 .build();
 
             byte[] bytes = inputStream.readAllBytes();
             s3Client.putObject(request, RequestBody.fromBytes(bytes));
 
-            log.info("[S3] 업로드 성공: key={}, size={}", key, bytes.length);
+            log.info("[S3] 업로드 성공: key={}, size={}, type={}", key, bytes.length, contentType);
             return key;
         } catch (Exception e) {
             log.error("[S3] 업로드 실패: file={}, ex={}", filename, e.toString(), e);
@@ -78,6 +79,7 @@ public class S3FileStorage implements FileStorage{
             var getReq = GetObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
+                .responseContentDisposition("inline")   // 브라우저 바로 보기
                 .build();
 
             var presignReq = GetObjectPresignRequest.builder()
@@ -116,6 +118,11 @@ public class S3FileStorage implements FileStorage{
         } catch (Exception e) {
             log.error("[S3] 삭제 실패: key={}, ex={}", key, e.toString(), e);
         }
+    }
+
+    @Override
+    public String resolveUrl(String path) {
+        return path != null ? download(path) : null;
     }
 
     /**
