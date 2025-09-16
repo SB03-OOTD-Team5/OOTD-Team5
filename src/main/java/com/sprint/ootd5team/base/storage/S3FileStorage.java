@@ -51,7 +51,14 @@ public class S3FileStorage implements FileStorage{
     )
     @Override
     public String upload(String filename, InputStream inputStream, String contentType) {
-        String key = "clothes/" + UUID.randomUUID() + "_" + filename;
+        String extension = "";
+        if (filename != null && filename.contains(".")) {
+            extension = filename.substring(filename.lastIndexOf('.'));
+        }
+
+        // 안전한 key 생성
+        String key = "clothes/" + UUID.randomUUID() + extension;
+
         try {
             PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(bucket)

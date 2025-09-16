@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -34,12 +35,20 @@ public class LocalFileStorage implements FileStorage {
 
     @Override
     public String upload(String filename, InputStream input, String contentType) {
+        String ext = "";
+        int dotIndex = filename.lastIndexOf(".");
+        if (dotIndex != -1) {
+            ext = filename.substring(dotIndex);
+            filename = filename.substring(0, dotIndex);
+        }
+        String uniqueName = filename + "_" + UUID.randomUUID() + ext;
+
         try {
-            Path target = root.resolve(filename);
+            Path target = root.resolve(uniqueName);
             Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
             return target.toAbsolutePath().toString();
         } catch (IOException e) {
-            throw FileSaveFailedException.withFileName(filename);
+            throw FileSaveFailedException.withFileName(uniqueName);
         }
     }
 
