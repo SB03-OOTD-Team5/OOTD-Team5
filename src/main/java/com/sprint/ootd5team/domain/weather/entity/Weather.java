@@ -24,14 +24,14 @@ import lombok.NoArgsConstructor;
 @Table(name = "tbl_weathers")
 public class Weather extends BaseEntity {
 
-    @Column(name = "forecasted_at",nullable = false)  // 예보 산출 시각
+    @Column(name = "forecasted_at", nullable = false)  // 예보 산출 시각
     private Instant forecastedAt;
 
     @Column(name = "forecast_at", nullable = false) // 예보 대상 시각
     private Instant forecastAt;
 
     @Column(name = "sky_status")
-    private SkyStatus SkyStatus;
+    private SkyStatus skyStatus;
 
     @Column(nullable = false)
     private BigDecimal latitude;
