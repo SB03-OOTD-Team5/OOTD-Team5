@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -120,7 +121,7 @@ public class JwtTokenProvider {
      * @throws JOSEException 예외
      */
     public String generateRefreshToken(OotdUserDetails userDetails) throws JOSEException {
-        return generateToken(userDetails, accessTokenExpirationInMs, refreshTokenSigner, "refresh");
+        return generateToken(userDetails, refreshTokenExpirationInMs, refreshTokenSigner, "refresh");
     }
 
     /**
@@ -228,16 +229,15 @@ public class JwtTokenProvider {
      * @param refreshToken 리프레쉬 토큰
      * @return 생성된 쿠키
      */
-    public Cookie genereateRefreshTokenCookie(String refreshToken) {
-        // Set refresh token in HttpOnly cookie
-        Cookie refreshCookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken);
-        refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(true); // Use HTTPS in production
-        refreshCookie.setPath("/");
-        refreshCookie.setMaxAge(refreshTokenExpirationInMs / 1000);
-        return refreshCookie;
+    public ResponseCookie generateRefreshTokenCookie(String refreshToken) {
+        return ResponseCookie.from("refreshToken", refreshToken)
+            .httpOnly(true)
+            .secure(true) // HTTPS 환경에서만
+            .path("/")
+            .maxAge(refreshTokenExpirationInMs / 1000)
+            .sameSite("Strict") // or "Lax", "None"
+            .build();
     }
-
     /**
      * RefreshToken을 강제로 만료시키는 쿠키를 생성하는 메서드 (로그아웃에서 사용)
      * @return 생성된 쿠키

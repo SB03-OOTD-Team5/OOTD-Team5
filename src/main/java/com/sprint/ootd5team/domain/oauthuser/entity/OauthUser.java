@@ -21,7 +21,7 @@ public class OauthUser {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", columnDefinition = "uuid", updatable = false, nullable = false)
-    private String id;
+    private UUID id;
 
     @Column(name = "user_id",nullable = false)
     private UUID userId;

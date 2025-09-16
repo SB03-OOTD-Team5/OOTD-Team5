@@ -32,7 +32,13 @@ public class JwtLogoutHandler implements LogoutHandler {
         Cookie refreshTokenExpirationCookie = tokenProvider.genereateRefreshTokenExpirationCookie();
         response.addCookie(refreshTokenExpirationCookie);
 
-        Arrays.stream(request.getCookies())
+        Cookie[] cookies = request.getCookies();
+        if(cookies != null || cookies.length == 0) {
+            log.debug("No cookies found");
+            return;
+        }
+
+        Arrays.stream(cookies)
             .filter(cookie -> cookie.getName().equals(JwtTokenProvider.REFRESH_TOKEN_COOKIE_NAME))
             .findFirst()
             .ifPresent(cookie -> {

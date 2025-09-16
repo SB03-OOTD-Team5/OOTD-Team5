@@ -11,6 +11,7 @@ import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,12 +27,12 @@ public class UserService {
      * @param request 유저 생성 정보(이메일, 닉네임, 비밀번호)
      * @return 생성된 유저 정보
      */
+    @Transactional
     public UserDto create(UserCreateRequest request){
 
         if (userRepository.existsByEmail(request.email())) {
             throw new UserAlreadyExistException();
         }
-
         User user = userRepository.save(
             new User(request.name(), request.email(), passwordEncoder.encode(request.password()),
                 Role.USER));
