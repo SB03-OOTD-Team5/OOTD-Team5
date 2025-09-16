@@ -46,9 +46,9 @@ public class WeatherBuilder {
         double precipitationAmount = 0d;
         double precipitationProbability = 0d;
         double humidity = 0d;
-        double humidityCompared = 0d;
-        double temperature = 0d;
-        double temperatureCompared = 0d;
+        double humidityCompared = 0d; //TODO: 습도비교계산
+        double temperature = 0d; //TODO: 평균온도계산
+        double temperatureCompared = 0d; //TODO: 온도비교계산
         double temperatureMin = 0d;
         double temperatureMax = 0d;
         double windspeed = 0d;

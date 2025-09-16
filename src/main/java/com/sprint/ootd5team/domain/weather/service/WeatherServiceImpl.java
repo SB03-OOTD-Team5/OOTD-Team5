@@ -5,6 +5,8 @@ import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.weather.dto.data.WeatherDto;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaGridConverter;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaGridConverter.GridXY;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto.WeatherItem;
 import com.sprint.ootd5team.domain.weather.mapper.WeatherBuilder;
@@ -40,11 +42,8 @@ public class WeatherServiceImpl implements WeatherService {
 
     @Override
     @Transactional
-    public List<WeatherDto> fetchWeatherByDateAndLocation() {
-        List<WeatherDto> weatherDtos = new ArrayList<>();
+    public List<WeatherDto> fetchWeatherByLocation(BigDecimal longitude, BigDecimal latitude) {
         //temp 데이터
-        BigDecimal longitude = new BigDecimal("37.5665");
-        BigDecimal latitude = new BigDecimal("127.34234");
         Integer xCoord = 55;
         Integer yCoord = 127;
         Profile testProfile = profileRepository.findById(
@@ -52,6 +51,9 @@ public class WeatherServiceImpl implements WeatherService {
             .orElseThrow(() -> new RuntimeException("프로필을 찾을수 없습니다."));
 
         log.debug("[Weather] 날씨 정보 조회 요청");
+        GridXY kmaXY = convertGridXY(longitude, latitude);
+        log.debug("[Weather] 날씨 정보 조회 요청 longitude:{},latitude:{},x:{},y:{}", longitude, longitude,
+            kmaXY.x(), kmaXY.y());
 
         String response = kmaApiClient.get()
             .uri(uriBuilder -> uriBuilder
@@ -59,8 +61,8 @@ public class WeatherServiceImpl implements WeatherService {
                 .queryParam("numOfRows", 1000)
                 .queryParam("base_date", "20250916")
                 .queryParam("base_time", "0200")
-                .queryParam("nx", xCoord)
-                .queryParam("ny", yCoord)
+                .queryParam("nx", kmaXY.x())
+                .queryParam("ny", kmaXY.y())
                 .build())
             .retrieve()
             .bodyToMono(String.class)
@@ -77,6 +79,11 @@ public class WeatherServiceImpl implements WeatherService {
             longitude);
 
         return weathers.stream().map(weatherMapper::toDto).toList();
+    }
+
+    private GridXY convertGridXY(BigDecimal longitude, BigDecimal latitude) {
+        return KmaGridConverter.toGrid(longitude, latitude);
+
     }
 
     //  엔티티 변환 & 영속화
