@@ -2,7 +2,7 @@ package com.sprint.ootd5team.feed.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.sprint.ootd5team.base.config.JpaConfig;
+import com.sprint.ootd5team.base.config.JpaAuditingConfig;
 import com.sprint.ootd5team.base.config.QuerydslConfig;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
-@Import({FeedClothesRepositoryImpl.class, QuerydslConfig.class, JpaConfig.class})
+@Import({FeedClothesRepositoryImpl.class, QuerydslConfig.class, JpaAuditingConfig.class})
 @ActiveProfiles("test")
 @DisplayName("FeedRepositoryImpl 테스트")
 public class FeedRepositoryImplTest {
