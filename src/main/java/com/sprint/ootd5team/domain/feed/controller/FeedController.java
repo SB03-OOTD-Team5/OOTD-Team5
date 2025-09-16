@@ -29,11 +29,11 @@ public class FeedController implements FeedApi {
     @GetMapping
     public ResponseEntity<FeedDtoCursorResponse> getFeeds(
         @Valid @ModelAttribute FeedListRequest feedListRequest,
-        @RequestParam(required = false) UUID currentUserId
-//        @AuthenticationPrincipal OotdUserDetails user
+        Authentication authentication
     ) {
-//        UUID userid = user.getUserDto().id();
-        FeedDtoCursorResponse feeds = feedService.getFeeds(feedListRequest, currentUserId);
+        OotdUserDetails user = (OotdUserDetails) authentication.getPrincipal();
+        UUID userid = user.getUserDto().id();
+        FeedDtoCursorResponse feeds = feedService.getFeeds(feedListRequest, userid);
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(feeds);

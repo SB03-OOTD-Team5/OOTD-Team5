@@ -8,10 +8,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.config.SecurityConfig;
 import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
+import com.sprint.ootd5team.base.security.OotdUserDetails;
+import com.sprint.ootd5team.domain.feed.controller.FeedController;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
 import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
 import com.sprint.ootd5team.domain.feed.service.FeedService;
+import com.sprint.ootd5team.domain.user.dto.UserDto;
+import com.sprint.ootd5team.domain.user.entity.Role;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,11 +28,13 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(controllers = com.sprint.ootd5team.domain.feed.controller.FeedController.class,
+@WebMvcTest(controllers = FeedController.class,
     excludeAutoConfiguration = {
         SecurityAutoConfiguration.class,
         SecurityFilterAutoConfiguration.class
@@ -50,9 +58,13 @@ public class FeedControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
+    @DisplayName("피드 목록 조회 성공")
     void getFeeds_success() throws Exception {
         // given
         UUID testUserId = UUID.randomUUID();
+        OotdUserDetails ootdUser = createTestUser(testUserId, Role.USER);
+        Authentication auth = new UsernamePasswordAuthenticationToken(ootdUser, null, ootdUser.getAuthorities());
+
         FeedDtoCursorResponse response = new FeedDtoCursorResponse(
             Collections.emptyList(),
             "next-cursor",
@@ -63,7 +75,7 @@ public class FeedControllerTest {
             "ASCENDING"
         );
 
-        when(feedService.getFeeds(org.mockito.ArgumentMatchers.any(FeedListRequest.class), org.mockito.ArgumentMatchers.eq(testUserId)))
+        when(feedService.getFeeds(any(FeedListRequest.class), eq(testUserId)))
             .thenReturn(response);
 
         // when & then
@@ -72,8 +84,21 @@ public class FeedControllerTest {
                 .param("limit", "10")
                 .param("sortBy", "createdAt")
                 .param("sortDirection", "ASCENDING")
-                .param("currentUserId", testUserId.toString()))
-            .andExpect(status().isOk())
-            .andExpect(content().json(objectMapper.writeValueAsString(response)));
+                .principal(auth)
+            )
+            .andExpect(status().isOk());
+    }
+
+    private OotdUserDetails createTestUser(UUID userId, Role role) {
+        UserDto userDto = new UserDto(
+            userId,
+            Instant.now(),
+            "test@example.com",
+            "tester",
+            role,
+            List.of(),
+            false
+        );
+        return new OotdUserDetails(userDto, "password");
     }
 }
