@@ -3,6 +3,7 @@ package com.sprint.ootd5team.base.eventlistener;
 import com.sprint.ootd5team.domain.user.dto.TemporaryPasswordCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
@@ -14,6 +15,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @RequiredArgsConstructor
 public class UserEventListener {
 
+    @Value("${ootd.email.sender}")
+    private String sender;
+
     private final JavaMailSender mailSender;
 
     @Async("eventTaskExecutor")
@@ -22,7 +26,7 @@ public class UserEventListener {
         log.info("임시 비밀번호 메일 발송 이벤트 시작 email:{}",event.email());
 
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("sprtms5335@gmail.com");
+        message.setFrom(sender);
         message.setTo(event.email());
         message.setSubject("임시 비밀번호 발급 - OTBOO");
         // 본문 구성
