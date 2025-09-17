@@ -1,7 +1,6 @@
 package com.sprint.ootd5team.base.config;
 
 
-import java.net.MalformedURLException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -18,7 +17,7 @@ public class WebclientConfig {
     public WebClient kmaApiClient(
         @Value("${weather.kma.base-url}") String baseUrl,
         @Value("${weather.kma.client-secret}") String secretKey
-    ) throws MalformedURLException {
+    ) {
 
         String fixedBase = baseUrl + "?ServiceKey=" + secretKey + "&dataType=JSON";
 
@@ -28,7 +27,9 @@ public class WebclientConfig {
         return WebClient.builder()
             .uriBuilderFactory(ubf)
             .filter((request, next) -> {
-                log.debug("[WebClient 리퀘스트] {} {}", request.method(), request.url());
+                String url = request.url().toString()
+                    .replaceAll("(?i)(serviceKey=)[^&]+", "$1****");
+                log.debug("[WebClient 리퀘스트] {} {}", request.method(), url);
                 return next.exchange(request);
             })
             .build();

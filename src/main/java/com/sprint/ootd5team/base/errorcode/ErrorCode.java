@@ -23,7 +23,7 @@ public enum ErrorCode {
     INVALID_SORT_OPTION(HttpStatus.BAD_REQUEST, "유효하지 않은 정렬 옵션입니다."),
     // Weather 관련 에러코드
     WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당하는 날씨 데이터가 없습니다."),
-    WEATHER_KMA_FETCH_FAILED(HttpStatus.BAD_REQUEST, "기상청 데이터를 가져오는데 실패했습니다."),
+    WEATHER_KMA_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "기상청 데이터를 가져오는데 실패했습니다."),
     WEATHER_KMA_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "기상청 데이터를 분석하는데 실패했습니다.");
 
     private final HttpStatus status;
