@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS tbl_clothes_attributes_values
     clothes_id                UUID NOT NULL,
     attribute_id             UUID NOT NULL,
     def_value                 VARCHAR(50) NOT NULL,
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
     -- constraints
     CONSTRAINT fk_attr_values_clothes FOREIGN KEY (clothes_id) REFERENCES tbl_clothes (id) ON DELETE CASCADE,
     CONSTRAINT fk_attr_values_attr FOREIGN KEY (attribute_id) REFERENCES tbl_clothes_attributes (id) ON DELETE CASCADE,
@@ -126,7 +127,8 @@ CREATE TABLE IF NOT EXISTS tbl_feed_clothes
     created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
     -- constraints
     CONSTRAINT fk_feed_clothes_feed FOREIGN KEY (feed_id) REFERENCES tbl_feeds (id) ON DELETE CASCADE,
-    CONSTRAINT fk_feed_clothes_clothes FOREIGN KEY (clothes_id) REFERENCES tbl_clothes (id) ON DELETE CASCADE
+    CONSTRAINT fk_feed_clothes_clothes FOREIGN KEY (clothes_id) REFERENCES tbl_clothes (id) ON DELETE CASCADE,
+    CONSTRAINT uq_feed_clothes UNIQUE (feed_id, clothes_id)
 );
 
 -- 피드 댓글 테이블
@@ -238,3 +240,30 @@ WHERE p.name IS NULL;
 
 ALTER TABLE tbl_profiles ALTER COLUMN name SET NOT NULL;
 
+
+/* feed 변경 사항 - unique 제약 조건, 인덱스 추가 */
+
+-- tbl_feed index
+CREATE INDEX IF NOT EXISTS idx_feeds_createdat_id
+    ON tbl_feeds(created_at DESC, id DESC);
+
+CREATE INDEX IF NOT EXISTS idx_feeds_likecount_id
+    ON tbl_feeds(like_count DESC, id DESC);
+
+-- tbl_feed_clothes index
+CREATE INDEX IF NOT EXISTS idx_feed_clothes_feed_id
+    ON tbl_feed_clothes(feed_id);
+
+CREATE INDEX IF NOT EXISTS idx_feed_clothes_clothes_id
+    ON tbl_feed_clothes(clothes_id);
+
+-- tbl_feed_comments index
+CREATE INDEX IF NOT EXISTS idx_feed_comments_feed_id
+    ON tbl_feed_comments(feed_id);
+
+-- tbl_feed_likes index
+CREATE INDEX IF NOT EXISTS idx_feed_likes_feed_id
+    ON tbl_feed_likes(feed_id);
+
+ALTER TABLE tbl_feed_clothes
+    ADD CONSTRAINT uq_feed_clothes UNIQUE (feed_id, clothes_id);
