@@ -21,6 +21,7 @@ import com.sprint.ootd5team.domain.user.mapper.UserMapper;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.mail.SimpleMailMessage;
