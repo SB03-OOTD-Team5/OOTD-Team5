@@ -67,7 +67,7 @@ public class AuthService {
         userRepository.save(user);
 
         // 이벤트 리스너를 통해 비동기로 메일 보내기를 처리함
-        eventPublisher.publishEvent(new TemporaryPasswordCreatedEvent(user.getTempPassword(),user.getEmail(),user.getName()));
+        eventPublisher.publishEvent(new TemporaryPasswordCreatedEvent(user.getTempPassword(),user.getEmail(),user.getName(),user.getTempPasswordExpireAt()));
     }
 
     /**

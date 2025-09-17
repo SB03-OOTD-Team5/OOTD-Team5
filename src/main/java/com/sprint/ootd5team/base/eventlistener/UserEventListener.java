@@ -24,12 +24,24 @@ public class UserEventListener {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom("sprtms5335@gmail.com");
         message.setTo(event.email());
-        message.setSubject("[OOTD] 임시 비밀번호 안내");
-        message.setText("안녕하세요, " + event.name() + "님.\n\n"
-            + "임시 비밀번호는 아래와 같습니다:\n\n"
-            + event.tempPassword() + "\n\n"
-            + "해당 비밀번호는 3분 동안만 유효합니다.\n"
-            + "로그인 후 반드시 새 비밀번호로 변경해주세요.");
+        message.setSubject("임시 비밀번호 발급 - OTBOO");
+        // 본문 구성
+        String body =
+            "OTBOO\n"
+                + "임시 비밀번호가 발급되었습니다\n\n"
+                + "안녕하세요, " + event.name() + "님!\n\n"
+                + "요청하신 임시 비밀번호가 발급되었습니다. "
+                + "아래 임시 비밀번호를 사용하여 로그인 후 새로운 비밀번호로 변경해주세요.\n\n"
+                + "임시 비밀번호\n"
+                + event.tempPassword() + "\n\n"
+                + "⚠️ 중요 안내사항\n"
+                + "• 이 임시 비밀번호는 " + event.expireAt() + " 까지만 유효합니다\n"
+                + "• 보안을 위해 로그인 후 즉시 새로운 비밀번호로 변경해주세요\n"
+                + "• 임시 비밀번호는 다른 사람과 공유하지 마세요\n\n"
+                + "본 메일은 발신전용이므로 회신되지 않습니다.\n"
+                + "문의사항이 있으시면 고객센터로 연락해주세요.";
+
+        message.setText(body);
         mailSender.send(message);
 
 
