@@ -3,6 +3,7 @@ package com.sprint.ootd5team.domain.clothes.service;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
+import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeValue;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
@@ -18,11 +19,13 @@ import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -53,6 +56,7 @@ public class ClothesServiceImpl implements ClothesService {
      * @param limit   조회할 데이터 개수
      * @return ClothesDtoCursorResponse (데이터, nextCursor, nextIdAfter, hasNext 등 포함)
      */
+    @Transactional(readOnly = true)
     @Override
     public ClothesDtoCursorResponse getClothes(
         UUID ownerId,
@@ -114,19 +118,13 @@ public class ClothesServiceImpl implements ClothesService {
      * @throws UserNotFoundException   주어진 ownerId 에 해당하는 사용자가 없는 경우
      * @throws FileSaveFailedException 이미지 업로드에 실패한 경우
      */
+    @Transactional
     @Override
     public ClothesDto create(ClothesCreateRequest request, MultipartFile image) {
         log.info("[ClothesService] 새 의상 등록 요청: ownerId={}, name={}, type={}, imagePresent={}",
             request.ownerId(), request.name(), request.type(), image != null && !image.isEmpty());
 
-        // 1. 이미지 업로드
-        String imageUrl = null;
-        if (image != null && !image.isEmpty()) {
-            imageUrl = uploadClothesImage(image);
-            log.debug("[ClothesService] 이미지 업로드 완료: url={}", imageUrl);
-        }
-
-        // 2. 유저 확인
+        // 1. 유저 확인
         UUID ownerId = request.ownerId();
         User owner = userRepository.findById(ownerId)
             .orElseThrow(() -> {
@@ -134,8 +132,30 @@ public class ClothesServiceImpl implements ClothesService {
                 return UserNotFoundException.withId(ownerId);
             });
 
+        // 2. 속성 값 선행 검증 및 수집
+        List<ClothesAttributeValue> cavs = new ArrayList<>();
+        if (request.attributes() != null) {
+            for (ClothesAttributeDto dto : request.attributes()) {
+                ClothesAttribute attr = attributeRepository.findById(dto.definitionId())
+                    .orElseThrow(() -> {
+                        log.error("[ClothesService] 속성 정의 없음: definitionId={}", dto.definitionId());
+                        throw new IllegalArgumentException("존재하지 않는 속성 정의");
+                        //TODO: return ClothesAttributeNotFoundException.withId(dto.definitionId());
+                    });
 
-        // 3. Clothes 엔티티 생성
+                validateAttributeValue(attr, dto.value());
+                cavs.add(new ClothesAttributeValue(attr, dto.value()));
+            }
+        }
+
+        // 3. 이미지 업로드
+        String imageUrl = null;
+        if (image != null && !image.isEmpty()) {
+            imageUrl = uploadClothesImage(image);
+            log.debug("[ClothesService] 이미지 업로드 완료: url={}", imageUrl);
+        }
+
+        // 4. Clothes 엔티티 생성
         Clothes clothes = Clothes.builder()
             .owner(owner)
             .name(request.name())
@@ -143,39 +163,25 @@ public class ClothesServiceImpl implements ClothesService {
             .imageUrl(imageUrl)
             .build();
 
-        log.debug("[ClothesService] Clothes 엔티티 생성: name={}, type={}, imageUrl={}",
-            clothes.getName(), clothes.getType(), clothes.getImageUrl());
+        cavs.forEach(clothes::addClothesAttributeValue);
 
-        // 4. 속성 값 (값이 있을 때만)
-        if (request.attributes() != null) {
-            request.attributes().forEach(dto -> {
-                    ClothesAttribute attr = attributeRepository.findById(dto.definitionId())
-                        .orElseThrow(() -> {
-                        log.error("[ClothesService] 속성 정의 없음: definitionId={}", dto.definitionId());
-                        return new IllegalArgumentException("속성값 못찾음");
-                       // TODO: 커스텀 예외 (예: new ClothesAttributeNotFoundException(dto.definitionId()))
-                        });
-
-                // 허용값 검증
-                validateAttributeValue(attr, dto.value());
-
-                // Clothes는 생성자에서 안 넘김
-                ClothesAttributeValue cav = new ClothesAttributeValue(attr, dto.value());
-
-                // Clothes에 연결 (이때 ClothesAttributeValue에도 clothes 세팅됨)
-                clothes.addClothesAttributeValue(cav);
-                log.debug("[ClothesService] 속성 값 연결 완료: definitionId={}, value={}",
-                    attr.getId(), dto.value());
-            });
+        // 5. 저장 (실패 시 이미지 삭제)
+        try {
+            clothesRepository.save(clothes);
+            log.info("[ClothesService] Clothes 저장 완료: clothesId={}, ownerId={}",
+                clothes.getId(), ownerId);
+            return clothesMapper.toDto(clothes);
+        } catch (RuntimeException e) {
+            if (imageUrl != null) {
+                try {
+                    fileStorage.delete(imageUrl);
+                    log.warn("[ClothesService] 저장 실패로 업로드 파일 삭제: {}", imageUrl);
+                } catch (Exception ex) {
+                    log.warn("[ClothesService] 삭제 실패: url={}, cause={}", imageUrl, ex.toString());
+                }
+            }
+            throw e;
         }
-
-        // 5. 저장
-        clothesRepository.save(clothes);
-        log.info("[ClothesService] Clothes 저장 완료: clothesId={}, ownerId={}",
-            clothes.getId(), ownerId);
-
-        // 6. DTO 변환 후 반환
-        return clothesMapper.toDto(clothes);
     }
 
     private void validateAttributeValue(ClothesAttribute attribute, String value) {
