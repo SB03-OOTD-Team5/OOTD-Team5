@@ -1,12 +1,16 @@
 package com.sprint.ootd5team.base.storage;
 
+import com.sprint.ootd5team.base.exception.file.FileDeleteFailedException;
 import com.sprint.ootd5team.base.exception.file.FilePermanentSaveFailedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
+import com.sprint.ootd5team.base.exception.file.FileTooLargeException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +22,7 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
+import org.springframework.util.unit.DataSize;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -28,18 +33,28 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 @ConditionalOnProperty(name = "ootd.storage.type", havingValue = "s3")
 public class S3FileStorage implements FileStorage{
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
+    private final long maxUploadSize;
 
     @Value("${ootd.storage.s3.bucket}")
     private String bucket;
 
     @Value("${ootd.storage.s3.presigned-url-expiration:600}")
     private int presignedUrlExpiration;
+
+    public S3FileStorage(
+        S3Client s3Client,
+        S3Presigner s3Presigner,
+        @Value("${ootd.storage.s3.max-upload-size}") DataSize maxUploadSize
+    ) {
+        this.s3Client = s3Client;
+        this.s3Presigner = s3Presigner;
+        this.maxUploadSize = maxUploadSize.toBytes();
+    }
 
     /**
      * 파일 업로드 (랜덤 UUID prefix 붙여서 key 충돌 방지)
@@ -59,21 +74,36 @@ public class S3FileStorage implements FileStorage{
         // 안전한 key 생성
         String key = "clothes/" + UUID.randomUUID() + extension;
 
+        Path tempFile = null;
         try {
+            tempFile = Files.createTempFile("upload-", ".tmp");
+            Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
+
+            long size = Files.size(tempFile);
+            if (size > maxUploadSize) {
+                Files.deleteIfExists(tempFile);
+                throw FileTooLargeException.withSize(size, maxUploadSize);
+            }
+
             PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
                 .contentType(contentType)
                 .build();
 
-            byte[] bytes = inputStream.readAllBytes();
-            s3Client.putObject(request, RequestBody.fromBytes(bytes));
+            s3Client.putObject(request, RequestBody.fromFile(tempFile));
 
-            log.info("[S3] 업로드 성공: key={}, size={}, type={}", key, bytes.length, contentType);
+            log.info("[S3] 업로드 성공: key={}, size={} bytes, type={}",
+                key, size, contentType);
             return key;
+
         } catch (Exception e) {
             log.error("[S3] 업로드 실패: file={}, ex={}", filename, e.toString(), e);
             throw FileSaveFailedException.withFileName(key);
+        } finally {
+            if (tempFile != null) {
+                try { Files.deleteIfExists(tempFile); } catch (Exception ignore) {}
+            }
         }
     }
 
@@ -124,6 +154,7 @@ public class S3FileStorage implements FileStorage{
             log.info("[S3] 삭제 성공: key={}", key);
         } catch (Exception e) {
             log.error("[S3] 삭제 실패: key={}, ex={}", key, e.toString(), e);
+            throw FileDeleteFailedException.withFilePath(key);
         }
     }
 
@@ -136,7 +167,7 @@ public class S3FileStorage implements FileStorage{
      * 업로드 재시도 실패 시 복구 처리
      */
     @Recover
-    public String recover(Exception e, String filename, InputStream inputStream) {
+    public String recover(Exception e, String filename, InputStream inputStream, String contentType) {
         String requestId = MDC.get("requestId");
         log.error("[S3] 업로드 모든 재시도 실패 - filename={}, requestId={}, cause={}",
             filename, requestId, e.toString(), e);

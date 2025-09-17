@@ -46,7 +46,7 @@ public class LocalFileStorage implements FileStorage {
         try {
             Path target = root.resolve(uniqueName);
             Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
-            return target.toAbsolutePath().toString();
+            return uniqueName;
         } catch (IOException e) {
             throw FileSaveFailedException.withFileName(uniqueName);
         }
@@ -54,15 +54,23 @@ public class LocalFileStorage implements FileStorage {
 
     @Override
     public String download(String path) {
-        return Paths.get(path).toAbsolutePath().toUri().toString();
+        Path p = root.resolve(path).normalize();
+        if (!p.startsWith(root)) {
+            throw new SecurityException("Invalid path");
+        }
+        return p.toAbsolutePath().toUri().toString();
     }
 
     @Override
     public void delete(String path) {
         try {
-            Files.deleteIfExists(Paths.get(path));
+            Path p = root.resolve(path).normalize();
+            if (!p.startsWith(root)) {
+                throw new SecurityException("Invalid path");
+            }
+            Files.deleteIfExists(p);
         } catch (IOException e) {
-            throw new FileDeleteFailedException(path);
+            throw FileDeleteFailedException.withFilePath(path);
         }
     }
 
