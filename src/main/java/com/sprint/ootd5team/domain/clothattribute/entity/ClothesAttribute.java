@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.clothattribute.entity;
 
+import com.sprint.ootd5team.base.entity.BaseEntity;
 import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -27,7 +28,7 @@ import lombok.NoArgsConstructor;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ClothesAttribute extends BaseUpdatableEntity {
+public class ClothesAttribute extends BaseEntity {
 
 	@Column(name = "name", length = 50, nullable = false)
 	private String name;            //속성명
