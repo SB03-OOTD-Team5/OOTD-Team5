@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS tbl_clothes_attributes_values
     clothes_id                UUID NOT NULL,
     attribute_id             UUID NOT NULL,
     def_value                 VARCHAR(50) NOT NULL,
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
     -- constraints
     CONSTRAINT fk_attr_values_clothes FOREIGN KEY (clothes_id) REFERENCES tbl_clothes (id) ON DELETE CASCADE,
     CONSTRAINT fk_attr_values_attr FOREIGN KEY (attribute_id) REFERENCES tbl_clothes_attributes (id) ON DELETE CASCADE,
