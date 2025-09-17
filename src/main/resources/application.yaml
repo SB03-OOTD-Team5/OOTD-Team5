@@ -18,7 +18,7 @@ spring:
 # SecurityConfig 비활성화/활성화 on off
 app:
   security:
-    enabled: false
+    enabled: true
 
 #외부 API key 설정
 weather:

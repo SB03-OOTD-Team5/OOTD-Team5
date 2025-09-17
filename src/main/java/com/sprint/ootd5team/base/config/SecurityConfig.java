@@ -107,13 +107,13 @@ public class SecurityConfig {
             )
             // 로그인 설정
             .formLogin(login -> login
-                .loginProcessingUrl("api/auth/sign-in")
+                .loginProcessingUrl("/api/auth/sign-in")
                 .successHandler(jwtLoginSuccessHandler)
                 .failureHandler(loginFailureHandler)
             )
             // 로그아웃 설정
             .logout(logout -> logout
-                .logoutUrl("api/auth/sign-out")
+                .logoutUrl("/api/auth/sign-out")
                 .addLogoutHandler(jwtLogoutHandler)
                 .logoutSuccessHandler(
                     new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)
