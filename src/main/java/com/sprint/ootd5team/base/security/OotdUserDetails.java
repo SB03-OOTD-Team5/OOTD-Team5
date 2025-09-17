@@ -3,6 +3,7 @@ package com.sprint.ootd5team.base.security;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -32,4 +33,6 @@ public class OotdUserDetails implements UserDetails {
     public String getUsername() {
         return userDto.name();
     }
+
+    public UUID getUserId() { return userDto.id(); }
 }

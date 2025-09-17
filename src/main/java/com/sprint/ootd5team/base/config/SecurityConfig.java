@@ -2,6 +2,7 @@ package com.sprint.ootd5team.base.config;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.ootd5team.base.security.CustomAuthenticationProvider;
 import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.RedisJwtRegistry;
@@ -26,6 +27,8 @@ import org.springframework.security.access.expression.method.DefaultMethodSecuri
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -104,13 +107,13 @@ public class SecurityConfig {
             )
             // 로그인 설정
             .formLogin(login -> login
-                .loginProcessingUrl("api/auth/sign-in")
+                .loginProcessingUrl("/api/auth/sign-in")
                 .successHandler(jwtLoginSuccessHandler)
                 .failureHandler(loginFailureHandler)
             )
             // 로그아웃 설정
             .logout(logout -> logout
-                .logoutUrl("api/auth/sign-out")
+                .logoutUrl("/api/auth/sign-out")
                 .addLogoutHandler(jwtLogoutHandler)
                 .logoutSuccessHandler(
                     new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)
@@ -123,6 +126,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-out").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-in").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
+                // 개발 storage = local일 때(s3시 필요없음)
+                .requestMatchers("/local-files/**").permitAll()
                 .anyRequest().permitAll()//TODO 개발환경은는 모두 허용, 빌드시에는 authenticated()으로 수정필요
             )
             // 예외처리
@@ -165,6 +170,14 @@ public class SecurityConfig {
         return handler;
     }
 
+    /**
+     * 커스텀 인증필터를 Bean으로 등록
+     * @param tokenProvider
+     * @param userDetailsService
+     * @param registry
+     * @param objectMapper
+     * @return
+     */
     @Bean
     JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider tokenProvider,
         UserDetailsService userDetailsService, JwtRegistry registry,
@@ -172,6 +185,28 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter(tokenProvider,userDetailsService,registry,objectMapper);
     }
 
+    /**
+     * 커스텀 로그인 인증 방식을 Bean으로 등록(임시 비밀번호도 확인하기 위해서)
+     * @param http
+     * @param provider
+     * @return
+     * @throws Exception
+     */
+    @Bean
+    public AuthenticationManager authManager(HttpSecurity http, CustomAuthenticationProvider provider) throws Exception {
+        return http.getSharedObject(AuthenticationManagerBuilder.class)
+            .authenticationProvider(provider)
+            .build();
+    }
+
+    /**
+     * Redis를 통해 멀티 서버 인스턴스 환경에서 jwt 토큰을 클러스터링
+     * @param jwtTokenProvider
+     * @param publisher
+     * @param redisTemplate
+     * @param redisLockProvider
+     * @return
+     */
     @Bean
     public JwtRegistry jwtRegistry(
         JwtTokenProvider jwtTokenProvider,
