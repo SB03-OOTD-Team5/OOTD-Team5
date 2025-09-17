@@ -1,7 +1,9 @@
 package com.sprint.ootd5team.domain.feed.controller.api;
 
 import com.sprint.ootd5team.base.exception.ErrorResponse;
+import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
+import com.sprint.ootd5team.domain.feed.dto.request.FeedUpdateRequest;
 import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -26,6 +28,19 @@ public interface FeedApi {
         )
     })
     ResponseEntity<FeedDtoCursorResponse> getFeeds(FeedListRequest feedListRequest);
+
+    @Operation(summary = "피드 수정")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", description = "피드 수정 성공",
+            content = @Content(schema = @Schema(implementation = FeedDto.class))
+        ),
+        @ApiResponse(
+            responseCode = "400", description = "피드 수정 실패",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    ResponseEntity<FeedDto> update(UUID feedId, FeedUpdateRequest feedUpdateRequest);
 
     @Operation(summary = "피드 삭제")
     @ApiResponses(value = {
