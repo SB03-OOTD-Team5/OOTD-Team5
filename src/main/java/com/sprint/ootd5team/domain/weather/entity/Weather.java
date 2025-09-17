@@ -34,7 +34,7 @@ public class Weather extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "sky_status")
-    private SkyStatus SkyStatus;
+    private SkyStatus skyStatus;
 
     @Column(nullable = false)
     private BigDecimal latitude;
