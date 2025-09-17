@@ -46,28 +46,27 @@ public class WeatherServiceImpl implements WeatherService {
     private final ProfileRepository profileRepository;
     private final WeatherMapper weatherMapper;
     private final String baseTime = "0200";
-    private String baseDate;
 
 
     @Override
     @Transactional
     public List<WeatherDto> fetchWeatherByLocation(BigDecimal longitude, BigDecimal latitude) {
+        final String baseDate = LocalDate.now(ZoneId.of("Asia/Seoul"))
+            .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
         //TODO: temp, 실제 사용자 프로필 가져오기
         Profile testProfile = profileRepository.findById(
                 UUID.fromString("036220a1-1223-4ba5-943e-48452526cbe9"))
             .orElseThrow(ProfileNotFoundException::new);
 
-        baseDate = LocalDate.now(ZoneId.of("Asia/Seoul"))
-            .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-
         //0. 이미 존재하는 데이터면 가져와서 전달 후 종료
-        List<WeatherDto> existed = getWeatherDtosIfExist(longitude, latitude);
+        List<WeatherDto> existed = getWeatherDtosIfExist(baseDate, longitude, latitude);
         if (!existed.isEmpty()) {
             return existed;
         }
 
         //1. 기상청 api 데이터 조회
-        String response = fetchKmaApi(longitude, latitude);
+        String response = fetchKmaApi(baseDate, longitude, latitude);
         KmaResponseDto kmaResponseDto = parseToKmaResponseDto(response);
         //2. 기상청 api 데이터  valid check
         validateKmaData(kmaResponseDto);
@@ -81,7 +80,8 @@ public class WeatherServiceImpl implements WeatherService {
         return weathers.stream().map(weatherMapper::toDto).toList();
     }
 
-    private List<WeatherDto> getWeatherDtosIfExist(BigDecimal longitude, BigDecimal latitude) {
+    private List<WeatherDto> getWeatherDtosIfExist(String baseDate, BigDecimal longitude,
+        BigDecimal latitude) {
         Instant baseDateTimeInstant = weatherBuilder.toInstantWithZone(baseDate, baseTime);
 
         log.debug("이미 존재하는 weather 데이터 확인 - baseDateTimeInstant:{},latitude:{},longitude:{}",
@@ -100,7 +100,7 @@ public class WeatherServiceImpl implements WeatherService {
         return List.of();
     }
 
-    private String fetchKmaApi(BigDecimal longitude, BigDecimal latitude) {
+    private String fetchKmaApi(String baseDate, BigDecimal longitude, BigDecimal latitude) {
         try {
             GridXY kmaXY = convertGridXY(longitude, latitude);
             log.debug(
@@ -119,7 +119,7 @@ public class WeatherServiceImpl implements WeatherService {
                     .build())
                 .retrieve()
                 .bodyToMono(String.class)
-                .block();
+                .block(); // TODO:  타임아웃,retrieve 설정
 
             return response;
         } catch (Exception e) {
