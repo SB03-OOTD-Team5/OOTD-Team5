@@ -22,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import org.springframework.util.unit.DataSize;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -42,7 +43,7 @@ class S3FileStorageTest {
 
     @BeforeEach
     void setUp() {
-        s3FileStorage = new S3FileStorage(s3Client, s3Presigner);
+        s3FileStorage = new S3FileStorage(s3Client, s3Presigner, DataSize.ofMegabytes(10));
         ReflectionTestUtils.setField(s3FileStorage, "bucket", "test-bucket");
         ReflectionTestUtils.setField(s3FileStorage, "presignedUrlExpiration", 600);
     }

@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,13 +44,12 @@ public class LocalFileStorageTest {
             assertThat(input).isNotNull();
 
             // when
-            String savedPath = localFileStorage.upload(filename, input, "image/png");
-            System.out.println("savedPath = " + savedPath);
+            String uniqueName = localFileStorage.upload(filename, input, "image/png");
 
             // then
-            File savedFile = new File(savedPath);
+            Path savedFile = Paths.get("uploads").resolve(uniqueName);
             assertThat(savedFile).exists();
-            assertThat(Files.probeContentType(savedFile.toPath())).isEqualTo("image/png");
+            assertThat(Files.probeContentType(savedFile)).isEqualTo("image/png");
         }
     }
 

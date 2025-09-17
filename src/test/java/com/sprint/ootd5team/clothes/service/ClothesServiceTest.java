@@ -8,11 +8,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.clothes.fixture.ClothesFixture;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
@@ -216,20 +216,15 @@ class ClothesServiceTest {
     @Test
     void 의상_생성시_허용되지않은_속성값이면_예외를_발생시킨다() {
         // given
-        UUID attrId = UUID.randomUUID();
+        UUID attributeId = UUID.randomUUID();
         ClothesCreateRequest request = new ClothesCreateRequest(
-            ownerId, "셔츠", ClothesType.TOP, List.of(new ClothesAttributeDto(attrId, "한여름"))
+            ownerId, "셔츠", ClothesType.TOP, List.of(new ClothesAttributeDto(attributeId, "한여름"))
         );
 
-        ClothesAttribute attr = new ClothesAttribute("계절");
-        ReflectionTestUtils.setField(attr, "id", attrId);
-        attr.getDefs().add(new ClothesAttributeDef(attr, "봄"));
-        attr.getDefs().add(new ClothesAttributeDef(attr, "여름"));
-        attr.getDefs().add(new ClothesAttributeDef(attr, "가을"));
-        attr.getDefs().add(new ClothesAttributeDef(attr, "겨울"));
+        ClothesAttribute attribute = ClothesFixture.createSeasonAttribute(attributeId);
 
         given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
-        given(clothesAttributeRepository.findById(attrId)).willReturn(Optional.of(attr));
+        given(clothesAttributeRepository.findById(attributeId)).willReturn(Optional.of(attribute));
 
         // when & then
         assertThatThrownBy(() -> clothesService.create(request, null))
@@ -250,5 +245,45 @@ class ClothesServiceTest {
         // when & then
         assertThatThrownBy(() -> clothesService.create(request, null))
             .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void 의상_생성시_존재하지않는_사용자면_예외를_던진다() {
+        // given
+        ClothesCreateRequest request = new ClothesCreateRequest(
+            ownerId, "셔츠", ClothesType.TOP, null
+        );
+        given(userRepository.findById(ownerId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> clothesService.create(request, null))
+            .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    void 의상_생성실패시_이미지삭제() {
+        // given
+        ClothesCreateRequest request = new ClothesCreateRequest(
+            ownerId,
+            "삭제테스트",
+            ClothesType.TOP,
+            null
+        );
+        MultipartFile mockImage = new MockMultipartFile(
+            "image", "test.png", "image/png", "fake-image".getBytes()
+        );
+
+        given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
+        given(fileStorage.upload(eq("test.png"), any(InputStream.class), eq("image/png")))
+            .willReturn("clothes/test.png");
+        // DB 저장 시 예외 발생
+        given(clothesRepository.save(any(Clothes.class)))
+            .willThrow(new RuntimeException("DB error"));
+
+        // when & then
+        assertThatThrownBy(() -> clothesService.create(request, mockImage))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessageContaining("DB error");
+        verify(fileStorage).delete("clothes/test.png");
     }
 }
