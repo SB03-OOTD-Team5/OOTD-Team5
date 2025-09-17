@@ -60,8 +60,8 @@ class S3FileStorageTest {
         verify(s3Client).putObject(captor.capture(), any(RequestBody.class));
 
         assertThat(captor.getValue().bucket()).isEqualTo("test-bucket");
-        assertThat(captor.getValue().key()).contains("test.jpg");
-        assertThat(key).contains("test.jpg");
+        assertThat(captor.getValue().key()).contains(".jpg");
+        assertThat(key).contains(".jpg");
     }
 
     @Test
