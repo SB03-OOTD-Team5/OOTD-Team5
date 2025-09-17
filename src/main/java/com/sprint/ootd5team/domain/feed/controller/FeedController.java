@@ -2,6 +2,7 @@ package com.sprint.ootd5team.domain.feed.controller;
 
 import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.feed.controller.api.FeedApi;
+import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
 import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
 import com.sprint.ootd5team.domain.feed.service.FeedService;
@@ -12,8 +13,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,5 +40,24 @@ public class FeedController implements FeedApi {
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(feeds);
+    }
+
+    @GetMapping("/{feedId}")
+    public ResponseEntity<FeedDto> getFeed(
+        @PathVariable UUID feedId,
+        @RequestParam(required = false) UUID currentUserId
+    ) {
+        FeedDto feed = feedService.getFeed(feedId, currentUserId);
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(feed);
+    }
+
+    @Override
+    @DeleteMapping(path = "/{feedId}")
+    public ResponseEntity<Void> delete(@PathVariable UUID feedId) {
+        feedService.delete(feedId);
+
+        return ResponseEntity.noContent().build();
     }
 }

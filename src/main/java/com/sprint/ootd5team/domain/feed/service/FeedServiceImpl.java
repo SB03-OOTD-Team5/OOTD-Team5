@@ -90,6 +90,29 @@ public class FeedServiceImpl implements FeedService {
         );
     }
 
+    @Override
+    public FeedDto getFeed(UUID feedId, UUID currentUserId) {
+        log.info("[FeedService] 피드 조회 - feedId:{}, currentUserId:{}", feedId, currentUserId);
+        return feedRepository.findFeedDtoById(feedId,  currentUserId);
+    }
+
+    /**
+     * 주어진 feedId에 해당하는 피드를 삭제한다.
+     *
+     * <p>DB 제약조건(FK + ON DELETE CASCADE)에 의해 연결된 엔티티 (피드 댓글, 좋아요, OOTD 매핑)도 자동 삭제</p>
+     *
+     * @param feedId 삭제할 피드 ID
+     */
+    @Transactional
+    @Override
+    public void delete(UUID feedId) {
+        log.info("[FeedService] 피드 삭제 시작");
+
+        Feed feed = getFeedOrThrow(feedId);
+
+        feedRepository.delete(feed);
+    }
+
     /**
      * 조회된 피드 목록에 OOTD 데이터를 매핑한다.
      *
