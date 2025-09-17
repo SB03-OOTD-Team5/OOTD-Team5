@@ -2,9 +2,13 @@ package com.sprint.ootd5team.feed.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -93,6 +97,22 @@ public class FeedControllerTest {
                 .principal(auth)
             )
             .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("피드 삭제 성공")
+    void deleteFeed_success() throws Exception {
+        // given
+        UUID feedId = UUID.randomUUID();
+
+        doNothing().when(feedService).delete(feedId);
+
+        // when & then
+        mockMvc.perform(delete("/api/feeds/{feedId}", feedId)
+                .with(csrf()))
+            .andExpect(status().isNoContent());
+
+        verify(feedService, times(1)).delete(feedId);
     }
 
     private OotdUserDetails createTestUser(UUID userId, Role role) {
