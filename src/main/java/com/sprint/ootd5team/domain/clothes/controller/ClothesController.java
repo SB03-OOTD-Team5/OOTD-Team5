@@ -32,13 +32,13 @@ public class ClothesController implements ClothesApi {
         UUID idAfter,
         int limit
     ) {
-        log.info("[ClothesController] 요청 수신: ownerId={}, typeEqual={}, cursor={}, idAfter={}, limit={}",
+        log.info("[ClothesController] 전체 조회 요청 수신: ownerId={}, typeEqual={}, cursor={}, idAfter={}, limit={}",
             ownerId, type, cursor, idAfter, limit);
 
         ClothesDtoCursorResponse response =
             clothesService.getClothes(ownerId, type, cursor, idAfter, limit);
 
-        log.info("[ClothesController] 응답 반환: data.size={}, hasNext={}, nextCursor={}, nextIdAfter={}",
+        log.info("[ClothesController] 전체 조회 응답 반환: data.size={}, hasNext={}, nextCursor={}, nextIdAfter={}",
             response.data().size(), response.hasNext(),
             response.nextCursor(), response.nextIdAfter());
 
@@ -50,7 +50,13 @@ public class ClothesController implements ClothesApi {
     @Override
     public ResponseEntity<ClothesDto> createClothes(ClothesCreateRequest request,
         MultipartFile image) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        log.info("[ClothesController] 생성 요청 수신: request={}, image={}", request, image);
+        ClothesDto clothesDto = clothesService.create(request, image);
+
+        log.info("[ClothesController] 생성 응답 반환: name={}, image={}", clothesDto.name(), clothesDto.imageUrl());
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(clothesDto);
     }
 
     @Override

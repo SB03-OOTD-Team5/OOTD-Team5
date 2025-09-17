@@ -48,6 +48,11 @@ public class Clothes extends BaseUpdatableEntity {
     @Builder.Default
     private List<ClothesAttributeValue> clothesAttributeValues = new ArrayList<>();
 
+    public void addClothesAttributeValue(ClothesAttributeValue value) {
+        clothesAttributeValues.add(value);
+        value.setClothes(this);
+    }
+
     public void updateClothesName(String name) {
         this.name = name;
     }
