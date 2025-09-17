@@ -1,8 +1,5 @@
 package com.sprint.ootd5team.base.security.service;
 
-import com.sprint.ootd5team.base.errorcode.ErrorCode;
-import com.sprint.ootd5team.base.exception.OotdException;
-import com.sprint.ootd5team.base.security.OotdUserDetails;
 import com.nimbusds.jose.JOSEException;
 import com.sprint.ootd5team.base.errorcode.ErrorCode;
 import com.sprint.ootd5team.base.exception.OotdException;
@@ -11,10 +8,10 @@ import com.sprint.ootd5team.base.security.JwtInformation;
 import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.OotdUserDetails;
+import com.sprint.ootd5team.domain.user.dto.TemporaryPasswordCreatedEvent;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ResetPasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
-import java.util.UUID;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.mapper.UserMapper;
@@ -22,11 +19,9 @@ import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
@@ -42,7 +37,7 @@ public class AuthService {
     private final JwtTokenProvider tokenProvider;
     private final JwtRegistry jwtRegistry;
     private final UserDetailsService userDetailsService;
-    private final JavaMailSender mailSender;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     /**
@@ -71,16 +66,8 @@ public class AuthService {
         user.issueTemporaryPassword();
         userRepository.save(user);
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("sprtms5335@gmail.com");
-        message.setTo(user.getEmail());
-        message.setSubject("[OOTD] 임시 비밀번호 안내");
-        message.setText("안녕하세요, " + user.getName() + "님.\n\n"
-            + "임시 비밀번호는 아래와 같습니다:\n\n"
-            + user.getTempPassword() + "\n\n"
-            + "해당 비밀번호는 3분 동안만 유효합니다.\n"
-            + "로그인 후 반드시 새 비밀번호로 변경해주세요.");
-        mailSender.send(message);
+        // 이벤트 리스너를 통해 비동기로 메일 보내기를 처리함
+        eventPublisher.publishEvent(new TemporaryPasswordCreatedEvent(user.getTempPassword(),user.getEmail(),user.getName()));
     }
 
     /**
