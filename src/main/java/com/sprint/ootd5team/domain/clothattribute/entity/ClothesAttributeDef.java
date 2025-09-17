@@ -38,4 +38,7 @@ public class ClothesAttributeDef extends BaseUpdatableEntity {
 		this.attribute = attribute;
 		this.attDef = attDef;
 	}
+	void setAttribute(ClothesAttribute attribute){
+		this.attribute = attribute;
+	}
 }
