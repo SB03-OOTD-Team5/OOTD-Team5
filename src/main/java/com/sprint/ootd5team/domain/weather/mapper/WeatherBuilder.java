@@ -45,9 +45,9 @@ public class WeatherBuilder {
         double precipitationAmount = 0d;
         double precipitationProbability = 0d;
         double humidity = 0d;
-        double humidityCompared = 0d; //TODO: 습도비교계산
-        double temperature = 0d; //TODO: 평균온도계산
-        double temperatureCompared = 0d; //TODO: 온도비교계산
+        double humidityCompared = 0d;
+//        double temperature = 0d;
+        double temperatureCompared = 0d;
         double temperatureMin = 0d;
         double temperatureMax = 0d;
         double windspeed = 0d;
@@ -68,7 +68,7 @@ public class WeatherBuilder {
                 case POP -> precipitationProbability = parseDouble(value);
                 case PCP -> precipitationAmount = parseDouble(value);
                 case REH -> humidity = parseDouble(value);
-                case TMP -> temperature = parseDouble(value);
+//                case TMP -> temperature = parseDouble(value);
                 case TMN -> temperatureMin = parseDouble(value);
                 case TMX -> temperatureMax = parseDouble(value);
                 case WSD -> {
@@ -80,6 +80,15 @@ public class WeatherBuilder {
                 }
             }
         }
+
+        // 평균온도 계산
+        double avgTemperature = calculateAvgTemp(temperatureMin, temperatureMax);
+
+        //TODO: 전날온도 비교 계산
+//        temperatureCompared = calculateTempComparedTo()
+
+        //TODO: 전날습도 비교 계산
+//        humidityCompared = calculateHumidComparedTo()
 
         // weather entity 생성
         return Weather.builder()
@@ -97,13 +106,17 @@ public class WeatherBuilder {
             .precipitationProbability(precipitationProbability)
             .humidity(humidity)
             .humidityCompared(humidityCompared)
-            .temperature(temperature)
+            .temperature(avgTemperature)
             .temperatureCompared(temperatureCompared)
             .temperatureMin(temperatureMin)
             .temperatureMax(temperatureMax)
             .windspeed(windspeed)
             .windspeedLevel(windspeedLevel)
             .build();
+    }
+
+    private double calculateAvgTemp(double temperatureMin, double temperatureMax) {
+        return (temperatureMin + temperatureMax) / 2;
     }
 
 

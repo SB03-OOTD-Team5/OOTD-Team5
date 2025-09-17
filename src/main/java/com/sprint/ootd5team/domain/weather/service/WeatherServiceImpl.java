@@ -105,7 +105,7 @@ public class WeatherServiceImpl implements WeatherService {
             GridXY kmaXY = convertGridXY(longitude, latitude);
             log.debug(
                 "[Weather] 날씨 정보 조회 요청 longitude:{},latitude:{},x:{},y:{},base date:{},base time:{}",
-                longitude, longitude,
+                longitude, latitude,
                 kmaXY.x(), kmaXY.y(), baseDate, baseTime);
 
             String response = kmaApiClient.get()
@@ -143,7 +143,7 @@ public class WeatherServiceImpl implements WeatherService {
     private void validateKmaData(KmaResponseDto kmaDto) {
         // TODO: 임시. resultcode 가져와서 enum으로 셋팅해야함
         if (!kmaDto.response().header().resultCode().equals("00")) {
-            throw new RuntimeException(kmaDto.response().header().resultMsg());
+            throw new WeatherKmaParseException(kmaDto.response().header().resultMsg());
         }
     }
 
