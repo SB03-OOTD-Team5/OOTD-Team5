@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -31,12 +30,10 @@ public class FeedController implements FeedApi {
 
     @Override
     @GetMapping
-    public ResponseEntity<FeedDtoCursorResponse> getFeeds(
-        @Valid @ModelAttribute FeedListRequest feedListRequest,
-        Authentication authentication
-    ) {
+    public ResponseEntity<FeedDtoCursorResponse> getFeeds(@Valid @ModelAttribute FeedListRequest feedListRequest) {
         UUID userId = authService.getCurrentUserId();
         FeedDtoCursorResponse feeds = feedService.getFeeds(feedListRequest, userId);
+
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(feeds);

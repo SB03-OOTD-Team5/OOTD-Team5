@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 
 public interface FeedApi {
 
@@ -24,5 +23,5 @@ public interface FeedApi {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))
         )
     })
-    ResponseEntity<FeedDtoCursorResponse> getFeeds(FeedListRequest feedListRequest, Authentication authentication);
+    ResponseEntity<FeedDtoCursorResponse> getFeeds(FeedListRequest feedListRequest);
 }
