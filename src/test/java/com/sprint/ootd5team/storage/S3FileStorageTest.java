@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
+import com.sprint.ootd5team.base.exception.file.FilePermanentSaveFailedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.storage.S3FileStorage;
 import java.io.ByteArrayInputStream;
@@ -78,9 +79,8 @@ class S3FileStorageTest {
         );
 
         // then
-        assertThat(thrown).isInstanceOf(FileSaveFailedException.class);
+        assertThat(thrown).isInstanceOf(FilePermanentSaveFailedException.class);
     }
-
 
     @Test
     void presigned_url_생성() {

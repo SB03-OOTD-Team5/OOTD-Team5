@@ -4,11 +4,12 @@ import com.sprint.ootd5team.base.exception.file.FileDeleteFailedException;
 import com.sprint.ootd5team.base.exception.file.FilePermanentSaveFailedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.file.FileTooLargeException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
@@ -18,9 +19,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.unit.DataSize;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -59,11 +59,6 @@ public class S3FileStorage implements FileStorage{
     /**
      * 파일 업로드 (랜덤 UUID prefix 붙여서 key 충돌 방지)
      */
-    @Retryable(
-        value = { Exception.class },
-        maxAttempts = 3,
-        backoff = @Backoff(delay = 2000, multiplier = 2)
-    )
     @Override
     public String upload(String filename, InputStream inputStream, String contentType) {
         String extension = "";
@@ -71,18 +66,26 @@ public class S3FileStorage implements FileStorage{
             extension = filename.substring(filename.lastIndexOf('.'));
         }
 
-        // 안전한 key 생성
         String key = "clothes/" + UUID.randomUUID() + extension;
-
         Path tempFile = null;
-        try {
-            tempFile = Files.createTempFile("upload-", ".tmp");
-            Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
 
-            long size = Files.size(tempFile);
-            if (size > maxUploadSize) {
-                Files.deleteIfExists(tempFile);
-                throw FileTooLargeException.withSize(size, maxUploadSize);
+        try {
+            // 1. 스트림 → temp 파일 생성 (크기 제한 검사 포함)
+            final Path tmp = Files.createTempFile("upload-", extension);
+            tempFile = tmp; // finally 블록에서 삭제할 수 있도록 저장
+
+            try (var out = Files.newOutputStream(tmp, StandardOpenOption.TRUNCATE_EXISTING)) {
+                byte[] buf = new byte[8192];
+                long total = 0L;
+                int n;
+                while ((n = inputStream.read(buf)) != -1) {
+                    total += n;
+                    if (total > maxUploadSize) {
+                        Files.deleteIfExists(tmp);
+                        throw FileTooLargeException.withSize(total, maxUploadSize);
+                    }
+                    out.write(buf, 0, n);
+                }
             }
 
             PutObjectRequest request = PutObjectRequest.builder()
@@ -91,18 +94,32 @@ public class S3FileStorage implements FileStorage{
                 .contentType(contentType)
                 .build();
 
-            s3Client.putObject(request, RequestBody.fromFile(tempFile));
+            // 2. putObject만 재시도
+            RetryTemplate template = RetryTemplate.builder()
+                .maxAttempts(3)
+                .exponentialBackoff(2000, 2.0, 30000)
+                .build();
 
-            log.info("[S3] 업로드 성공: key={}, size={} bytes, type={}",
-                key, size, contentType);
+            template.execute(ctx -> {
+                s3Client.putObject(request, RequestBody.fromFile(tmp));
+                return null;
+            }, ctx -> {
+                log.error("[S3] 업로드 모든 재시도 실패 - filename={}, cause={}",
+                    filename, ctx.getLastThrowable().toString());
+                throw FilePermanentSaveFailedException.withFileName(filename);
+            });
+
+            log.info("[S3] 업로드 성공: key={}, type={}", key, contentType);
             return key;
 
-        } catch (Exception e) {
-            log.error("[S3] 업로드 실패: file={}, ex={}", filename, e.toString(), e);
-            throw FileSaveFailedException.withFileName(key);
+        } catch (IOException e) {
+            throw FileSaveFailedException.withFileName(filename);
+
         } finally {
             if (tempFile != null) {
-                try { Files.deleteIfExists(tempFile); } catch (Exception ignore) {}
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (IOException ignore) {}
             }
         }
     }
