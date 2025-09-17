@@ -6,7 +6,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Named;
 
 @Mapper(componentModel = "spring")
-public interface PrecipitationDtoMapper {
+public interface PrecipitationMapper {
 
     @Named("toPrecipitationDto")
     default PrecipitationDto toPrecipitationDto(Weather w) {

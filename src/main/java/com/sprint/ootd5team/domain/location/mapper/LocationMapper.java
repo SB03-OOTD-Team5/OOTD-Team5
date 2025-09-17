@@ -6,7 +6,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Named;
 
 @Mapper(componentModel = "spring")
-public interface LocationDtoMapper {
+public interface LocationMapper {
 
     @Named("toLocationDto")
     default WeatherAPILocationDto toLocationDto(Weather w) {

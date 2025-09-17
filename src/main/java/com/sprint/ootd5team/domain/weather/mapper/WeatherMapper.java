@@ -1,6 +1,6 @@
 package com.sprint.ootd5team.domain.weather.mapper;
 
-import com.sprint.ootd5team.domain.location.mapper.LocationDtoMapper;
+import com.sprint.ootd5team.domain.location.mapper.LocationMapper;
 import com.sprint.ootd5team.domain.weather.dto.data.WeatherDto;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
 import org.mapstruct.Mapper;
@@ -9,11 +9,11 @@ import org.mapstruct.Mapping;
 @Mapper(
     componentModel = "spring",
     uses = {
-        TemperatureDtoMapper.class,
-        HumidityDtoMapper.class,
-        PrecipitationDtoMapper.class,
-        WindSpeedDtoMapper.class,
-        LocationDtoMapper.class
+        TemperatureMapper.class,
+        HumidityMapper.class,
+        PrecipitationMapper.class,
+        WindSpeedMapper.class,
+        LocationMapper.class
     }
 )
 public interface WeatherMapper {

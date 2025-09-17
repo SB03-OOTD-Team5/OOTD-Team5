@@ -7,7 +7,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Named;
 
 @Mapper(componentModel = "spring")
-public interface HumidityDtoMapper {
+public interface HumidityMapper {
 
     @Named("toHumidityDto")
     default HumidityDto toHumidityDto(Weather w) {

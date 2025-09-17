@@ -6,7 +6,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Named;
 
 @Mapper(componentModel = "spring")
-public interface WindSpeedDtoMapper {
+public interface WindSpeedMapper {
 
     @Named("toWindSpeedDto")
     default WindSpeedDto toWindSpeedDto(Weather w) {
