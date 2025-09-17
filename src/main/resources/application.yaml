@@ -47,6 +47,9 @@ ootd:
     username: ${OOTD_ADMIN_USERNAME}
     password: ${OOTD_ADMIN_PASSWORD}
     email: ${OOTD_ADMIN_EMAIL}
+    # 임시 비밀번호 전송하는 이메일 설정
+  email:
+    sender: ${OOTD_EMAIL_SENDER}
 
   # Access Token 및 Refresh Token 비밀키, 만료시간 설정
   jwt:
