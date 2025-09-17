@@ -8,7 +8,9 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 
 public interface FeedApi {
 
@@ -24,4 +26,16 @@ public interface FeedApi {
         )
     })
     ResponseEntity<FeedDtoCursorResponse> getFeeds(FeedListRequest feedListRequest);
+
+    @Operation(summary = "피드 삭제")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "204", description = "피드 삭제 성공"
+        ),
+        @ApiResponse(
+            responseCode = "400", description = "피드 삭제 실패",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    ResponseEntity<Void> delete(@PathVariable UUID feedId);
 }

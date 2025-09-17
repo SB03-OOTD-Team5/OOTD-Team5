@@ -1,8 +1,10 @@
 package com.sprint.ootd5team.feed.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,6 +15,8 @@ import com.sprint.ootd5team.domain.feed.dto.data.OotdDto;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
 import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
+import com.sprint.ootd5team.domain.feed.entity.Feed;
+import com.sprint.ootd5team.domain.feed.exception.FeedNotFoundException;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.feed.repository.feedClothes.FeedClothesRepository;
 import com.sprint.ootd5team.domain.feed.service.FeedServiceImpl;
@@ -26,6 +30,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -173,5 +178,48 @@ public class FeedServiceTest {
         assertThat(response.hasNext()).isTrue();
         assertThat(response.nextCursor()).isEqualTo(feed1.createdAt().toString());
         assertThat(response.nextIdAfter()).isEqualTo(feed1.id());
+    }
+
+    @Test
+    @DisplayName("피드 삭제 성공")
+    void deleteFeed_success() {
+        // given
+        UUID feedId = UUID.randomUUID();
+        Feed feed = new Feed(
+            userId,
+            UUID.randomUUID(),
+            "테스트 피드",
+            0L,
+            0L
+        );
+
+        when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
+
+        // when
+        feedService.delete(feedId);
+
+        // then
+        verify(feedRepository, times(1)).findById(feedId);
+        verify(feedRepository, times(1)).delete(feed);
+    }
+
+    @Test
+    @DisplayName("피드 삭제 실패 - 존재하지 않는 feedId")
+    void deleteFeed_notFound() {
+        // given
+        UUID feedId = UUID.randomUUID();
+
+        when(feedRepository.findById(feedId)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> feedService.delete(feedId))
+            .isInstanceOf(FeedNotFoundException.class)
+            .satisfies(ex -> {
+                FeedNotFoundException fnf = (FeedNotFoundException) ex;
+                assertThat(fnf.getFeedId()).isEqualTo(feedId);
+            });
+
+        verify(feedRepository, times(1)).findById(feedId);
+        verify(feedRepository, never()).delete(any());
     }
 }
