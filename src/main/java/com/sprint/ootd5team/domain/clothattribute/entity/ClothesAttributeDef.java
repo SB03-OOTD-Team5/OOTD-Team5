@@ -1,7 +1,6 @@
 package com.sprint.ootd5team.domain.clothattribute.entity;
 
 import com.sprint.ootd5team.base.entity.BaseEntity;
-import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

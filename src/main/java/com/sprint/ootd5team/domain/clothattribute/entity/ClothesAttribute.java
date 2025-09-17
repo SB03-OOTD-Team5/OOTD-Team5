@@ -1,7 +1,6 @@
 package com.sprint.ootd5team.domain.clothattribute.entity;
 
 import com.sprint.ootd5team.base.entity.BaseEntity;
-import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,32 +43,32 @@ public class ClothesAttribute extends BaseEntity {
 	public void rename(String newName) {
 		this.name = newName;
 	}
-
-	// 기존 정의 전부 제거 후 새 정의 추가
-	public void replaceDefs(List<ClothesAttributeDef> newDefs) {
-		for (var it = defs.iterator(); it.hasNext(); ) {
-			ClothesAttributeDef def = it.next();
-			it.remove();           // ✔ orphanRemoval 트리거
-			def.setAttribute(null);  // 양방향 정합성 유지(없어도 orphanRemoval이면 삭제됨)
-		}
-
-		// 2) 새 자식들 추가 (양방향 세팅)
-		for (ClothesAttributeDef newDef : newDefs) {
-			addDef(newDef);
-		}
-	}
+//
+//	// 기존 정의 전부 제거 후 새 정의 추가
+//	public void replaceDefs(List<ClothesAttributeDef> newDefs) {
+//		for (var it = defs.iterator(); it.hasNext(); ) {
+//			ClothesAttributeDef def = it.next();
+//			it.remove();           // ✔ orphanRemoval 트리거
+//			def.setAttribute(null);  // 양방향 정합성 유지(없어도 orphanRemoval이면 삭제됨)
+//		}
+//
+//		// 2) 새 자식들 추가 (양방향 세팅)
+//		for (ClothesAttributeDef newDef : newDefs) {
+//			addDef(newDef);
+//		}
+//	}
 
 	// def 추가
 	public void addDef(ClothesAttributeDef newDef) {
 		defs.add(newDef);
 		newDef.setAttribute(this);
 	}
-
-	// def 제거
-	public void removeDef(ClothesAttributeDef def) {
-		defs.remove(def);
-		def.setAttribute(null);
-	}
+//
+//	// def 제거
+//	public void removeDef(ClothesAttributeDef def) {
+//		defs.remove(def);
+//		def.setAttribute(null);
+//	}
 
 	// def전부 비우기
 	public void clearDefs() {
