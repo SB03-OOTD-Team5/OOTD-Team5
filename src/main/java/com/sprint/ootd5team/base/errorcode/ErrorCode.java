@@ -10,6 +10,8 @@ public enum ErrorCode {
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "권한이 없는 사용자 입니다."),
     INVALID_USER_CREDENTIALS(HttpStatus.UNAUTHORIZED, "잘못된 사용자 인증 정보입니다."),
     UNSUPPORTED_PRINCIPAL(HttpStatus.UNAUTHORIZED, "지원하지 않는 사용자 인증 타입입니다."),
+    INVALID_TOKEN(HttpStatus.BAD_REQUEST,"잘못된 토큰 입니다."),
+    INVALID_USER_DETAILS(HttpStatus.BAD_REQUEST,"잘못된 유저 Details 입니다."),
 
     // User 관련 에러코드
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자 입니다."),
@@ -17,7 +19,10 @@ public enum ErrorCode {
 
     // Feed 관련 에러 코드
     FEED_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 피드입니다."),
-    INVALID_SORT_OPTION(HttpStatus.BAD_REQUEST, "유효하지 않은 정렬 옵션입니다.");
+    INVALID_SORT_OPTION(HttpStatus.BAD_REQUEST, "유효하지 않은 정렬 옵션입니다."),
+
+    //기타 에러코드
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"알수없는 오류가 발생했습니다.");
 
     private final HttpStatus status;
     private final String message;

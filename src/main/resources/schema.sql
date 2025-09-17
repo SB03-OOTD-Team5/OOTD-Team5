@@ -11,8 +11,10 @@ CREATE TABLE IF NOT EXISTS tbl_users
     is_locked                BOOLEAN                  NOT NULL,
     created_at               TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at               TIMESTAMP WITH TIME ZONE,
+    temp_password            VARCHAR(100)             NULL,
+    temp_password_expired_at TIMESTAMP WITH TIME ZONE NULL,
     -- constraints
-    CONSTRAINT check_role CHECK (role IN ('ROLE_USER', 'ROLE_ADMIN'))
+    CONSTRAINT check_role CHECK (role IN ('USER', 'ADMIN'))
 );
 
 -- 인증 테이블
