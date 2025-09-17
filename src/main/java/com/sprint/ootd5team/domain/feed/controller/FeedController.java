@@ -60,7 +60,7 @@ public class FeedController implements FeedApi {
     @PatchMapping(path = "/{feedId}")
     public ResponseEntity<FeedDto> update(
         @PathVariable UUID feedId,
-        @RequestBody FeedUpdateRequest feedUpdateRequest
+        @Valid @RequestBody FeedUpdateRequest feedUpdateRequest
     ) {
         UUID userId = authService.getCurrentUserId();
         FeedDto updatedFeedDto = feedService.update(feedId, feedUpdateRequest, userId);
