@@ -17,4 +17,8 @@ public record FeedDto(
     long likeCount,
     long commentCount,
     boolean likedByMe
-) { }
+) {
+    public FeedDto withOotds(List<OotdDto> ootds) {
+        return new FeedDto(id, createdAt, updatedAt, author, weather, ootds, content, likeCount, commentCount, likedByMe);
+    }
+}

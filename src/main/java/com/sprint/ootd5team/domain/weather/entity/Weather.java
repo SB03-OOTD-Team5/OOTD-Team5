@@ -7,6 +7,8 @@ import com.sprint.ootd5team.domain.weather.enums.SkyStatus;
 import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -30,6 +32,7 @@ public class Weather extends BaseEntity {
     @Column(name = "forecast_at", nullable = false) // 예보 대상 시각
     private Instant forecastAt;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "sky_status")
     private SkyStatus SkyStatus;
 
@@ -48,6 +51,7 @@ public class Weather extends BaseEntity {
     @Column(name = "location_names")
     private String locationNames;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "precipitation_type")
     private PrecipitationType precipitationType;
 

@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.domain.feed.dto.request;
+package com.sprint.ootd5team.domain.comment.dto.request;
 
 import java.util.UUID;
 
