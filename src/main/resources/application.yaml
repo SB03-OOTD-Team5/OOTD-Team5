@@ -3,6 +3,17 @@ spring:
     name: OOTD-5Team
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 #외부 API key 설정
 weather:

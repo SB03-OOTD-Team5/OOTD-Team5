@@ -44,17 +44,7 @@ public class RedisConfig {
     // Redis에 저장할 때 JSON 직렬화를 담당하는 Serializer Bean 등록
     @Bean("redisSerializer")
     public GenericJackson2JsonRedisSerializer redisSerializer(ObjectMapper objectMapper) {
-        // 기존 ObjectMapper 복사 (기존 설정 유지)
-        ObjectMapper redisObjectMapper = objectMapper.copy();
-
-        // 다형성 타입 처리 활성화
-        redisObjectMapper.activateDefaultTyping(
-            LaissezFaireSubTypeValidator.instance, // 타입 검증자, 모든 서브 타입 허용
-            DefaultTyping.EVERYTHING,             // 모든 객체 타입에 대해 타입 정보를 추가
-            As.PROPERTY                            // JSON 속성으로 타입 정보를 저장
-        );
-
         // 직렬화된 JSON을 Redis에 저장할 Serializer 생성
-        return new GenericJackson2JsonRedisSerializer(redisObjectMapper);
+        return new GenericJackson2JsonRedisSerializer(objectMapper);
     }
 }
