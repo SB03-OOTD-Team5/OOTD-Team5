@@ -2,6 +2,7 @@ package com.sprint.ootd5team.domain.feed.service;
 
 import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
 import com.sprint.ootd5team.domain.feed.dto.data.OotdDto;
+import com.sprint.ootd5team.domain.feed.dto.request.FeedCreateRequest;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedUpdateRequest;
 import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
@@ -28,6 +29,14 @@ public class FeedServiceImpl implements FeedService {
 
     private final FeedRepository feedRepository;
     private final FeedClothesRepository feedClothesRepository;
+
+    @Override
+    public FeedDto create(FeedCreateRequest request) {
+        log.info("[FeedService] 피드 등록 시작");
+
+        FeedDto feedDto = null;
+        return feedDto;
+    }
 
     /**
      * 피드 목록을 커서 기반 페이지네이션 방식으로 조회한다.
