@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface WeatherService {
 
-    List<WeatherDto> fetchWeatherByLocation(BigDecimal longitude, BigDecimal latitude);
+    List<WeatherDto> fetchWeatherByLocation(BigDecimal latitude, BigDecimal longitude);
 }

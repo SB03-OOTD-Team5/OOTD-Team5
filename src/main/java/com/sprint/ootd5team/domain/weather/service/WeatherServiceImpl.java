@@ -27,20 +27,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
 
 @Slf4j
-@RequiredArgsConstructor
 @Service
 public class WeatherServiceImpl implements WeatherService {
 
     private final WebClient kmaApiClient;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
     private final WeatherRepository weatherRepository;
     private final WeatherBuilder weatherBuilder;
     private final ProfileRepository profileRepository;
@@ -48,9 +47,21 @@ public class WeatherServiceImpl implements WeatherService {
     private final String baseTime = "0200";
 
 
+    public WeatherServiceImpl(@Qualifier("kmaApiClient") WebClient kmaApiClient,
+        WeatherRepository weatherRepository,
+        WeatherBuilder weatherBuilder, ProfileRepository profileRepository,
+        WeatherMapper weatherMapper) {
+        this.kmaApiClient = kmaApiClient;
+        this.mapper = new ObjectMapper();
+        this.weatherRepository = weatherRepository;
+        this.weatherBuilder = weatherBuilder;
+        this.profileRepository = profileRepository;
+        this.weatherMapper = weatherMapper;
+    }
+
     @Override
     @Transactional
-    public List<WeatherDto> fetchWeatherByLocation(BigDecimal longitude, BigDecimal latitude) {
+    public List<WeatherDto> fetchWeatherByLocation(BigDecimal latitude, BigDecimal longitude) {
         final String baseDate = LocalDate.now(ZoneId.of("Asia/Seoul"))
             .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
@@ -60,15 +71,15 @@ public class WeatherServiceImpl implements WeatherService {
             .orElseThrow(ProfileNotFoundException::new);
 
         //0. 이미 존재하는 데이터면 가져와서 전달 후 종료
-        List<WeatherDto> existed = getWeatherDtosIfExist(baseDate, longitude, latitude);
+        List<WeatherDto> existed = getWeatherDtosIfExist(baseDate, latitude, longitude);
         if (!existed.isEmpty()) {
             return existed;
         }
 
         //1. 기상청 api 데이터 조회
-        String response = fetchKmaApi(baseDate, longitude, latitude);
+        String response = fetchKmaApi(baseDate, latitude, longitude);
         KmaResponseDto kmaResponseDto = parseToKmaResponseDto(response);
-        //2. 기상청 api 데이터  valid check
+        //2. 기상청 api 데이터 valid check
         validateKmaData(kmaResponseDto);
         //3. 날짜별 데이터 묶음
         Map<String, List<WeatherItem>> itemsByDateSlots = groupByForecastSlots(
@@ -80,8 +91,9 @@ public class WeatherServiceImpl implements WeatherService {
         return weathers.stream().map(weatherMapper::toDto).toList();
     }
 
-    private List<WeatherDto> getWeatherDtosIfExist(String baseDate, BigDecimal longitude,
-        BigDecimal latitude) {
+    private List<WeatherDto> getWeatherDtosIfExist(String baseDate, BigDecimal latitude,
+        BigDecimal longitude
+    ) {
         Instant baseDateTimeInstant = weatherBuilder.toInstantWithZone(baseDate, baseTime);
 
         log.debug("이미 존재하는 weather 데이터 확인 - baseDateTimeInstant:{},latitude:{},longitude:{}",
@@ -100,7 +112,7 @@ public class WeatherServiceImpl implements WeatherService {
         return List.of();
     }
 
-    private String fetchKmaApi(String baseDate, BigDecimal longitude, BigDecimal latitude) {
+    private String fetchKmaApi(String baseDate, BigDecimal latitude, BigDecimal longitude) {
         try {
             GridXY kmaXY = convertGridXY(longitude, latitude);
             log.debug(
@@ -127,7 +139,7 @@ public class WeatherServiceImpl implements WeatherService {
         }
     }
 
-    private GridXY convertGridXY(BigDecimal longitude, BigDecimal latitude) {
+    private GridXY convertGridXY(BigDecimal latitude, BigDecimal longitude) {
         return KmaGridConverter.toGrid(longitude, latitude);
 
     }
