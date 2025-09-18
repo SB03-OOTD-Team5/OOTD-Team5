@@ -18,6 +18,10 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true     # 쿼리 로그 포맷 (정렬)
 
+# csrf 설정 비활성화/활성화 on off
+app:
+    csrf:
+      enabled: false
 
 #로그 설정
 logging:
