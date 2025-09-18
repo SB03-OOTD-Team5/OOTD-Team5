@@ -397,7 +397,7 @@ class ClothesServiceTest {
             .id(clothesId)
             .ownerId(ownerId)
             .name("운동화")
-            .type(ClothesType.OUTER)
+            .type(ClothesType.SHOES)
             .imageUrl("new/image.png")
             .attributes(List.of())
             .build();
@@ -439,7 +439,7 @@ class ClothesServiceTest {
             .ownerId(ownerId)
             .name("청바지")
             .type(ClothesType.BOTTOM)
-            .imageUrl("new/image.png")
+            .imageUrl(null)
             .attributes(List.of(attrDto))
             .build();
         given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
