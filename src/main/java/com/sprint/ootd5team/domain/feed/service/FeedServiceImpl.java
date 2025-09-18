@@ -140,9 +140,12 @@ public class FeedServiceImpl implements FeedService {
     public FeedDto getFeed(UUID feedId, UUID currentUserId) {
         log.info("[FeedService] 피드 조회 - feedId:{}, currentUserId:{}", feedId, currentUserId);
 
-        return enrichSingleFeed(
-            feedRepository.findFeedDtoById(feedId, currentUserId)
-        );
+        FeedDto dto = feedRepository.findFeedDtoById(feedId, currentUserId);
+        if (dto == null) {
+            throw FeedNotFoundException.withId(feedId);
+        }
+
+        return enrichSingleFeed(dto);
     }
 
     /**
