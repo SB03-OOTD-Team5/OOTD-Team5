@@ -18,6 +18,7 @@ import com.sprint.ootd5team.domain.user.mapper.UserMapper;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -27,6 +28,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -71,12 +73,13 @@ public class AuthService {
     }
 
     /**
-     * 르프레쉬 토큰 재발급 로직
+     * 리프레쉬 토큰 재발급 로직
      * @param refreshToken 재발급 받기 전 리프레쉬토큰
      * @return Jwt 정보
      */
     @Transactional
     public JwtInformation refreshToken(String refreshToken) {
+        log.info("refreshToken : {}",refreshToken);
         // Validate refresh token
         if (!tokenProvider.validateRefreshToken(refreshToken)
             || !jwtRegistry.hasActiveJwtInformationByRefreshToken(refreshToken)) {

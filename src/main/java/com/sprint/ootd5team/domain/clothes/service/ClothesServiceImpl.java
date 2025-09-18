@@ -4,6 +4,7 @@ import static org.springframework.util.StringUtils.hasText;
 
 import com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException;
 import com.sprint.ootd5team.base.exception.clothes.ClothesSaveFailedException;
+import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
@@ -38,8 +39,9 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * 의상 목록 조회 서비스 구현체
  * <p>
- * - QueryDSL 기반으로 옷 목록을 조회한다. - 커서 기반 페이지네이션(cursor + idAfter)을 지원. - 결과를 ClothesDtoCursorResponse
- * 형태로 반환.
+ * - QueryDSL 기반으로 옷 목록을 조회한다.
+ * - 커서 기반 페이지네이션(cursor + idAfter)을 지원.
+ * - 결과를 ClothesDtoCursorResponse 형태로 반환.
  */
 @Service
 @RequiredArgsConstructor
@@ -71,8 +73,7 @@ public class ClothesServiceImpl implements ClothesService {
         UUID idAfter,
         int limit
     ) {
-        log.info(
-            "[ClothesService] 옷 목록 조회 시작: ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
+        log.info("[ClothesService] 옷 목록 조회 시작: ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
             ownerId, type, cursor, idAfter, limit);
 
         Instant cursorInstant = cursor != null ? Instant.parse(cursor) : null;
@@ -296,8 +297,7 @@ public class ClothesServiceImpl implements ClothesService {
      */
     private ClothesAttributeValue toClothesAttributeValue(ClothesAttributeDto dto) {
         ClothesAttribute attr = attributeRepository.findById(dto.definitionId())
-            .orElseThrow(() -> new IllegalArgumentException("속성값 못찾음"));
-        // TODO: ClothesAttributeNotFoundException.withId(dto.definitionId());
+            .orElseThrow(() -> AttributeNotFoundException.withId(dto.definitionId()));
 
         validateAttributeValue(attr, dto.value());
         return new ClothesAttributeValue(attr, dto.value());
