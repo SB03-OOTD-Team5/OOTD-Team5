@@ -3,6 +3,7 @@ package com.sprint.ootd5team.domain.feed.service;
 import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
 import com.sprint.ootd5team.domain.feed.dto.data.OotdDto;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
+import com.sprint.ootd5team.domain.feed.dto.request.FeedUpdateRequest;
 import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
 import com.sprint.ootd5team.domain.feed.entity.Feed;
 import com.sprint.ootd5team.domain.feed.exception.FeedNotFoundException;
@@ -88,6 +89,51 @@ public class FeedServiceImpl implements FeedService {
             request.sortBy(),
             request.sortDirection().name()
         );
+    }
+
+    @Override
+    public FeedDto getFeed(UUID feedId, UUID currentUserId) {
+        log.info("[FeedService] 피드 조회 - feedId:{}, currentUserId:{}", feedId, currentUserId);
+        return feedRepository.findFeedDtoById(feedId,  currentUserId);
+    }
+
+    /**
+     * 주어진 feedId에 해당하는 피드를 수정한다.
+     *
+     * @param feedId        수정 대상 피드 ID
+     * @param request       수정 요청 객체
+     * @param currentUserId 현재 로그인 사용자 ID (likedByMe 여부 판단에 사용)
+     * @return 수정된 최신 상태의 {@link FeedDto}
+     */
+    @Transactional
+    @Override
+    public FeedDto update(UUID feedId, FeedUpdateRequest request, UUID currentUserId) {
+        log.info("[FeedService] 피드 수정 시작 - userId:{}", currentUserId);
+
+        Feed feed = getFeedOrThrow(feedId);
+        feed.updateContent(request.content());
+
+        log.debug("[FeedService] 피드 수정 완료 - feedId:{}, newContent:{}", feedId, feed.getContent());
+
+        FeedDto updated = feedRepository.findFeedDtoById(feedId, currentUserId);
+        return enrichSingleFeed(updated);
+    }
+
+    /**
+     * 주어진 feedId에 해당하는 피드를 삭제한다.
+     *
+     * <p>DB 제약조건(FK + ON DELETE CASCADE)에 의해 연결된 엔티티 (피드 댓글, 좋아요, OOTD 매핑)도 자동 삭제</p>
+     *
+     * @param feedId 삭제할 피드 ID
+     */
+    @Transactional
+    @Override
+    public void delete(UUID feedId) {
+        log.info("[FeedService] 피드 삭제 시작");
+
+        Feed feed = getFeedOrThrow(feedId);
+
+        feedRepository.delete(feed);
     }
 
     /**

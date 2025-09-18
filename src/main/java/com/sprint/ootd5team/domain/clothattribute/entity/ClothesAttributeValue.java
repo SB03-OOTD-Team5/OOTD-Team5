@@ -1,6 +1,6 @@
 package com.sprint.ootd5team.domain.clothattribute.entity;
 
-import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
+import com.sprint.ootd5team.base.entity.BaseEntity;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -36,11 +36,12 @@ import lombok.Setter;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ClothesAttributeValue extends BaseUpdatableEntity {
+public class ClothesAttributeValue extends BaseEntity {
 
 	/**
 	 * 어떤 의상인지
 	 */
+	@Setter
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "clothes_id", nullable = false)
 	private Clothes clothes;
@@ -61,6 +62,11 @@ public class ClothesAttributeValue extends BaseUpdatableEntity {
 
 	public ClothesAttributeValue(Clothes cloths, ClothesAttribute attribute, String value){
 		this.clothes = cloths;
+		this.attribute = attribute;
+		this.defValue = value;
+	}
+
+	public ClothesAttributeValue(ClothesAttribute attribute, String value) {
 		this.attribute = attribute;
 		this.defValue = value;
 	}

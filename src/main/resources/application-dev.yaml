@@ -11,8 +11,6 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      repositories:
-        enabled: false
   # JPA 설정
   jpa:
     properties:
@@ -28,8 +26,3 @@ logging:
     org.springframework.security: TRACE
     org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLoggingListener: off # @ConditionalOnClass 로그 숨기기
     org.springframework.boot.autoconfigure: warn
-
-management:
-  health:
-    redis:
-      enabled: false
