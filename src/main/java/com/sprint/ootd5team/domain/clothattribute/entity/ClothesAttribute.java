@@ -49,7 +49,6 @@ public class ClothesAttribute extends BaseEntity {
 //		for (var it = defs.iterator(); it.hasNext(); ) {
 //			ClothesAttributeDef def = it.next();
 //			it.remove();           // ✔ orphanRemoval 트리거
-//			def.setAttribute(null);  // 양방향 정합성 유지(없어도 orphanRemoval이면 삭제됨)
 //		}
 //
 //		// 2) 새 자식들 추가 (양방향 세팅)
@@ -67,7 +66,6 @@ public class ClothesAttribute extends BaseEntity {
 //	// def 제거
 //	public void removeDef(ClothesAttributeDef def) {
 //		defs.remove(def);
-//		def.setAttribute(null);
 //	}
 
 	// def전부 비우기
@@ -75,7 +73,6 @@ public class ClothesAttribute extends BaseEntity {
 		for (var it = defs.iterator(); it.hasNext(); ) {
 			ClothesAttributeDef def = it.next();
 			it.remove();
-			def.setAttribute(null);
 		}
 	}
 }
