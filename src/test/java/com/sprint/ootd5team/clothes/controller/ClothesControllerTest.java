@@ -62,9 +62,7 @@ class ClothesControllerTest {
             "흰 티셔츠",
             null,
             ClothesType.TOP,
-            List.of(),
-            Instant.now(),
-            Instant.now()
+            List.of()
         );
 
         ClothesDto clothes2 = new ClothesDto(
@@ -73,9 +71,7 @@ class ClothesControllerTest {
             "청바지",
             null,
             ClothesType.BOTTOM,
-            List.of(),
-            Instant.now(),
-            Instant.now()
+            List.of()
         );
 
         mockClothes = List.of(clothes1, clothes2);
@@ -150,9 +146,7 @@ class ClothesControllerTest {
             List.of(
                 new ClothesAttributeWithDefDto(attributeId, "계절", List.of("봄", "여름", "가을", "겨울"),
                     "겨울")
-            ),
-            Instant.now(),
-            null
+            )
         );
         given(clothesService.create(any(ClothesCreateRequest.class), any(MultipartFile.class)))
             .willReturn(expectedDto);
@@ -208,9 +202,7 @@ class ClothesControllerTest {
             ClothesType.OUTER,
             List.of(new ClothesAttributeWithDefDto(
                 attributeId, "계절", List.of("봄","여름","가을","겨울"), "봄"
-            )),
-            Instant.now(),
-            Instant.now()
+            ))
         );
 
         given(clothesService.update(eq(clothesId), any(), any(MultipartFile.class)))
