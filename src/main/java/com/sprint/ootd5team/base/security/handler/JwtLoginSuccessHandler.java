@@ -20,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -40,10 +41,20 @@ public class JwtLoginSuccessHandler implements
 
         if (authentication.getPrincipal() instanceof OotdUserDetails userDetails) {
             try {
+                // 1. 토큰생성
                 String accessToken = tokenProvider.generateAccessToken(userDetails);
                 String refreshToken = tokenProvider.generateRefreshToken(userDetails);
 
-                // Set refresh token in HttpOnly cookie
+                // 2. 서버 상태 등록
+                jwtRegistry.registerJwtInformation(
+                    new JwtInformation(
+                        userDetails.getUserDto(),
+                        accessToken,
+                        refreshToken
+                    )
+                );
+
+                // 3. 쿠키설정
                 ResponseCookie refreshCookie = tokenProvider.generateRefreshTokenCookie(refreshToken);
                 response.addHeader("Set-Cookie", refreshCookie.toString());
 
@@ -52,16 +63,10 @@ public class JwtLoginSuccessHandler implements
                     accessToken
                 );
 
+                // 4. 본문 전송
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().write(objectMapper.writeValueAsString(jwtDto));
 
-                jwtRegistry.registerJwtInformation(
-                    new JwtInformation(
-                        userDetails.getUserDto(),
-                        accessToken,
-                        refreshToken
-                    )
-                );
 
 
 

@@ -14,10 +14,12 @@ import jakarta.servlet.http.Cookie;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class JwtTokenProvider {
 
@@ -153,21 +155,24 @@ public class JwtTokenProvider {
         try {
             SignedJWT signedJWT = SignedJWT.parse(token);
 
-            // verifier signature
-            if(!signedJWT.verify(verifier)){
+            if (!signedJWT.verify(verifier)) {
+                log.error("Token signature invalid: {}", token);
                 return false;
             }
 
-            // 토큰의 타입 체크
-            if(!signedJWT.getJWTClaimsSet().getClaim("type").toString().equals(type)){
+            if (!signedJWT.getJWTClaimsSet().getClaim("type").toString().equals(type)) {
+                log.error("Token type mismatch: expected={}, actual={}", type,
+                    signedJWT.getJWTClaimsSet().getClaim("type"));
                 return false;
             }
 
-            // 만료시간 체크
             Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
             if (expirationTime == null || expirationTime.before(new Date())) {
+                log.error("Token expired: expirationTime={} now={}", expirationTime, new Date());
                 return false;
             }
+
+            log.info("Token expireTime: expirationTime={} now={}", expirationTime, new Date());
 
             // 체크 통과시 true 반환
             return true;
@@ -230,7 +235,7 @@ public class JwtTokenProvider {
      * @return 생성된 쿠키
      */
     public ResponseCookie generateRefreshTokenCookie(String refreshToken) {
-        return ResponseCookie.from("refreshToken", refreshToken)
+        return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
             .httpOnly(true)
             .secure(true) // HTTPS 환경에서만
             .path("/")
