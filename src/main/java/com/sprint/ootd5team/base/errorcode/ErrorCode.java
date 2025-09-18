@@ -33,6 +33,12 @@ public enum ErrorCode {
     // Clothes 관련 에러코드
     CLOTHES_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 의상 입니다."),
 
+    // ClothesAttribute 관련 에러코드
+    ATTRIBUTE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 속성입니다."),
+    ATTRIBUTE_ALREADY_EXIST(HttpStatus.CONFLICT, "이미 존재하는 속성입니다."),
+    INVALID_ATTRIBUTE_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 속성명입니다.")
+
+
     ;
     private final HttpStatus status;
     private final String message;

@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.domain.clothattribute.entity;
 
 import com.sprint.ootd5team.base.entity.BaseEntity;
+import com.sprint.ootd5team.base.exception.clothesattribute.InvalidAttributeException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -39,6 +40,7 @@ public class ClothesAttributeDef extends BaseEntity {
 		this.attDef = attDef;
 	}
 	void setAttribute(ClothesAttribute attribute){
+		if(attribute == null){throw new InvalidAttributeException();}
 		this.attribute = attribute;
 	}
 }

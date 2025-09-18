@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.clothes.service;
 
+import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
@@ -139,8 +140,7 @@ public class ClothesServiceImpl implements ClothesService {
                 ClothesAttribute attr = attributeRepository.findById(dto.definitionId())
                     .orElseThrow(() -> {
                         log.error("[ClothesService] 속성 정의 없음: definitionId={}", dto.definitionId());
-                        throw new IllegalArgumentException("존재하지 않는 속성 정의");
-                        //TODO: return ClothesAttributeNotFoundException.withId(dto.definitionId());
+	                    return AttributeNotFoundException.withId(dto.definitionId());
                     });
 
                 validateAttributeValue(attr, dto.value());
