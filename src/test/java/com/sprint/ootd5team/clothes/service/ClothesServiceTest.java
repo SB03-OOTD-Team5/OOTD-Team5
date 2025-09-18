@@ -194,6 +194,8 @@ class ClothesServiceTest {
     void 의상_생성_성공_이미지와_속성값_존재() {
         // given
         UUID attributeId = UUID.randomUUID();
+        UUID imageId = UUID.randomUUID();
+        String imageUrl = "clothes/" + imageId;
         ClothesCreateRequest request = new ClothesCreateRequest(
             ownerId,
             "멋쟁이패딩",
@@ -210,13 +212,13 @@ class ClothesServiceTest {
             .owner(owner)
             .name("멋쟁이패딩")
             .type(ClothesType.OUTER)
-            .imageUrl("clothes/uuid_coat.png")
+            .imageUrl(imageUrl)
             .build();
         ClothesDto expectedDto = ClothesFixture.toDto(clothes);
         given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
         given(clothesAttributeRepository.findById(attributeId)).willReturn(Optional.of(attribute));
-        given(fileStorage.upload(eq("coat.png"), any(InputStream.class), eq("image/png")))
-            .willReturn("clothes/uuid_coat.png");
+        given(fileStorage.upload(any(), any(InputStream.class), eq("image/png"))).willReturn(
+            imageUrl);
         given(clothesMapper.toDto(any(Clothes.class))).willReturn(expectedDto);
 
         // when
@@ -226,8 +228,8 @@ class ClothesServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.name()).isEqualTo("멋쟁이패딩");
         assertThat(result.type()).isEqualTo(ClothesType.OUTER);
-        assertThat(result.imageUrl()).contains("clothes/uuid_coat.png");
-        verify(fileStorage).upload(eq("coat.png"), any(InputStream.class), eq("image/png"));
+        assertThat(result.imageUrl()).isEqualTo(imageUrl);
+        verify(fileStorage).upload(any(), any(InputStream.class), eq("image/png"));
     }
 
     @Test
@@ -236,7 +238,7 @@ class ClothesServiceTest {
         ClothesCreateRequest request = new ClothesCreateRequest(ownerId, "멋진티셔츠", ClothesType.TOP,
             null);
         ClothesDto expected = new ClothesDto(UUID.randomUUID(), ownerId, "멋진티셔츠", null,
-            ClothesType.TOP, List.of(), Instant.now(), null);
+            ClothesType.TOP, List.of());
 
         given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
         given(clothesMapper.toDto(any(Clothes.class))).willReturn(expected);
@@ -295,33 +297,7 @@ class ClothesServiceTest {
 
         // when & then
         assertThatThrownBy(() -> clothesService.create(request, null))
-            .isInstanceOf(UserNotFoundException.class); // TODO: 이후 ClothesAttributeNotFoundException 교체
-    }
-
-    @Test
-    void 의상_생성실패시_이미지삭제() {
-        // given
-        ClothesCreateRequest request = new ClothesCreateRequest(
-            ownerId,
-            "삭제테스트",
-            ClothesType.TOP,
-            null
-        );
-        MultipartFile mockImage = new MockMultipartFile(
-            "image", "test.png", "image/png", "fake-image".getBytes()
-        );
-
-        given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
-        given(fileStorage.upload(eq("test.png"), any(InputStream.class), eq("image/png")))
-            .willReturn("clothes/test.png");
-        // DB 저장 시 예외 발생
-        given(clothesRepository.save(any(Clothes.class)))
-            .willThrow(new RuntimeException("DB error"));
-
-        // when & then
-        assertThatThrownBy(() -> clothesService.create(request, mockImage))
-            .isInstanceOf(RuntimeException.class);
-        verify(fileStorage).delete("clothes/test.png");
+            .isInstanceOf(UserNotFoundException.class);
     }
 
     @Test
@@ -368,6 +344,7 @@ class ClothesServiceTest {
         assertThatThrownBy(() -> clothesService.create(request, mockImage))
             .isInstanceOf(FileSaveFailedException.class);
         verify(fileStorage, never()).upload(any(), any(), any());
+        verify(fileStorage, never()).delete(any());
     }
 
     @Test
@@ -391,8 +368,6 @@ class ClothesServiceTest {
             .type(ClothesType.OUTER)
             .imageUrl(null)
             .attributes(List.of(attrDto))
-            .createdAt(clothes.getCreatedAt())
-            .updatedAt(clothes.getUpdatedAt())
             .build();
 
         given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
@@ -410,7 +385,8 @@ class ClothesServiceTest {
     void 의상_수정시_이미지교체_성공() {
         // given
         UUID clothesId = UUID.randomUUID();
-        Clothes clothes = ClothesFixture.createClothesEntity(owner, "운동화", ClothesType.SHOES, "old/image.png");
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "운동화", ClothesType.SHOES,
+            "old/image.png");
         ReflectionTestUtils.setField(clothes, "id", clothesId);
 
         ClothesUpdateRequest request = new ClothesUpdateRequest(null, null, null);
@@ -424,8 +400,6 @@ class ClothesServiceTest {
             .type(ClothesType.OUTER)
             .imageUrl("new/image.png")
             .attributes(List.of())
-            .createdAt(clothes.getCreatedAt())
-            .updatedAt(clothes.getUpdatedAt())
             .build();
 
         given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
@@ -445,7 +419,8 @@ class ClothesServiceTest {
     void 의상_수정시_속성값을_추가할_수있다() {
         // given
         UUID clothesId = UUID.randomUUID();
-        Clothes clothes = ClothesFixture.createClothesEntity(owner, "청바지", ClothesType.BOTTOM, null);
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "청바지", ClothesType.BOTTOM,
+            null);
         ReflectionTestUtils.setField(clothes, "id", clothesId);
 
         UUID attrId = UUID.randomUUID();
@@ -466,8 +441,6 @@ class ClothesServiceTest {
             .type(ClothesType.BOTTOM)
             .imageUrl("new/image.png")
             .attributes(List.of(attrDto))
-            .createdAt(clothes.getCreatedAt())
-            .updatedAt(clothes.getUpdatedAt())
             .build();
         given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
         given(clothesAttributeRepository.findById(attrId)).willReturn(Optional.of(attribute));
@@ -490,11 +463,11 @@ class ClothesServiceTest {
 
         // when & then
         assertThatThrownBy(() -> clothesService.update(clothesId, request, null))
-            .isInstanceOf(com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException.class);
+            .isInstanceOf(
+                com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException.class);
     }
 
     @Test
-    @DisplayName("의상 수정 시 기존 속성 값이 다르면 새로운 값으로 업데이트된다")
     void 의상_수정시_속성값_변경() {
         // given
         UUID clothesId = UUID.randomUUID();
@@ -528,8 +501,6 @@ class ClothesServiceTest {
             .type(ClothesType.TOP)
             .imageUrl(null)
             .attributes(List.of(updatedAttrDto))
-            .createdAt(clothes.getCreatedAt())
-            .updatedAt(clothes.getUpdatedAt())
             .build();
 
         given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));

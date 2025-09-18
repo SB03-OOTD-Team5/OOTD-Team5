@@ -10,13 +10,13 @@ public class FileDeleteFailedException extends FileException {
 
     public static FileDeleteFailedException withFilePath(String filePath) {
         FileDeleteFailedException exception = new FileDeleteFailedException();
-        exception.addDetail("fileName", filePath);
+        exception.addDetail("filePath", filePath);
         return exception;
     }
 
-    public static FileDeleteFailedException withFilePath(String fileName, Throwable cause) {
+    public static FileDeleteFailedException withFilePath(String filePath, Throwable cause) {
         FileDeleteFailedException exception = new FileDeleteFailedException();
-        exception.addDetail("fileName", fileName);
+        exception.addDetail("filePath", filePath);
         exception.initCause(cause);
         return exception;
     }

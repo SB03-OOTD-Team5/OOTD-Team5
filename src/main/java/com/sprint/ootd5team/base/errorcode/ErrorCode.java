@@ -32,7 +32,7 @@ public enum ErrorCode {
 
     // Clothes 관련 에러코드
     CLOTHES_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 의상입니다."),
-    CLOTHES_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "옷 등록에 실패했습니다."),
+    CLOTHES_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "옷 저장에 실패했습니다."),
 
 
     ;
