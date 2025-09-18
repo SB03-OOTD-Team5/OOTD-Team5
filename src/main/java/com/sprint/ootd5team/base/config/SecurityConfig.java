@@ -32,6 +32,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -101,10 +102,11 @@ public class SecurityConfig {
         throws Exception {
         http
             // csrf 설정
-            .csrf(csrf -> csrf
-                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-            )
+            .csrf(AbstractHttpConfigurer::disable)
+//            .csrf(csrf -> csrf
+//                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+//                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+//            )
             // 로그인 설정
             .formLogin(login -> login
                 .loginProcessingUrl("/api/auth/sign-in")
