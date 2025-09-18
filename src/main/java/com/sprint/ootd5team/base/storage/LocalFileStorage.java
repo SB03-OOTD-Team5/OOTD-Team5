@@ -39,16 +39,21 @@ public class LocalFileStorage implements FileStorage {
         int dotIndex = filename.lastIndexOf(".");
         if (dotIndex != -1) {
             ext = filename.substring(dotIndex);
-            filename = filename.substring(0, dotIndex);
         }
-        String uniqueName = filename + "_" + UUID.randomUUID() + ext;
+        String uniqueName = "clothes/" + UUID.randomUUID() + ext;
 
         try {
-            Path target = root.resolve(uniqueName);
+            Path target = root.resolve(uniqueName).normalize();
+            if (!target.startsWith(root)) {
+                throw new SecurityException("Invalid path");
+            }
+
+            Files.createDirectories(target.getParent());
+
             Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
             return uniqueName;
         } catch (IOException e) {
-            throw FileSaveFailedException.withFileName(uniqueName);
+            throw FileSaveFailedException.withFileName(uniqueName, e);
         }
     }
 
