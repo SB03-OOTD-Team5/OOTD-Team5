@@ -91,7 +91,7 @@ class ClothesRepositoryImplTest {
             ownerId,
             null,
             after,
-            null, // tie-breaker 없이 createdAt만 테스트
+            null,
             10
         );
 
@@ -100,5 +100,24 @@ class ClothesRepositoryImplTest {
             .isNotEmpty()
             .extracting(Clothes::getName)
             .contains("운동화", "운동화2");
+    }
+
+    @Test
+    void createdAtCursor가_같으면_id값을_기준_다음페이지조회() {
+        // given
+        Instant cursor = Instant.parse("2024-01-01T08:00:00Z");
+        UUID idAfter = clothes.getId();
+
+        // when
+        List<Clothes> result = clothesRepository.findClothes(
+            ownerId,
+            null,
+            cursor,
+            idAfter,
+            10
+        );
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getCreatedAt()).isEqualTo(cursor);
     }
 }

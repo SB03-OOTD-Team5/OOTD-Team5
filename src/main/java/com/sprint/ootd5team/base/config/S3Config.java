@@ -32,7 +32,7 @@ public class S3Config {
     }
 
     @Bean
-    public S3Client amazonS3Client(AwsBasicCredentials awsBasicCredentials) {
+    public S3Client s3Client(AwsBasicCredentials awsBasicCredentials) {
         return S3Client.builder()
             .region(Region.of(region))
             .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
