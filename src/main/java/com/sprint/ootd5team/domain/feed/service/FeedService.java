@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public interface FeedService {
 
-    FeedDto create(FeedCreateRequest request);
+    FeedDto create(FeedCreateRequest request, UUID currentUserId);
 
     FeedDtoCursorResponse getFeeds(FeedListRequest request, UUID currentUserId);
 

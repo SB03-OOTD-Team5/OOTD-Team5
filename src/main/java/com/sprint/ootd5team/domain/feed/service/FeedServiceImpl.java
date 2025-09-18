@@ -1,5 +1,9 @@
 package com.sprint.ootd5team.domain.feed.service;
 
+import com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException;
+import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
+import com.sprint.ootd5team.domain.clothes.entity.Clothes;
+import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
 import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
 import com.sprint.ootd5team.domain.feed.dto.data.OotdDto;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedCreateRequest;
@@ -9,11 +13,18 @@ import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
 import com.sprint.ootd5team.domain.feed.entity.Feed;
 import com.sprint.ootd5team.base.exception.feed.FeedNotFoundException;
 import com.sprint.ootd5team.base.exception.feed.InvalidSortOptionException;
+import com.sprint.ootd5team.domain.feed.entity.FeedClothes;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.feed.repository.feedClothes.FeedClothesRepository;
+import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
+import com.sprint.ootd5team.domain.weather.exception.WeatherNotFoundException;
+import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,12 +41,37 @@ public class FeedServiceImpl implements FeedService {
     private final FeedRepository feedRepository;
     private final FeedClothesRepository feedClothesRepository;
 
+    private final ProfileRepository profileRepository;
+    private final WeatherRepository weatherRepository;
+    private final ClothesRepository clothesRepository;
+
+    /**
+     * 피드를 생성하고 {@link FeedDto}로 반환한다.
+     *
+     * <p>작성자, 날씨, 옷 ID 유효성을 검증한 뒤 피드와 피드/옷 매핑을 저장한다.</p>
+     *
+     * @param request       피드 생성 요청
+     * @param currentUserId 현재 로그인한 사용자 ID
+     * @return 생성된 피드 DTO
+     */
+    @Transactional
     @Override
-    public FeedDto create(FeedCreateRequest request) {
+    public FeedDto create(FeedCreateRequest request, UUID currentUserId) {
         log.info("[FeedService] 피드 등록 시작");
 
-        FeedDto feedDto = null;
-        return feedDto;
+        UUID authorId = request.authorId();
+        UUID weatherId = request.weatherId();
+        Set<UUID> clothesIds = request.clothesIds();
+
+        validateAuthorAndWeather(authorId, weatherId);
+        List<Clothes> clothesList = validateClothes(clothesIds);
+
+        Feed feed = saveFeed(authorId, weatherId, request.content());
+        saveFeedClothes(feed, clothesList);
+
+        return enrichSingleFeed(
+            feedRepository.findFeedDtoById(feed.getId(), currentUserId)
+        );
     }
 
     /**
@@ -103,7 +139,10 @@ public class FeedServiceImpl implements FeedService {
     @Override
     public FeedDto getFeed(UUID feedId, UUID currentUserId) {
         log.info("[FeedService] 피드 조회 - feedId:{}, currentUserId:{}", feedId, currentUserId);
-        return feedRepository.findFeedDtoById(feedId,  currentUserId);
+
+        return enrichSingleFeed(
+            feedRepository.findFeedDtoById(feedId, currentUserId)
+        );
     }
 
     /**
@@ -180,5 +219,52 @@ public class FeedServiceImpl implements FeedService {
                 log.warn("[FeedService] 유효하지 않은 피드 - feedId:{}", feedId);
                 return FeedNotFoundException.withId(feedId);
             });
+    }
+
+    private void validateAuthorAndWeather(UUID authorId, UUID weatherId) {
+        if (!profileRepository.existsByUserId(authorId)) {
+            log.warn("[FeedService] 존재하지 않는 사용자 - userId:{}", authorId);
+            throw ProfileNotFoundException.withUserId(authorId);
+        } else if (!weatherRepository.existsById(weatherId)) {
+            throw new WeatherNotFoundException("존재하지 않는 날씨 데이터입니다.");
+        }
+    }
+
+    private List<Clothes> validateClothes(Set<UUID> clothesIds) {
+        List<Clothes> clothesList = clothesRepository.findAllById(clothesIds);
+
+        Set<UUID> foundIds = clothesList.stream()
+            .map(Clothes::getId)
+            .collect(Collectors.toSet());
+        Set<UUID> missingIds = new HashSet<>(clothesIds);
+        missingIds.removeAll(foundIds);
+
+        if (!missingIds.isEmpty()) {
+            log.warn("[FeedService] 존재하지 않는 의상 - clothesIds:{}", missingIds);
+            throw ClothesNotFoundException.withIds(missingIds);
+        }
+
+        return clothesList;
+    }
+
+    public Feed saveFeed(UUID authorId, UUID weatherId, String content) {
+        Feed feed = Feed.of(
+            authorId, weatherId, content
+        );
+
+        feedRepository.save(feed);
+        log.debug("[FeedService] 저장된 Feed 엔티티 - Feed:{}", feed);
+
+        return feed;
+    }
+
+    public void saveFeedClothes(Feed feed, List<Clothes> clothesList) {
+        List<FeedClothes> mappings = clothesList.stream()
+            .map(clothes -> {
+                log.debug("[FeedService] FeedClothes 엔티티 생성 - feedId:{}, clothesId:{}", feed.getId(), clothes.getId());
+                return new FeedClothes(feed.getId(), clothes.getId());
+            })
+            .toList();
+        feedClothesRepository.saveAll(mappings);
     }
 }
