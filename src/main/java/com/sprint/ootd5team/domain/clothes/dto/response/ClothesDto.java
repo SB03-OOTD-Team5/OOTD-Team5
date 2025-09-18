@@ -18,6 +18,7 @@ public record ClothesDto(
     Instant createdAt,
     Instant updatedAt
 ) {
+
     public ClothesDto {
         attributes = attributes == null ? List.of() : List.copyOf(attributes);
     }

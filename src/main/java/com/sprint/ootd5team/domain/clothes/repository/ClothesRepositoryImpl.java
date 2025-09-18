@@ -58,7 +58,7 @@ public class ClothesRepositoryImpl implements ClothesRepositoryCustom {
                     .and(clothes.id.lt(idAfter)));
                 log.debug("[ClothesRepository] idAfter 필터 적용: id < {}", idAfter);
             }
-            where.and(cursorCondition);
+            where.and(clothes.owner.id.eq(ownerId));
 
             log.debug("[ClothesRepository] cursor 필터 적용: createdAt < {}", cursor);
         }
