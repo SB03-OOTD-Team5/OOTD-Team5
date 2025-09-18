@@ -34,4 +34,7 @@ public class Location extends BaseEntity {
     @Column(name = "location_names")
     private String locationNames;
 
+    @Column(name = "location_code")
+    private String locationCode;
+
 }
