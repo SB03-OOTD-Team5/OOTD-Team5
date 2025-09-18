@@ -28,9 +28,19 @@ public enum ErrorCode {
     WEATHER_KMA_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "기상청 데이터를 가져오는데 실패했습니다."),
     WEATHER_KMA_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "기상청 데이터를 분석하는데 실패했습니다."),
 
-    //기타 에러코드
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"알수없는 오류가 발생했습니다.");
+    // File 관련 에러코드
+    FILE_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드 실패 - 재시도 가능"),
+    FILE_PERMANENT_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드 실패 - 모든 재시도 소진"),
+    FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제 실패"),
+    FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 크기 초과"),
 
+    //기타 에러코드
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"알수없는 오류가 발생했습니다."),
+
+    // Clothes 관련 에러코드
+    CLOTHES_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 의상 입니다."),
+
+    ;
     private final HttpStatus status;
     private final String message;
 

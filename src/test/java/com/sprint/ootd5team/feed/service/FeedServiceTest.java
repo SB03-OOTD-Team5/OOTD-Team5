@@ -1,8 +1,10 @@
 package com.sprint.ootd5team.feed.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,7 +14,10 @@ import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
 import com.sprint.ootd5team.domain.feed.dto.data.OotdDto;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
+import com.sprint.ootd5team.domain.feed.dto.request.FeedUpdateRequest;
 import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
+import com.sprint.ootd5team.domain.feed.entity.Feed;
+import com.sprint.ootd5team.domain.feed.exception.FeedNotFoundException;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.feed.repository.feedClothes.FeedClothesRepository;
 import com.sprint.ootd5team.domain.feed.service.FeedServiceImpl;
@@ -26,6 +31,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -173,5 +179,125 @@ public class FeedServiceTest {
         assertThat(response.hasNext()).isTrue();
         assertThat(response.nextCursor()).isEqualTo(feed1.createdAt().toString());
         assertThat(response.nextIdAfter()).isEqualTo(feed1.id());
+    }
+
+    @Test
+    @DisplayName("피드 삭제 성공")
+    void deleteFeed_success() {
+        // given
+        UUID feedId = UUID.randomUUID();
+        Feed feed = new Feed(
+            userId,
+            UUID.randomUUID(),
+            "테스트 피드",
+            0L,
+            0L
+        );
+
+        when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
+
+        // when
+        feedService.delete(feedId);
+
+        // then
+        verify(feedRepository, times(1)).findById(feedId);
+        verify(feedRepository, times(1)).delete(feed);
+    }
+
+    @Test
+    @DisplayName("피드 삭제 실패 - 존재하지 않는 feedId")
+    void deleteFeed_notFound() {
+        // given
+        UUID feedId = UUID.randomUUID();
+
+        when(feedRepository.findById(feedId)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> feedService.delete(feedId))
+            .isInstanceOf(FeedNotFoundException.class)
+            .satisfies(ex -> {
+                FeedNotFoundException fnf = (FeedNotFoundException) ex;
+                assertThat(fnf.getFeedId()).isEqualTo(feedId);
+            });
+
+        verify(feedRepository, times(1)).findById(feedId);
+        verify(feedRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("피드 수정 성공")
+    void updateFeed_success() {
+        // given
+        UUID feedId = UUID.randomUUID();
+        FeedUpdateRequest request = new FeedUpdateRequest("수정된 내용");
+
+        Feed feed = new Feed(
+            userId,
+            UUID.randomUUID(),
+            "원래 내용",
+            0L,
+            0L
+        );
+
+        FeedDto updatedDto = new FeedDto(
+            feedId,
+            Instant.now(),
+            Instant.now(),
+            testAuthor,
+            testWeather,
+            List.of(),
+            "수정된 내용",
+            10,
+            2,
+            true
+        );
+
+        OotdDto ootd = new OotdDto(
+            UUID.randomUUID(),
+            "나이키 반팔 티셔츠",
+            "https://image.url/nikeShirt.jpg",
+            "상의",
+            List.of()
+        );
+
+        when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
+        when(feedRepository.findFeedDtoById(feedId, userId)).thenReturn(updatedDto);
+        when(feedClothesRepository.findOotdsByFeedIds(List.of(feedId)))
+            .thenReturn(Map.of(feedId, List.of(ootd)));
+
+        // when
+        FeedDto result = feedService.update(feedId, request, userId);
+
+        // then
+        assertThat(feed.getContent()).isEqualTo("수정된 내용");
+        assertThat(result.content()).isEqualTo("수정된 내용");
+        assertThat(result.ootds()).hasSize(1);
+        assertThat(result.ootds().get(0).name()).isEqualTo("나이키 반팔 티셔츠");
+
+        verify(feedRepository, times(1)).findById(feedId);
+        verify(feedRepository, times(1)).findFeedDtoById(feedId, userId);
+        verify(feedClothesRepository, times(1)).findOotdsByFeedIds(List.of(feedId));
+    }
+
+    @Test
+    @DisplayName("피드 수정 실패 - 존재하지 않는 feedId")
+    void updateFeed_notFound() {
+        // given
+        UUID feedId = UUID.randomUUID();
+        FeedUpdateRequest request = new FeedUpdateRequest("수정된 내용");
+
+        when(feedRepository.findById(feedId)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> feedService.update(feedId, request, userId))
+            .isInstanceOf(FeedNotFoundException.class)
+            .satisfies(ex -> {
+                FeedNotFoundException fnf = (FeedNotFoundException) ex;
+                assertThat(fnf.getFeedId()).isEqualTo(feedId);
+            });
+
+        verify(feedRepository, times(1)).findById(feedId);
+        verify(feedRepository, never()).findFeedDtoById(any(), any());
+        verify(feedClothesRepository, never()).findOotdsByFeedIds(anyList());
     }
 }

@@ -107,13 +107,13 @@ public class SecurityConfig {
             )
             // 로그인 설정
             .formLogin(login -> login
-                .loginProcessingUrl("api/auth/sign-in")
+                .loginProcessingUrl("/api/auth/sign-in")
                 .successHandler(jwtLoginSuccessHandler)
                 .failureHandler(loginFailureHandler)
             )
             // 로그아웃 설정
             .logout(logout -> logout
-                .logoutUrl("api/auth/sign-out")
+                .logoutUrl("/api/auth/sign-out")
                 .addLogoutHandler(jwtLogoutHandler)
                 .logoutSuccessHandler(
                     new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)
@@ -126,6 +126,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-out").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-in").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
+                // 개발 storage = local일 때(s3시 필요없음)
+                .requestMatchers("/local-files/**").permitAll()
                 .anyRequest().permitAll()//TODO 개발환경은는 모두 허용, 빌드시에는 authenticated()으로 수정필요
             )
             // 예외처리
