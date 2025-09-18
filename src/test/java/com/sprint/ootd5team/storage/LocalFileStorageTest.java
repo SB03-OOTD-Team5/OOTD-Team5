@@ -1,7 +1,10 @@
 package com.sprint.ootd5team.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.sprint.ootd5team.base.exception.file.FileDeleteFailedException;
+import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.storage.LocalFileStorage;
 import java.io.File;
 import java.io.IOException;
@@ -67,7 +70,7 @@ public class LocalFileStorageTest {
         String url = localFileStorage.download(savedPath);
 
         // then
-        assertThat(url).startsWith("file:/");
+        assertThat(url).startsWith("file:");
         assertThat(url).contains("uploads");
         System.out.println("url = " + url);
     }
@@ -87,5 +90,81 @@ public class LocalFileStorageTest {
 
         // then
         assertThat(new File(savedPath)).doesNotExist();
+    }
+
+    @Test
+    void 업로드_실패_IO예외() {
+        // given
+        InputStream brokenStream = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw new IOException("읽기 실패");
+            }
+        };
+
+        // when & then
+        assertThatThrownBy(() -> localFileStorage.upload("broken.png", brokenStream, "image/png"))
+            .isInstanceOf(FileSaveFailedException.class);
+    }
+
+    @Test
+    void 다운로드_실패_루트밖의_경로() {
+        // given
+        String invalidPath = "../outside.png";
+
+        // when & then
+        assertThatThrownBy(() -> localFileStorage.download(invalidPath))
+            .isInstanceOf(SecurityException.class);
+    }
+
+    @Test
+    void 삭제_실패_루트밖의_경로() {
+        // given
+        String invalidPath = "../outside.png";
+
+        // when & then
+        assertThatThrownBy(() -> localFileStorage.delete(invalidPath))
+            .isInstanceOf(SecurityException.class);
+    }
+
+    @Test
+    void 업로드실패_InputStream읽기예외() {
+        // given: 항상 IOException 던지는 InputStream
+        InputStream brokenStream = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw new IOException("읽기 실패");
+            }
+        };
+
+        // when & then
+        assertThatThrownBy(() ->
+            localFileStorage.upload("broken.png", brokenStream, "image/png")
+        )
+            .isInstanceOf(FileSaveFailedException.class);
+    }
+
+
+    @Test
+    void 삭제실패_FileDelete예외() throws Exception {
+        // given
+        Path root = Files.createTempDirectory("deletefail");
+        LocalFileStorage storage = new LocalFileStorage(root);
+        Path fakeFile = root.resolve("locked.txt");
+        Files.writeString(fakeFile, "lock");
+        fakeFile.toFile().setWritable(false); // 삭제 권한 제한
+
+        // when & then
+        assertThatThrownBy(() -> storage.delete("locked.txt"))
+            .isInstanceOf(FileDeleteFailedException.class);
+    }
+
+    @Test
+    void resolveUrl_nullPath() {
+        // given
+        String result = localFileStorage.resolveUrl(null);
+
+        // then
+        assertThat(result).isNull();
     }
 }

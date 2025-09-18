@@ -16,6 +16,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true     # 쿼리 로그 포맷 (정렬)
 
 
 #로그 설정
@@ -29,8 +30,3 @@ logging:
     org.hibernate.SQL: debug                 # 실행되는 SQL
     org.hibernate.orm.jdbc.bind: trace       # 바인딩 파라미터 값
     org.hibernate.orm.jdbc.extract: trace    # ResultSet에서 값 읽기
-
-management:
-  health:
-    redis:
-      enabled: false
