@@ -13,7 +13,7 @@ import org.springframework.web.util.DefaultUriBuilderFactory;
 public class WebclientConfig {
 
 
-    @Bean
+    @Bean("kmaApiClient")
     public WebClient kmaApiClient(
         @Value("${weather.kma.base-url}") String baseUrl,
         @Value("${weather.kma.client-secret}") String secretKey
@@ -29,10 +29,29 @@ public class WebclientConfig {
             .filter((request, next) -> {
                 String url = request.url().toString()
                     .replaceAll("(?i)(serviceKey=)[^&]+", "$1****");
-                log.debug("[WebClient 리퀘스트] {} {}", request.method(), url);
+                log.debug("[기상청 API 리퀘스트] {} {}", request.method(), url);
                 return next.exchange(request);
             })
             .build();
 
+    }
+
+
+    @Bean("kakaoApiClient")
+    public WebClient kakaoApiClient(
+        @Value("${weather.kakao.base-url}") String baseUrl,
+        @Value("${weather.kakao.client-secret}") String secretKey
+    ) {
+        DefaultUriBuilderFactory ubf = new DefaultUriBuilderFactory(baseUrl);
+        ubf.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.VALUES_ONLY);
+
+        return WebClient.builder()
+            .uriBuilderFactory(ubf)
+            .defaultHeader("Authorization", "KakaoAK " + secretKey)
+            .filter((request, next) -> {
+                log.debug("[카카오 API 리퀘스트] {} {}", request.method(), request.url());
+                return next.exchange(request);
+            })
+            .build();
     }
 }

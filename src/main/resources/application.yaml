@@ -23,7 +23,7 @@ app:
 #외부 API key 설정
 weather:
   kakao:
-    client-id: ${KAKAO_CLIENT_ID}
+    base-url: https://dapi.kakao.com/v2/local/geo/coord2regioncode.json
     client-secret: ${KAKAO_CLIENT_SECRET}
   kma: #기상청
     base-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst
