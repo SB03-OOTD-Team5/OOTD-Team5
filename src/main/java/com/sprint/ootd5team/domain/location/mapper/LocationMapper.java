@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.domain.location.mapper;
 
 import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
+import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
 import org.mapstruct.Mapper;
 import org.mapstruct.Named;
@@ -19,6 +20,16 @@ public interface LocationMapper {
             w.getXCoord(),
             w.getYCoord(),
             w.getLocationNames().split(" ")
+        );
+    }
+
+    default WeatherAPILocationDto toDto(Location location) {
+        return new WeatherAPILocationDto(
+            location.getLatitude(),
+            location.getLongitude(),
+            location.getXCoord(),
+            location.getYCoord(),
+            location.getLocationNames().split(" ")
         );
     }
 }
