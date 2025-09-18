@@ -5,5 +5,5 @@ import java.math.BigDecimal;
 
 public interface LocationService {
 
-    WeatherAPILocationDto fetchLocation(BigDecimal longitude, BigDecimal latitude);
+    WeatherAPILocationDto fetchLocation(BigDecimal latitude, BigDecimal longitude);
 }

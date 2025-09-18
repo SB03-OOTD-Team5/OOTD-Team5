@@ -24,12 +24,18 @@ public interface LocationMapper {
     }
 
     default WeatherAPILocationDto toDto(Location location) {
+        if (location == null) {
+            return null;
+        }
+        String names = location.getLocationNames();
+        String[] locationNames =
+            (names == null || names.isBlank()) ? new String[0] : names.split(" ");
         return new WeatherAPILocationDto(
             location.getLatitude(),
             location.getLongitude(),
             location.getXCoord(),
             location.getYCoord(),
-            location.getLocationNames().split(" ")
+            locationNames
         );
     }
 }
