@@ -172,7 +172,6 @@ public class JwtTokenProvider {
                 return false;
             }
 
-            log.info("Token expireTime: expirationTime={} now={}", expirationTime, new Date());
 
             // 체크 통과시 true 반환
             return true;

@@ -83,8 +83,6 @@ public class AuthService {
         // Validate refresh token
         if (!tokenProvider.validateRefreshToken(refreshToken)
             || !jwtRegistry.hasActiveJwtInformationByRefreshToken(refreshToken)) {
-            log.error("!tokenProvider.validateRefreshToken(refreshToken) : {}",!tokenProvider.validateRefreshToken(refreshToken));
-            log.error("!jwtRegistry.hasActiveJwtInformationByRefreshToken(refreshToken) : {}",!jwtRegistry.hasActiveJwtInformationByRefreshToken(refreshToken));
             throw new OotdException(ErrorCode.INVALID_TOKEN);
         }
 

@@ -68,8 +68,6 @@ public class JwtLoginSuccessHandler implements
                 response.getWriter().write(objectMapper.writeValueAsString(jwtDto));
 
 
-
-
                 log.info("JWT access and refresh tokens issued for user: {}", userDetails.getUsername());
 
             } catch (JOSEException e) {
