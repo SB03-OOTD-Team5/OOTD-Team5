@@ -21,6 +21,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -52,7 +53,7 @@ public class MethodSecurityTest {
 
     private UUID userId;
     @MockitoBean
-    private org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
 
 
     @BeforeEach
@@ -71,10 +72,5 @@ public class MethodSecurityTest {
         ).isInstanceOf(AccessDeniedException.class);
     }
 
-    @Test
-    @WithMockUser(roles = {"USER"})
-    @DisplayName("USER 권한으로 계정 잠금 메서드 호출시 접근 거부")
-    void user_cannot_access_admin_method2() {
 
-    }
 }
