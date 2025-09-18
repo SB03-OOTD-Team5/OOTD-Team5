@@ -200,6 +200,7 @@ CREATE TABLE IF NOT EXISTS tbl_locations
     x_coord                   INTEGER,
     y_coord                   INTEGER,
     location_names            VARCHAR(100),
+    location_code             VARCHAR(20),
     created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
     -- constraints
     CONSTRAINT uq_locations UNIQUE (latitude,longitude)
@@ -274,3 +275,6 @@ ALTER TABLE tbl_feed_clothes
 
 ALTER TABLE tbl_locations
     ADD CONSTRAINT uq_locations UNIQUE (latitude, longitude);
+
+ALTER TABLE tbl_locations
+    ADD COLUMN location_code  VARCHAR(20);
