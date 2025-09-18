@@ -12,4 +12,11 @@ public class FileSaveFailedException extends FileException {
         exception.addDetail("fileName", fileName);
         return exception;
     }
+
+    public static FileSaveFailedException withFileName(String fileName, Throwable cause) {
+            FileSaveFailedException exception = new FileSaveFailedException();
+            exception.addDetail("fileName", fileName);
+            exception.initCause(cause);
+            return exception;
+        }
 }

@@ -70,7 +70,7 @@ public class LocalFileStorage implements FileStorage {
             }
             Files.deleteIfExists(p);
         } catch (IOException e) {
-            throw FileDeleteFailedException.withFilePath(path);
+            throw FileDeleteFailedException.withFilePath(path, e);
         }
     }
 

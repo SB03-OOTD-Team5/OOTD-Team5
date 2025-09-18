@@ -113,7 +113,7 @@ public class S3FileStorage implements FileStorage{
             return key;
 
         } catch (IOException e) {
-            throw FileSaveFailedException.withFileName(filename);
+            throw FileSaveFailedException.withFileName(filename, e);
 
         } finally {
             if (tempFile != null) {
@@ -171,7 +171,7 @@ public class S3FileStorage implements FileStorage{
             log.info("[S3] 삭제 성공: key={}", key);
         } catch (Exception e) {
             log.error("[S3] 삭제 실패: key={}, ex={}", key, e.toString(), e);
-            throw FileDeleteFailedException.withFilePath(key);
+            throw FileDeleteFailedException.withFilePath(key, e);
         }
     }
 
