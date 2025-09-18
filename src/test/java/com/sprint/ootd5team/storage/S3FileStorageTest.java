@@ -1,19 +1,25 @@
 package com.sprint.ootd5team.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
+import com.sprint.ootd5team.base.exception.file.FileDeleteFailedException;
 import com.sprint.ootd5team.base.exception.file.FilePermanentSaveFailedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
+import com.sprint.ootd5team.base.exception.file.FileTooLargeException;
 import com.sprint.ootd5team.base.storage.S3FileStorage;
 import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,10 +28,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-
 import org.springframework.util.unit.DataSize;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
@@ -112,5 +118,103 @@ class S3FileStorageTest {
 
         // then
         verify(s3Client).deleteObject(any(Consumer.class));
+    }
+
+    @Test
+    void 업로드시_InputStream읽기실패_FileSaveFailedException() {
+        // given: 항상 IOException 발생시키는 InputStream
+        InputStream brokenStream = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw new IOException("읽기 실패");
+            }
+        };
+
+        // when
+        Throwable thrown = catchThrowable(
+            () -> s3FileStorage.upload("broken.png", brokenStream, "image/png")
+        );
+
+        // then
+        assertThat(thrown)
+            .isInstanceOf(FileSaveFailedException.class);
+    }
+
+    @Test
+    void 삭제_실패시_FileDeleteFailedException() {
+        // given
+        String key = "clothes/error.jpg";
+        doThrow(new RuntimeException("delete fail"))
+            .when(s3Client).deleteObject(any(Consumer.class));
+
+        // when
+        Throwable thrown = catchThrowable(() -> s3FileStorage.delete(key));
+
+        // then
+        assertThat(thrown)
+            .isInstanceOf(FileDeleteFailedException.class);
+    }
+
+    @Test
+    void 존재하지않는key_다운로드시_NoSuchKeyException() {
+        // given
+        String key = "notfound.jpg";
+        given(s3Presigner.presignGetObject(any(GetObjectPresignRequest.class)))
+            .willThrow(NoSuchKeyException.builder().build());
+
+        // when
+        Throwable thrown = catchThrowable(() -> s3FileStorage.download(key));
+
+        // then
+        assertThat(thrown).isInstanceOf(
+            NoSuchKeyException.class
+        );
+    }
+
+    @Test
+    void resolveUrl_null입력시_null반환() {
+        // when
+        String url = s3FileStorage.resolveUrl(null);
+
+        // then
+        assertThat(url).isNull();
+    }
+
+    @Test
+    void 업로드_실패_용량초과() {
+        // given
+        S3FileStorage smallLimitStorage = new S3FileStorage(s3Client, s3Presigner, DataSize.ofBytes(1));
+        ReflectionTestUtils.setField(smallLimitStorage, "bucket", "test-bucket");
+
+        InputStream inputStream = new ByteArrayInputStream("hello".getBytes());
+
+        // when & then
+        assertThatThrownBy(() ->
+            smallLimitStorage.upload("big.txt", inputStream, "text/plain")
+        ).isInstanceOf(FileTooLargeException.class);
+    }
+
+    @Test
+    void presignedUrl_redirect_성공() {
+        // given
+        String key = "clothes/test.jpg";
+        String fakeUrl = "https://fake-url.com/file.png";
+        S3FileStorage spyStorage = spy(s3FileStorage);
+        doReturn(fakeUrl).when(spyStorage).download(key);
+
+        // when
+        var response = spyStorage.redirectToPresignedUrl(key);
+
+        // then
+        assertThat(response.getStatusCodeValue()).isEqualTo(302);
+        assertThat(response.getHeaders().getLocation().toString()).isEqualTo(fakeUrl);
+    }
+
+    @Test
+    void recover_항상_FilePermanentSaveFailedException발생() {
+        // when & then
+        assertThatThrownBy(() ->
+            s3FileStorage.recover(new RuntimeException("fail"), "bad.png", null, "image/png")
+        ).isInstanceOf(FilePermanentSaveFailedException.class);
     }
 }
