@@ -61,8 +61,8 @@ public class LocationServiceImpl implements LocationService {
             .orElseThrow(() -> new LocationKakaoFetchException("해당하는 행정동 데이터가 없습니다."));
 
         Location location = Location.builder()
-            .latitude(latitude)
-            .longitude(longitude)
+            .latitude(toNumeric(latitude))
+            .longitude(toNumeric(longitude))
             .locationNames(locationInfo.addressName())
             .build();
 

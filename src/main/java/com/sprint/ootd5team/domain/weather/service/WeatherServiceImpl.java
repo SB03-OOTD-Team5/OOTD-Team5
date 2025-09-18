@@ -173,8 +173,9 @@ public class WeatherServiceImpl implements WeatherService {
         Profile testProfile, BigDecimal latitude, BigDecimal longitude) {
         List<Weather> weathers = new ArrayList<>();
         for (Map.Entry<String, List<WeatherItem>> entry : itemsByDateSlots.entrySet()) {
-            Weather weather = weatherBuilder.build(testProfile, entry.getValue(), latitude,
-                longitude);
+            Weather weather = weatherBuilder.build(testProfile, entry.getValue(),
+                toNumeric(latitude),
+                toNumeric(longitude));
             weathers.add(weather);
         }
         return weatherRepository.saveAll(weathers);
