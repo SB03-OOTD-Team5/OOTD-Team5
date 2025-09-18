@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.domain.weather.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.ootd5team.domain.location.dto.data.ClientCoords;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.exception.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
@@ -88,7 +89,9 @@ public class WeatherServiceImpl implements WeatherService {
         List<Weather> weathers = saveWeathers(itemsByDateSlots, testProfile, latitude,
             longitude);
 
-        return weathers.stream().map(weatherMapper::toDto).toList();
+        return weathers.stream()
+            .map((weather) -> weatherMapper.toDto(weather, new ClientCoords(latitude, longitude)))
+            .toList();
     }
 
     private List<WeatherDto> getWeatherDtosIfExist(String baseDate, BigDecimal latitude,
@@ -106,7 +109,9 @@ public class WeatherServiceImpl implements WeatherService {
 
         if (!weathers.isEmpty()) {
             log.debug("데이터 {}건 존재", weathers.size());
-            return weathers.stream().map(weatherMapper::toDto).toList();
+            return weathers.stream().map(
+                    (weather) -> weatherMapper.toDto(weather, new ClientCoords(latitude, longitude)))
+                .toList();
         }
         log.debug("데이터 존재 안함");
         return List.of();

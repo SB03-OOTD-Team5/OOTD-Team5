@@ -2,6 +2,7 @@ package com.sprint.ootd5team.domain.location.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.ootd5team.domain.location.dto.data.ClientCoords;
 import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
 import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.location.exception.LocationKakaoFetchException;
@@ -49,7 +50,7 @@ public class LocationServiceImpl implements LocationService {
         //2. 엔티티 변환 & 영속화
         Location location = saveLocation(kakaoResponseDto, latitude, longitude);
 
-        return locationMapper.toDto(location);
+        return locationMapper.toDto(location, new ClientCoords(latitude, longitude));
     }
 
     private Location saveLocation(KakaoResponseDto kakaoResponseDto, BigDecimal latitude,
@@ -123,7 +124,9 @@ public class LocationServiceImpl implements LocationService {
 
         return locationRepository.findByLatitudeAndLongitude(toNumeric(latitude),
                 toNumeric(longitude))
-            .map(locationMapper::toDto).orElse(null);
+            .map(
+                (location -> locationMapper.toDto(location, new ClientCoords(latitude, longitude))))
+            .orElse(null);
 
     }
 
