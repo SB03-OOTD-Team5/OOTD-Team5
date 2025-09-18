@@ -180,8 +180,9 @@ public class WeatherServiceImpl implements WeatherService {
         return weatherRepository.saveAll(weathers);
     }
 
+    //TODO: location 도 같은 로직 사용, util로 뺄것
     // NUMERIC(8,4) → 소수점 이하 4자리, 반올림 적용
-    private BigDecimal toNumeric(BigDecimal value) {
+    public BigDecimal toNumeric(BigDecimal value) {
         if (value == null) {
             return null;
         }
