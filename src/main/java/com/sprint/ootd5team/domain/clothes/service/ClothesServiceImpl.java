@@ -5,6 +5,7 @@ import static org.springframework.util.StringUtils.hasText;
 import com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException;
 import com.sprint.ootd5team.base.exception.clothes.ClothesSaveFailedException;
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundException;
+import com.sprint.ootd5team.base.exception.clothesattribute.AttributeValueNotAllowedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
@@ -183,8 +184,7 @@ public class ClothesServiceImpl implements ClothesService {
         boolean allowed = attribute.getDefs().stream()
             .anyMatch(def -> def.getAttDef().equals(value));
         if (!allowed) {
-            // TODO: 커스텀 예외 (예: ClothesAttributeValueNotAllowedException)로 교체
-            throw new IllegalArgumentException("허용되지 않은 속성값: " + value);
+            throw AttributeValueNotAllowedException.withValue(attribute.getId(), value);
         }
     }
 
@@ -264,8 +264,11 @@ public class ClothesServiceImpl implements ClothesService {
     }
 
     /**
-     * 의상의 속성 리스트에 요청된 속성 목록과 동기화 추가: 요청에 있고, 현재 의상 속성에 없으면 추가 수정: 동일 속성이 존재하지만, 값이 다르면 새 값으로 교체 삭제:
-     * 현재 의상에 있지만, 요청에 없으면 제거 (현재 프론트에선 기존 의상 생성시 선택한 속성에 대해서 제거할 수 없다(기존값 유지 or 수정)
+     * 의상의 속성 리스트에 요청된 속성 목록과 동기화
+     * 추가: 요청에 있고, 현재 의상 속성에 없으면 추가
+     * 수정: 동일 속성이 존재하지만, 값이 다르면 새 값으로 교체
+     * 삭제: 현재 의상에 있지만, 요청에 없으면 제거
+     * (현재 프론트에선 기존 의상 생성시 선택한 속성에 대해서 제거할 수 없다(기존값 유지 or 수정)
      */
     private void applyAttributes(Clothes clothes, List<ClothesAttributeDto> newAttributes) {
         Map<UUID, ClothesAttributeValue> currentMap = clothes.getClothesAttributeValues().stream()

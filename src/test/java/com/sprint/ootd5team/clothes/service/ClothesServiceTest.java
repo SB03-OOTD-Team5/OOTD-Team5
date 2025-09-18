@@ -10,6 +10,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sprint.ootd5team.base.exception.clothes.ClothesSaveFailedException;
+import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundException;
+import com.sprint.ootd5team.base.exception.clothesattribute.AttributeValueNotAllowedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
@@ -267,7 +269,7 @@ class ClothesServiceTest {
 
         // when & then
         assertThatThrownBy(() -> clothesService.create(request, null))
-            .isInstanceOf(IllegalArgumentException.class); // TODO: 이후 커스텀 예외로 교체
+            .isInstanceOf(AttributeValueNotAllowedException.class);
     }
 
 
@@ -284,7 +286,7 @@ class ClothesServiceTest {
 
         // when & then
         assertThatThrownBy(() -> clothesService.create(request, null))
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(AttributeNotFoundException.class);
     }
 
     @Test
