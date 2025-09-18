@@ -1,18 +1,17 @@
 package com.sprint.ootd5team.base.exception.feed;
 
 import com.sprint.ootd5team.base.errorcode.ErrorCode;
-import com.sprint.ootd5team.base.exception.OotdException;
 import java.util.UUID;
-import lombok.Getter;
 
-@Getter
-public class FeedNotFoundException extends OotdException {
+public class FeedNotFoundException extends FeedException {
 
-    private final UUID feedId;
-
-    public FeedNotFoundException(UUID feedId) {
+    public FeedNotFoundException() {
         super(ErrorCode.FEED_NOT_FOUND);
-        this.feedId = feedId;
-        this.addDetail("feedId", feedId);
+    }
+
+    public static FeedNotFoundException withId (UUID feedId) {
+        FeedNotFoundException exception = new FeedNotFoundException();
+        exception.addDetail("feedId", feedId);
+        return exception;
     }
 }

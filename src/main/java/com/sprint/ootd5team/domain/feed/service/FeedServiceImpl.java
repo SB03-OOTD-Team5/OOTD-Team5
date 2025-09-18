@@ -73,7 +73,7 @@ public class FeedServiceImpl implements FeedService {
             switch (request.sortBy()) {
                 case "createdAt" -> nextCursor = lastFeedDto.createdAt().toString();
                 case "likeCount" -> nextCursor = String.valueOf(lastFeedDto.likeCount());
-                default -> throw new InvalidSortOptionException(request.sortBy());
+                default -> throw InvalidSortOptionException.withSortBy(request.sortBy());
             }
             nextIdAfter = lastFeedDto.id();
         }
@@ -178,7 +178,7 @@ public class FeedServiceImpl implements FeedService {
         return feedRepository.findById(feedId)
             .orElseThrow(() -> {
                 log.warn("[FeedService] 유효하지 않은 피드 - feedId:{}", feedId);
-                return new FeedNotFoundException(feedId);
+                return FeedNotFoundException.withId(feedId);
             });
     }
 }

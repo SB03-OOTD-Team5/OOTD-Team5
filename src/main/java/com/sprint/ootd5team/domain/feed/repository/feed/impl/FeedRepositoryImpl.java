@@ -245,7 +245,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                     : null;
                 yield new SortSpecDto(orders, cursorCondition);
             }
-            default -> throw new InvalidSortOptionException(request.sortBy());
+            default -> throw InvalidSortOptionException.withSortBy(request.sortBy());
         };
     }
 }

@@ -1,17 +1,16 @@
 package com.sprint.ootd5team.base.exception.feed;
 
 import com.sprint.ootd5team.base.errorcode.ErrorCode;
-import com.sprint.ootd5team.base.exception.OotdException;
 import lombok.Getter;
 
 @Getter
-public class InvalidSortOptionException extends OotdException {
+public class InvalidSortOptionException extends FeedException {
 
-    private final String sortBy;
+    public InvalidSortOptionException() { super(ErrorCode.INVALID_SORT_OPTION); }
 
-    public InvalidSortOptionException(String sortBy) {
-        super(ErrorCode.INVALID_SORT_OPTION);
-        this.sortBy = sortBy;
-        this.addDetail("sortBy", sortBy);
+    public static InvalidSortOptionException withSortBy (String sortBy) {
+        InvalidSortOptionException exception = new InvalidSortOptionException();
+        exception.addDetail("sortBy", sortBy);
+        return exception;
     }
 }
