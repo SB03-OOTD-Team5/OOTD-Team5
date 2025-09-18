@@ -155,7 +155,7 @@ public class WeatherServiceTest {
 
     @Test
     @DisplayName("위경도가 NUMERIC(8,4) 반올림되어 Repository에 전달된다")
-    void toNumeric_rounding_isAppliedOnRepositoryArgs() {
+    void toNumeric_반올림_레포지토리인자검증() {
         // given
         Profile dummyProfile = new Profile();
         given(profileRepository.findById(eq(FIXED_PROFILE_ID))).willReturn(
@@ -182,8 +182,8 @@ public class WeatherServiceTest {
         ArgumentCaptor<BigDecimal> lonCaptor = ArgumentCaptor.forClass(BigDecimal.class);
         verify(weatherRepository).findAllByForecastedAtAndLatitudeAndLongitude(
             eq(baseDateTimeInstant),
-            latCaptor.capture(),
-            lonCaptor.capture()
+            lonCaptor.capture(),
+            latCaptor.capture()
         );
 
         assertThat(lonCaptor.getValue()).isEqualByComparingTo(new BigDecimal("127.1235"));
