@@ -49,8 +49,9 @@ public class LocalFileStorage implements FileStorage {
             }
 
             Files.createDirectories(target.getParent());
-
-            Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
+            try (InputStream in = input) {
+                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+            }
             return uniqueName;
         } catch (IOException e) {
             throw FileSaveFailedException.withFileName(uniqueName, e);
