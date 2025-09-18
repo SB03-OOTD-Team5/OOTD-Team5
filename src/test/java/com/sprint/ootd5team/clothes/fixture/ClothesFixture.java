@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.clothes.fixture;
 
+import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
@@ -58,7 +59,18 @@ public class ClothesFixture {
             .name(clothes.getName())
             .type(clothes.getType())
             .imageUrl(clothes.getImageUrl())
-            .attributes(List.of())
+            .attributes(
+                clothes.getClothesAttributeValues().stream()
+                    .map(v -> new ClothesAttributeWithDefDto(
+                            v.getAttribute().getId(),
+                            v.getAttribute().getName(),
+                            v.getAttribute().getDefs().stream()
+                                .map(def -> def.getAttDef())
+                                .toList(),
+                            v.getDefValue()
+                        ))
+                        .toList()
+            )
             .createdAt(clothes.getCreatedAt())
             .updatedAt(clothes.getUpdatedAt())
             .build();
