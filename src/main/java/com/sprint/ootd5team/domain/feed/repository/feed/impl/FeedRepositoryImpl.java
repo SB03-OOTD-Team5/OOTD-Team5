@@ -13,7 +13,7 @@ import com.sprint.ootd5team.domain.feed.dto.data.SortSpecDto;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
 import com.sprint.ootd5team.domain.feed.entity.QFeed;
-import com.sprint.ootd5team.domain.feed.exception.InvalidSortOptionException;
+import com.sprint.ootd5team.base.exception.feed.InvalidSortOptionException;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepositoryCustom;
 import com.sprint.ootd5team.domain.like.entity.QFeedLike;
 import com.sprint.ootd5team.domain.profile.entity.QProfile;

@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.domain.feed.exception;
+package com.sprint.ootd5team.base.exception.feed;
 
 import com.sprint.ootd5team.base.errorcode.ErrorCode;
 import com.sprint.ootd5team.base.exception.OotdException;
