@@ -35,6 +35,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -168,14 +170,7 @@ public class ClothesServiceImpl implements ClothesService {
                 clothes.getId(), ownerId);
             return clothesMapper.toDto(clothes);
         } catch (RuntimeException e) {
-            if (imageUrl != null) {
-                try {
-                    fileStorage.delete(imageUrl);
-                    log.warn("[ClothesService] 저장 실패로 업로드 파일 삭제: {}", imageUrl);
-                } catch (Exception ex) {
-                    log.warn("[ClothesService] 삭제 실패: url={}, cause={}", imageUrl, ex.toString());
-                }
-            }
+            deleteFileSafely(imageUrl, "의상 저장 실패 롤백");
             throw ClothesSaveFailedException.withId(clothes.getId());
         }
     }
@@ -239,17 +234,15 @@ public class ClothesServiceImpl implements ClothesService {
 
         // 이미지 수정
         if (image != null && !image.isEmpty()) {
-            String newKey = uploadClothesImage(image);  // 1) 새 이미지 업로드 먼저
+            String newKey = uploadClothesImage(image);  // 새 이미지 업로드
             String oldKey = clothes.getImageUrl();
 
-            clothes.updateClothesImageUrl(newKey);      // 2) 엔티티 반영
-            if (oldKey != null) {
-                try {
-                    fileStorage.delete(oldKey);         // 3) 기존 이미지 제거
-                    log.debug("[clothes] 기존 이미지 삭제 성공: {}", oldKey);
-                } catch (Exception e) {
-                    log.warn("[clothes] 기존 이미지 삭제 실패: {}", oldKey, e);
-                }
+            try {
+                clothes.updateClothesImageUrl(newKey);
+                deleteFileSafely(oldKey, "의상 이미지 교체");
+            } catch (Exception e) {
+                deleteFileSafely(newKey, "의상 수정 롤백");
+                throw e;
             }
         }
 
@@ -316,6 +309,16 @@ public class ClothesServiceImpl implements ClothesService {
         return dtos.stream()
             .map(this::toClothesAttributeValue)
             .collect(Collectors.toList());
+    }
+
+    private void deleteFileSafely(String key, String reason) {
+        if (key == null) return;
+        try {
+            fileStorage.delete(key);
+            log.info("[clothes] 파일 삭제 성공 - key={}, reason={}", key, reason);
+        } catch (Exception e) {
+            log.warn("[clothes] 파일 삭제 실패 - key={}, reason={}, cause={}", key, reason, e.toString());
+        }
     }
 
 
