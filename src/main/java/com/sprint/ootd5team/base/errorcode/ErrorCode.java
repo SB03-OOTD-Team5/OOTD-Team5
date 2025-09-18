@@ -30,6 +30,7 @@ public enum ErrorCode {
     //위치 관련 에러코드
     LOCATION_NOT_FOUND(HttpStatus.NOT_FOUND, "해당하는 위치 데이터가 없습니다"),
     LOCATION_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "카카오 위치 데이터를 가져오는데 실패했습니다."),
+    COORD_CONVERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "좌표 변환에 실패해했습니다."),
 
     // File 관련 에러코드
     FILE_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드 실패 - 재시도 가능"),
@@ -38,7 +39,7 @@ public enum ErrorCode {
     FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 크기 초과"),
 
     //기타 에러코드
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"알수없는 오류가 발생했습니다."),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "알수없는 오류가 발생했습니다."),
 
     // Clothes 관련 에러코드
     CLOTHES_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 의상 입니다.");

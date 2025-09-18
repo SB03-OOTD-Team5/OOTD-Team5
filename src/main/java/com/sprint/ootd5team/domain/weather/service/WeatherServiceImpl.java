@@ -7,6 +7,7 @@ import com.sprint.ootd5team.domain.profile.exception.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.weather.dto.data.WeatherDto;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
+import com.sprint.ootd5team.domain.weather.exception.ConvertCoordFailException;
 import com.sprint.ootd5team.domain.weather.exception.WeatherKmaFetchException;
 import com.sprint.ootd5team.domain.weather.exception.WeatherKmaParseException;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaGridConverter;
@@ -108,18 +109,19 @@ public class WeatherServiceImpl implements WeatherService {
             toNumeric(latitude), toNumeric(longitude));
 
         if (!weathers.isEmpty()) {
-            log.debug("데이터 {}건 존재", weathers.size());
+            log.debug("[Weather] 데이터 {}건 존재", weathers.size());
             return weathers.stream().map(
                     (weather) -> weatherMapper.toDto(weather, new ClientCoords(latitude, longitude)))
                 .toList();
         }
-        log.debug("데이터 존재 안함");
+        log.debug("[Weather] 데이터 존재 안함");
         return List.of();
     }
 
     private String fetchKmaApi(String baseDate, BigDecimal latitude, BigDecimal longitude) {
+        GridXY kmaXY = convertGridXY(latitude, longitude);
+
         try {
-            GridXY kmaXY = convertGridXY(longitude, latitude);
             log.debug(
                 "[Weather] 날씨 정보 조회 요청 longitude:{},latitude:{},x:{},y:{},base date:{},base time:{}",
                 longitude, latitude,
@@ -134,9 +136,11 @@ public class WeatherServiceImpl implements WeatherService {
                     .queryParam("nx", kmaXY.x())
                     .queryParam("ny", kmaXY.y())
                     .build())
-                .retrieve()
-                .bodyToMono(String.class)
+                .exchangeToMono(
+                    clientResponse -> clientResponse.bodyToMono(String.class)
+                )
                 .block(); // TODO:  타임아웃,retrieve 설정
+            log.debug("[Weather] 날씨 정보 조회 완료");
 
             return response;
         } catch (Exception e) {
@@ -145,8 +149,16 @@ public class WeatherServiceImpl implements WeatherService {
     }
 
     private GridXY convertGridXY(BigDecimal latitude, BigDecimal longitude) {
-        return KmaGridConverter.toGrid(longitude, latitude);
-
+        try {
+            GridXY gridXY = KmaGridConverter.toGrid(longitude, latitude);
+            log.debug("[Weather] 좌표변환완료: x:{},y:{}", gridXY.x(), gridXY.y());
+            return gridXY;
+        } catch (Exception e) {
+            ConvertCoordFailException ex = new ConvertCoordFailException();
+            ex.addDetail("latitude", latitude);
+            ex.addDetail("longitude", longitude);
+            throw e;
+        }
     }
 
     private KmaResponseDto parseToKmaResponseDto(String responseJson) {

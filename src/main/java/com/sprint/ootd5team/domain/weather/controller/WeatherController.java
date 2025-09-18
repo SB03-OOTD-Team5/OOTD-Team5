@@ -8,6 +8,7 @@ import com.sprint.ootd5team.domain.weather.service.WeatherService;
 import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/weathers")
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class WeatherController implements WeatherApi {
 
     private final WeatherService weatherService;
     private final LocationService locationService;
+
 
     @GetMapping
     @Override
@@ -34,6 +37,7 @@ public class WeatherController implements WeatherApi {
             return ResponseEntity.status(HttpStatus.OK).body(weatherDtos);
         } catch (Exception e) {
             //TODO: body에 ErrorResponse 넣기
+            log.error(e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
@@ -49,6 +53,7 @@ public class WeatherController implements WeatherApi {
             return ResponseEntity.status(HttpStatus.OK).body(locationDto);
         } catch (Exception e) {
             //TODO: body에 ErrorResponse 넣기
+            log.error(e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
