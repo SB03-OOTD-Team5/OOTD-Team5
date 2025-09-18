@@ -125,6 +125,7 @@ public class ClothesServiceImpl implements ClothesService {
      * @throws UserNotFoundException   주어진 ownerId 에 해당하는 사용자가 없는 경우
      * @throws FileSaveFailedException 이미지 업로드에 실패한 경우
      */
+    @Transactional
     @Override
     public ClothesDto create(ClothesCreateRequest request, MultipartFile image) {
         log.info("[ClothesService] 새 의상 등록 요청: ownerId={}, name={}, type={}, imagePresent={}",
