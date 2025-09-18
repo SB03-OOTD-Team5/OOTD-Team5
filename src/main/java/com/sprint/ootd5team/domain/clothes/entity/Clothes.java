@@ -49,8 +49,28 @@ public class Clothes extends BaseUpdatableEntity {
     private List<ClothesAttributeValue> clothesAttributeValues = new ArrayList<>();
 
     public void addClothesAttributeValue(ClothesAttributeValue value) {
-        clothesAttributeValues.add(value);
-        value.setClothes(this);
+        if (value == null) {
+            return;
+        }
+        if (!clothesAttributeValues.contains(value)) {
+            clothesAttributeValues.add(value);
+            value.setClothes(this);
+        }
+    }
+
+    public void removeClothesAttributeValue(ClothesAttributeValue value) {
+        if (value == null) {
+            return;
+        }
+
+        clothesAttributeValues.remove(value);
+        if (value.getClothes() == this) {
+            value.setClothes(null);
+        }
+    }
+
+    public void updateClothesAttributeValue(ClothesAttributeValue value, String newValue) {
+        value.setDefValue(newValue);
     }
 
     public void updateClothesName(String name) {
@@ -65,13 +85,4 @@ public class Clothes extends BaseUpdatableEntity {
         this.imageUrl = imageUrl;
     }
 
-//    public void updateAttributes(List<ClothesAttributeWithDefDto> newAttributes) {
-//        this.clothesAttributeValues.clear();
-//        if (newAttributes != null) {
-//            newAttributes.forEach(attrDto -> {
-//                ClothesAttribute attr = ClothesAttribute.createFromDto(attrDto, this);
-//                this.clothesAttributeValues.add(attr);
-//            });
-//        }
-//    }
 }
