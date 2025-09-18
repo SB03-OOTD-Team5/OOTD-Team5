@@ -7,6 +7,7 @@ import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.RedisJwtRegistry;
 import com.sprint.ootd5team.base.security.RedisLockProvider;
+import com.sprint.ootd5team.base.security.SpaCsrfTokenRequestHandler;
 import com.sprint.ootd5team.base.security.handler.Http403ForbiddenAccessDeniedHandler;
 import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
 import com.sprint.ootd5team.base.security.handler.JwtLoginSuccessHandler;
@@ -103,7 +104,7 @@ public class SecurityConfig {
             // csrf 설정
             .csrf(csrf -> csrf
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
             )
             // 로그인 설정
             .formLogin(login -> login

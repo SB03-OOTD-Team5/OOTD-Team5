@@ -115,13 +115,23 @@ public class RedisJwtRegistry implements JwtRegistry {
                     if (tokens.get(i) instanceof JwtInformation jwtInfo &&
                         jwtInfo.getRefreshToken().equals(refreshToken)) {
 
+                        // 기존 토큰 인덱스 제거
                         removeTokenIndex(jwtInfo.getAccessToken(), jwtInfo.getRefreshToken());
-                        jwtInfo.rotate(newJwtInformation.getAccessToken(),
-                            newJwtInformation.getRefreshToken());
+
+                        // 새 토큰으로 갱신
+                        jwtInfo.rotate(newJwtInformation.getAccessToken(), newJwtInformation.getRefreshToken());
+
+                        // Redis에 안전하게 반영
                         redisTemplate.opsForList().set(userKey, i, jwtInfo);
+
+                        // 새 토큰 인덱스 추가
                         addTokenIndex(newJwtInformation.getAccessToken(),
-                            newJwtInformation.getRefreshToken());
+                            newJwtInformation.getRefreshToken()
+                            );
+
+                        // Redis TTL을 refreshToken 만료 시간 기준으로 맞춤
                         redisTemplate.expire(userKey, DEFAULT_TTL);
+
                         break;
                     }
                 }
