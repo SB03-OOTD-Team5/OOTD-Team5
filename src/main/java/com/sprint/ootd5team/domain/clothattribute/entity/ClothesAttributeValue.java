@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -60,8 +61,8 @@ public class ClothesAttributeValue extends BaseEntity {
 	@Setter
 	private String defValue; // 선택된 값(문자열)
 
-	public ClothesAttributeValue(Clothes cloths, ClothesAttribute attribute, String value){
-		this.clothes = cloths;
+	public ClothesAttributeValue(Clothes clothes, ClothesAttribute attribute, String value){
+		this.clothes = clothes;
 		this.attribute = attribute;
 		this.defValue = value;
 	}

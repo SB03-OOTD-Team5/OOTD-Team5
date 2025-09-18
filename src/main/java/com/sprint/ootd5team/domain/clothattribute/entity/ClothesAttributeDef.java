@@ -1,6 +1,6 @@
 package com.sprint.ootd5team.domain.clothattribute.entity;
 
-import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
+import com.sprint.ootd5team.base.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ClothesAttributeDef extends BaseUpdatableEntity {
+public class ClothesAttributeDef extends BaseEntity {
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "attribute_id", nullable = false)
