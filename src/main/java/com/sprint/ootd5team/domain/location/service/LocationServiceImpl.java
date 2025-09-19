@@ -2,15 +2,19 @@ package com.sprint.ootd5team.domain.location.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.ootd5team.base.util.CoordinateUtils;
 import com.sprint.ootd5team.domain.location.dto.data.ClientCoords;
 import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
 import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.location.exception.LocationKakaoFetchException;
 import com.sprint.ootd5team.domain.location.mapper.LocationMapper;
 import com.sprint.ootd5team.domain.location.repository.LocationRepository;
+import com.sprint.ootd5team.domain.profile.entity.Profile;
+import com.sprint.ootd5team.domain.profile.exception.ProfileNotFoundException;
+import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.weather.external.kakao.KakaoResponseDto;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -19,38 +23,69 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Slf4j
 @Service
-public class LocationServiceImpl implements LocationService {
+public class LocationServiceImpl implements LocationService, LocationQueryService {
 
     private final WebClient kakaoApiClient;
     private final LocationRepository locationRepository;
     private final ObjectMapper mapper;
     private final LocationMapper locationMapper;
+    private final ProfileRepository profileRepository;
 
     public LocationServiceImpl(@Qualifier("kakaoApiClient") WebClient kakaoApiClient,
-        LocationRepository locationRepository, LocationMapper locationMapper) {
+        LocationRepository locationRepository, LocationMapper locationMapper,
+        ProfileRepository profileRepository) {
         this.kakaoApiClient = kakaoApiClient;
         this.locationRepository = locationRepository;
         this.mapper = new ObjectMapper();
         this.locationMapper = locationMapper;
+        this.profileRepository = profileRepository;
+
     }
 
     @Override
     @Transactional
-    public WeatherAPILocationDto fetchLocation(BigDecimal latitude, BigDecimal longitude) {
+    public WeatherAPILocationDto fetchLocation(BigDecimal latitude, BigDecimal longitude,
+        UUID userId) {
+        log.debug(" userId: {}", userId);
+        Profile profile = profileRepository.findByUserId(userId)
+            .orElseThrow(ProfileNotFoundException::new);
 
-        //0. 이미 존재하는 데이터면 가져와서 전달 후 종료
-        WeatherAPILocationDto existed = getLocationDtoIfExist(latitude, longitude);
-        log.debug("[location] 해당 데이터 존재 유무: {}", existed != null);
-        if (existed != null) {
-            return existed;
-        }
-        //1. kakao api 데이터 조회 & validation 체크
-        String response = fetchKakaoApi(latitude, longitude);
-        KakaoResponseDto kakaoResponseDto = parseToKakaoResponseDto(response);
-        //2. 엔티티 변환 & 영속화
-        Location location = saveLocation(kakaoResponseDto, latitude, longitude);
+        Location location = findOrCreateLocation(latitude, longitude);
+        // 프로필 위치 업데이트
+        profile.relocate(location.getLatitude(), location.getLongitude(),
+            location.getLocationNames());
 
         return locationMapper.toDto(location, new ClientCoords(latitude, longitude));
+    }
+
+    /* 날씨 데이터 요청 시 지명만 전달 */
+    @Transactional
+    @Override
+    public String getLocationNames(BigDecimal latitude, BigDecimal longitude) {
+        Location location = findOrCreateLocation(latitude, longitude);
+        return location.getLocationNames();
+    }
+
+
+    private Location findOrCreateLocation(BigDecimal latitude, BigDecimal longitude) {
+        //0. 이미 존재하는 데이터면 가져와서 전달
+        Location cached = getLocationIfExist(latitude, longitude);
+        log.debug("[location] 해당 데이터 존재 유무: {}", cached != null);
+        if (cached != null) {
+            return cached;
+        }
+        //1. kakao api 데이터 조회 & validation 체크
+        KakaoResponseDto dto = parseToKakaoResponseDto(fetchKakaoApi(latitude, longitude));
+        //2. 영속화
+        return saveLocation(dto, latitude, longitude);
+    }
+
+    private Location getLocationIfExist(BigDecimal latitude,
+        BigDecimal longitude) {
+        log.debug("이미 존재하는 location 데이터 확인 - latitude:{},longitude:{}", latitude, longitude);
+        return locationRepository.findByLatitudeAndLongitude(CoordinateUtils.toNumeric(latitude),
+            CoordinateUtils.toNumeric(longitude)).orElse(null);
+
     }
 
     private Location saveLocation(KakaoResponseDto kakaoResponseDto, BigDecimal latitude,
@@ -62,8 +97,8 @@ public class LocationServiceImpl implements LocationService {
             .orElseThrow(() -> new LocationKakaoFetchException("해당하는 행정동 데이터가 없습니다."));
 
         Location location = Location.builder()
-            .latitude(toNumeric(latitude))
-            .longitude(toNumeric(longitude))
+            .latitude(CoordinateUtils.toNumeric(latitude))
+            .longitude(CoordinateUtils.toNumeric(longitude))
             .locationNames(locationInfo.addressName())
             .build();
 
@@ -118,24 +153,5 @@ public class LocationServiceImpl implements LocationService {
         }
     }
 
-    private WeatherAPILocationDto getLocationDtoIfExist(BigDecimal latitude,
-        BigDecimal longitude) {
-        log.debug("이미 존재하는 location 데이터 확인 - latitude:{},longitude:{}", latitude, longitude);
 
-        return locationRepository.findByLatitudeAndLongitude(toNumeric(latitude),
-                toNumeric(longitude))
-            .map(
-                (location -> locationMapper.toDto(location, new ClientCoords(latitude, longitude))))
-            .orElse(null);
-
-    }
-
-    //TODO: weather 도 같은 로직 사용, util로 뺄것
-    // NUMERIC(8,4) → 소수점 이하 4자리, 반올림 적용
-    public BigDecimal toNumeric(BigDecimal value) {
-        if (value == null) {
-            return null;
-        }
-        return value.setScale(4, RoundingMode.HALF_UP);
-    }
 }

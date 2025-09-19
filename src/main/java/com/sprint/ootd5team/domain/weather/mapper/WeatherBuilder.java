@@ -25,7 +25,7 @@ public class WeatherBuilder {
         "yyyyMMddHHmm");
 
     public Weather build(Profile profile, List<WeatherItem> weatherItems, BigDecimal latitude,
-        BigDecimal longitude) {
+        BigDecimal longitude, String locationNames) {
         log.debug("[weather builder] 진입, weatherItems.size(): {}", weatherItems.size());
         if (weatherItems.isEmpty()) {
             throw new WeatherNotFoundException();
@@ -37,9 +37,9 @@ public class WeatherBuilder {
         Instant forecastAt = toInstantWithZone(any.fcstDate(), any.fcstTime());
         Integer xCoord = any.nx();
         Integer yCoord = any.ny();
+        log.debug("위도:{}, 경도:{}, nx:{}, ny:{} ", latitude, longitude, xCoord, yCoord);
 
         // 기본 값 셋팅
-        String locationNames = "서울시 중구"; // TODO: kakao api에서 로드
         SkyStatus skyStatus = SkyStatus.CLEAR;
         PrecipitationType precipitationType = PrecipitationType.NONE;
         double precipitationAmount = 0d;
@@ -57,6 +57,8 @@ public class WeatherBuilder {
         for (WeatherItem item : weatherItems) {
             String value = item.fcstValue();
             KmaCategoryType categoryType = KmaCategoryType.of(item.category());
+            log.debug("category type :{}, 값:{} ", categoryType, value);
+
             switch (categoryType) {
                 case SKY -> skyStatus = toSkyStatus(value);
                 case PTY -> {

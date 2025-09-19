@@ -1,7 +1,9 @@
 package com.sprint.ootd5team.domain.weather.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.ootd5team.base.util.CoordinateUtils;
 import com.sprint.ootd5team.domain.location.dto.data.ClientCoords;
+import com.sprint.ootd5team.domain.location.service.LocationQueryService;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.exception.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
@@ -18,7 +20,6 @@ import com.sprint.ootd5team.domain.weather.mapper.WeatherBuilder;
 import com.sprint.ootd5team.domain.weather.mapper.WeatherMapper;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -47,55 +48,59 @@ public class WeatherServiceImpl implements WeatherService {
     private final ProfileRepository profileRepository;
     private final WeatherMapper weatherMapper;
     private final String baseTime = "0200";
+    private final LocationQueryService locationQueryService;
 
 
     public WeatherServiceImpl(@Qualifier("kmaApiClient") WebClient kmaApiClient,
         WeatherRepository weatherRepository,
         WeatherBuilder weatherBuilder, ProfileRepository profileRepository,
-        WeatherMapper weatherMapper) {
+        WeatherMapper weatherMapper, LocationQueryService locationQueryService) {
         this.kmaApiClient = kmaApiClient;
         this.mapper = new ObjectMapper();
         this.weatherRepository = weatherRepository;
         this.weatherBuilder = weatherBuilder;
         this.profileRepository = profileRepository;
         this.weatherMapper = weatherMapper;
+        this.locationQueryService = locationQueryService;
     }
 
     @Override
     @Transactional
-    public List<WeatherDto> fetchWeatherByLocation(BigDecimal latitude, BigDecimal longitude) {
+    public List<WeatherDto> fetchWeatherByLocation(BigDecimal latitude, BigDecimal longitude,
+        UUID userId) {
         final String baseDate = LocalDate.now(ZoneId.of("Asia/Seoul"))
             .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-        //TODO: temp, 실제 사용자 프로필 가져오기
-        Profile testProfile = profileRepository.findById(
-                UUID.fromString("036220a1-1223-4ba5-943e-48452526cbe9"))
+        log.debug(" userId: {}", userId);
+        Profile profile = profileRepository.findByUserId(userId)
             .orElseThrow(ProfileNotFoundException::new);
 
-        //0. 이미 존재하는 데이터면 가져와서 전달 후 종료
-        List<WeatherDto> existed = getWeatherDtosIfExist(baseDate, latitude, longitude);
-        if (!existed.isEmpty()) {
-            return existed;
-        }
-
-        //1. 기상청 api 데이터 조회
-        String response = fetchKmaApi(baseDate, latitude, longitude);
-        KmaResponseDto kmaResponseDto = parseToKmaResponseDto(response);
-        //2. 기상청 api 데이터 valid check
-        validateKmaData(kmaResponseDto);
-        //3. 날짜별 데이터 묶음
-        Map<String, List<WeatherItem>> itemsByDateSlots = groupByForecastSlots(
-            kmaResponseDto.response().body().items().weatherItems());
-        //4. 엔티티 변환 & 영속화
-        List<Weather> weathers = saveWeathers(itemsByDateSlots, testProfile, latitude,
-            longitude);
-
+        List<Weather> weathers = findOrCreateWeathers(latitude, longitude, baseDate, profile);
         return weathers.stream()
             .map((weather) -> weatherMapper.toDto(weather, new ClientCoords(latitude, longitude)))
             .toList();
     }
 
-    private List<WeatherDto> getWeatherDtosIfExist(String baseDate, BigDecimal latitude,
+    private List<Weather> findOrCreateWeathers(BigDecimal latitude,
+        BigDecimal longitude, String baseDate, Profile profile) {
+        //0. 이미 존재하는 데이터면 가져와서 전달
+        List<Weather> cached = getWeathersIfExist(baseDate, latitude, longitude);
+        log.debug("[Weather] 해당 데이터 존재 유무: {}", !cached.isEmpty());
+        if (!cached.isEmpty()) {
+            return cached;
+        }
+        //1. 기상청 api 데이터 조회
+        KmaResponseDto dto = parseToKmaResponseDto(fetchKmaApi(baseDate, latitude, longitude));
+        //2.   validation 체크
+        validateKmaData(dto);
+        //3. 날짜별 데이터 묶음
+        Map<String, List<WeatherItem>> itemsByDateSlots = groupByForecastSlots(
+            dto.response().body().items().weatherItems());
+        //4. 엔티티 변환 & 영속화
+        return saveWeathers(itemsByDateSlots, profile, latitude, longitude);
+    }
+
+    private List<Weather> getWeathersIfExist(String baseDate, BigDecimal latitude,
         BigDecimal longitude
     ) {
         Instant baseDateTimeInstant = weatherBuilder.toInstantWithZone(baseDate, baseTime);
@@ -106,13 +111,11 @@ public class WeatherServiceImpl implements WeatherService {
 
         List<Weather> weathers = weatherRepository.findAllByForecastedAtAndLatitudeAndLongitude(
             baseDateTimeInstant,
-            toNumeric(latitude), toNumeric(longitude));
+            CoordinateUtils.toNumeric(latitude), CoordinateUtils.toNumeric(longitude));
 
         if (!weathers.isEmpty()) {
             log.debug("[Weather] 데이터 {}건 존재", weathers.size());
-            return weathers.stream().map(
-                    (weather) -> weatherMapper.toDto(weather, new ClientCoords(latitude, longitude)))
-                .toList();
+            return weathers;
         }
         log.debug("[Weather] 데이터 존재 안함");
         return List.of();
@@ -189,22 +192,15 @@ public class WeatherServiceImpl implements WeatherService {
     private List<Weather> saveWeathers(Map<String, List<WeatherItem>> itemsByDateSlots,
         Profile testProfile, BigDecimal latitude, BigDecimal longitude) {
         List<Weather> weathers = new ArrayList<>();
+        String locationNames = locationQueryService.getLocationNames(latitude, longitude);
         for (Map.Entry<String, List<WeatherItem>> entry : itemsByDateSlots.entrySet()) {
             Weather weather = weatherBuilder.build(testProfile, entry.getValue(),
-                toNumeric(latitude),
-                toNumeric(longitude));
+                CoordinateUtils.toNumeric(latitude),
+                CoordinateUtils.toNumeric(longitude), locationNames);
             weathers.add(weather);
         }
         return weatherRepository.saveAll(weathers);
     }
 
-    //TODO: location 도 같은 로직 사용, util로 뺄것
-    // NUMERIC(8,4) → 소수점 이하 4자리, 반올림 적용
-    public BigDecimal toNumeric(BigDecimal value) {
-        if (value == null) {
-            return null;
-        }
-        return value.setScale(4, RoundingMode.HALF_UP);
-    }
 
 }
