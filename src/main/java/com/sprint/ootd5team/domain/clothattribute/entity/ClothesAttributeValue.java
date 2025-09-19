@@ -60,8 +60,8 @@ public class ClothesAttributeValue extends BaseEntity {
 	@Setter
 	private String defValue; // 선택된 값(문자열)
 
-	public ClothesAttributeValue(Clothes cloths, ClothesAttribute attribute, String value){
-		this.clothes = cloths;
+	public ClothesAttributeValue(Clothes clothes, ClothesAttribute attribute, String value){
+		this.clothes = clothes;
 		this.attribute = attribute;
 		this.defValue = value;
 	}

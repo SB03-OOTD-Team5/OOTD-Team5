@@ -16,6 +16,7 @@ import com.sprint.ootd5team.base.security.handler.LoginFailureHandler;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import java.util.List;
 import java.util.stream.IntStream;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
@@ -50,6 +51,8 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 @ConditionalOnProperty(name = "app.security.enabled", matchIfMissing = true, havingValue = "true")
 public class SecurityConfig {
 
+    @Value("${app.csrf.enabled:true}")
+    private boolean csrfEnabled;
     /**
      * 현재 적용된 필터체인 목록 표시
      * @param filterChain 시큐리티 필터체인
@@ -102,10 +105,14 @@ public class SecurityConfig {
         throws Exception {
         http
             // csrf 설정
-            .csrf(csrf -> csrf
-                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
-            )
+            .csrf(csrf -> {
+                if(csrfEnabled){
+                    csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler());
+                    } else {
+                    csrf.disable();
+                }
+            })
             // 로그인 설정
             .formLogin(login -> login
                 .loginProcessingUrl("/api/auth/sign-in")

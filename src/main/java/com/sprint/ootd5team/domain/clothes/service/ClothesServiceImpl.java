@@ -1,13 +1,21 @@
 package com.sprint.ootd5team.domain.clothes.service;
 
+import static org.springframework.util.StringUtils.hasText;
+
+import com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException;
+import com.sprint.ootd5team.base.exception.clothes.ClothesSaveFailedException;
+import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundException;
+import com.sprint.ootd5team.base.exception.clothesattribute.AttributeValueNotAllowedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeValue;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
+import com.sprint.ootd5team.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
@@ -19,9 +27,11 @@ import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,6 +55,7 @@ public class ClothesServiceImpl implements ClothesService {
     private final FileStorage fileStorage;
     private final UserRepository userRepository;
     private final ClothesAttributeRepository attributeRepository;
+    private final AuthService authService;
 
     /**
      * 특정 사용자의 의상 목록을 조회한다.
@@ -133,20 +144,7 @@ public class ClothesServiceImpl implements ClothesService {
             });
 
         // 2. 속성 값 선행 검증 및 수집
-        List<ClothesAttributeValue> cavs = new ArrayList<>();
-        if (request.attributes() != null) {
-            for (ClothesAttributeDto dto : request.attributes()) {
-                ClothesAttribute attr = attributeRepository.findById(dto.definitionId())
-                    .orElseThrow(() -> {
-                        log.error("[ClothesService] 속성 정의 없음: definitionId={}", dto.definitionId());
-                        throw new IllegalArgumentException("존재하지 않는 속성 정의");
-                        //TODO: return ClothesAttributeNotFoundException.withId(dto.definitionId());
-                    });
-
-                validateAttributeValue(attr, dto.value());
-                cavs.add(new ClothesAttributeValue(attr, dto.value()));
-            }
-        }
+        List<ClothesAttributeValue> cavs = toClothesAttributeValues(request.attributes());
 
         // 3. 이미지 업로드
         String imageUrl = null;
@@ -172,15 +170,8 @@ public class ClothesServiceImpl implements ClothesService {
                 clothes.getId(), ownerId);
             return clothesMapper.toDto(clothes);
         } catch (RuntimeException e) {
-            if (imageUrl != null) {
-                try {
-                    fileStorage.delete(imageUrl);
-                    log.warn("[ClothesService] 저장 실패로 업로드 파일 삭제: {}", imageUrl);
-                } catch (Exception ex) {
-                    log.warn("[ClothesService] 삭제 실패: url={}, cause={}", imageUrl, ex.toString());
-                }
-            }
-            throw e;
+            deleteFileSafely(imageUrl, "의상 저장 실패 롤백");
+            throw ClothesSaveFailedException.withId(clothes.getId());
         }
     }
 
@@ -188,8 +179,7 @@ public class ClothesServiceImpl implements ClothesService {
         boolean allowed = attribute.getDefs().stream()
             .anyMatch(def -> def.getAttDef().equals(value));
         if (!allowed) {
-            // TODO: 커스텀 예외 (예: ClothesAttributeValueNotAllowedException)로 교체
-            throw new IllegalArgumentException("허용되지 않은 속성값: " + value);
+            throw AttributeValueNotAllowedException.withValue(attribute.getId(), value);
         }
     }
 
@@ -208,7 +198,146 @@ public class ClothesServiceImpl implements ClothesService {
                 image.getContentType()
             );
         } catch (IOException e) {
+            log.warn("[clothes] 이미지 업로드 실패 {}", e.getMessage());
             throw FileSaveFailedException.withFileName(image.getOriginalFilename());
         }
     }
+
+    /**
+     * 의상 정보 수정
+     *
+     * 이미지: 새 파일 업로드 후 기존 파일 삭제
+     * 속성: 요청된 속성과 현재 속성을 비교하여 추가/수정/삭제
+     */
+    @Transactional
+    @Override
+    public ClothesDto update(UUID clothesId, ClothesUpdateRequest request, MultipartFile image) {
+        Clothes clothes = clothesRepository.findById(clothesId)
+            .orElseThrow(() -> ClothesNotFoundException.withId(clothesId));
+
+        UUID ownerId = clothes.getOwner().getId();
+        log.info("[clothes] 수정 요청 - clothesId: {}, ownerId: {}", clothesId, ownerId);
+
+        String newName = request.name();
+        ClothesType newType = request.type();
+        List<ClothesAttributeDto> newAttributes = request.attributes();
+
+        // 이름 수정
+        if (hasText(newName) && !newName.equals(clothes.getName())) {
+            clothes.updateClothesName(newName);
+        }
+
+        // 타입 수정
+        if (newType != null && !newType.equals(clothes.getType())) {
+            clothes.updateClothesType(newType);
+        }
+
+        // 이미지 수정
+        if (image != null && !image.isEmpty()) {
+            String newKey = uploadClothesImage(image);  // 새 이미지 업로드
+            String oldKey = clothes.getImageUrl();
+
+            try {
+                clothes.updateClothesImageUrl(newKey);
+                deleteFileSafely(oldKey, "의상 이미지 교체");
+            } catch (Exception e) {
+                deleteFileSafely(newKey, "의상 수정 롤백");
+                throw e;
+            }
+        }
+
+        // 속성 수정
+        if (newAttributes != null) {
+            applyAttributes(clothes, request.attributes());
+        }
+
+        log.info("[clothes] 수정 완료 - clothesId: {}, name: {}, type: {}, imageUrl: {}",
+            clothesId, clothes.getName(), clothes.getType(), clothes.getImageUrl());
+        return clothesMapper.toDto(clothes);
+    }
+
+    /**
+     * 의상의 속성 리스트에 요청된 속성 목록과 동기화
+     * 추가: 요청에 있고, 현재 의상 속성에 없으면 추가
+     * 수정: 동일 속성이 존재하지만, 값이 다르면 새 값으로 교체
+     * 삭제: 현재 의상에 있지만, 요청에 없으면 제거
+     * (현재 프론트에선 기존 의상 생성시 선택한 속성에 대해서 제거할 수 없다(기존값 유지 or 수정)
+     */
+    private void applyAttributes(Clothes clothes, List<ClothesAttributeDto> newAttributes) {
+        Map<UUID, ClothesAttributeValue> currentMap = clothes.getClothesAttributeValues().stream()
+            .collect(Collectors.toMap(cav -> cav.getAttribute().getId(), cav -> cav));
+
+        Set<UUID> requestIds = newAttributes.stream()
+            .map(ClothesAttributeDto::definitionId)
+            .collect(Collectors.toSet());
+
+        for (ClothesAttributeDto dto : newAttributes) {
+            ClothesAttributeValue newCav = toClothesAttributeValue(dto); // <-- 공통 메서드 활용
+            ClothesAttributeValue existing = currentMap.get(dto.definitionId());
+
+            if (existing == null) {
+                clothes.addClothesAttributeValue(newCav);
+            } else if (!existing.getDefValue().equals(newCav.getDefValue())) {
+                clothes.updateClothesAttributeValue(existing, newCav.getDefValue());
+            }
+        }
+
+        // 요청에 없는 속성 제거
+        clothes.getClothesAttributeValues().removeIf(
+            cav -> !requestIds.contains(cav.getAttribute().getId())
+        );
+    }
+
+    /**
+     * ClothesAttributeDto → ClothesAttributeValue 변환 (검증 포함)
+     */
+    private ClothesAttributeValue toClothesAttributeValue(ClothesAttributeDto dto) {
+        ClothesAttribute attr = attributeRepository.findById(dto.definitionId())
+            .orElseThrow(() -> AttributeNotFoundException.withId(dto.definitionId()));
+
+        validateAttributeValue(attr, dto.value());
+        return new ClothesAttributeValue(attr, dto.value());
+    }
+
+    /**
+     * ClothesAttributeDto 리스트 → ClothesAttributeValue 리스트 변환
+     */
+    private List<ClothesAttributeValue> toClothesAttributeValues(List<ClothesAttributeDto> dtos) {
+        if (dtos == null) {
+            return List.of();
+        }
+        return dtos.stream()
+            .map(this::toClothesAttributeValue)
+            .collect(Collectors.toList());
+    }
+
+    private void deleteFileSafely(String key, String reason) {
+        if (key == null) return;
+        try {
+            fileStorage.delete(key);
+            log.info("[clothes] 파일 삭제 성공 - key={}, reason={}", key, reason);
+        } catch (Exception e) {
+            log.warn("[clothes] 파일 삭제 실패 - key={}, reason={}, cause={}", key, reason, e.toString());
+        }
+    }
+
+    @Transactional
+    @Override
+    public void delete(UUID clothesId) {
+        UUID currentUserId = authService.getCurrentUserId();
+
+        Clothes clothes = clothesRepository.findById(clothesId)
+            .orElseThrow(() -> {
+                log.warn("[clothes] 삭제 실패 - 존재하지 않는 clothesId: {}", clothesId);
+                throw ClothesNotFoundException.withId(clothesId);
+            });
+
+        if (!clothes.getOwner().getId().equals(currentUserId)) {
+            throw new SecurityException();
+        }
+
+        clothesRepository.deleteById(clothesId);
+        log.info("[clothes] 삭제 완료 - ownerId={}", currentUserId);
+    }
+
 }

@@ -266,6 +266,3 @@ CREATE INDEX IF NOT EXISTS idx_feed_comments_feed_id
 -- tbl_feed_likes index
 CREATE INDEX IF NOT EXISTS idx_feed_likes_feed_id
     ON tbl_feed_likes(feed_id);
-
-ALTER TABLE tbl_feed_clothes
-    ADD CONSTRAINT uq_feed_clothes UNIQUE (feed_id, clothes_id);

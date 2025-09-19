@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.domain.clothattribute.entity;
 
-import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
+import com.sprint.ootd5team.base.entity.BaseEntity;
+import com.sprint.ootd5team.base.exception.clothesattribute.InvalidAttributeException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -23,7 +24,7 @@ import lombok.NoArgsConstructor;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ClothesAttributeDef extends BaseUpdatableEntity {
+public class ClothesAttributeDef extends BaseEntity {
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "attribute_id", nullable = false)
@@ -37,5 +38,9 @@ public class ClothesAttributeDef extends BaseUpdatableEntity {
 	public ClothesAttributeDef(ClothesAttribute attribute, String attDef) {
 		this.attribute = attribute;
 		this.attDef = attDef;
+	}
+	void setAttribute(ClothesAttribute attribute){
+		if(attribute == null){throw new InvalidAttributeException();}
+		this.attribute = attribute;
 	}
 }

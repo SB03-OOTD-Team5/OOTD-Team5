@@ -1,6 +1,6 @@
 package com.sprint.ootd5team.domain.clothes.dto.request;
 
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -16,7 +16,7 @@ public record ClothesUpdateRequest(
     @NotNull
     ClothesType type,
 
-    List<ClothesAttributeWithDefDto> attributes
+    List<ClothesAttributeDto> attributes
 ) {
 
 }
