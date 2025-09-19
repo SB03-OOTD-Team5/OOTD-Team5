@@ -8,6 +8,7 @@ import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundExc
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeValueNotAllowedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
@@ -35,8 +36,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -56,6 +55,7 @@ public class ClothesServiceImpl implements ClothesService {
     private final FileStorage fileStorage;
     private final UserRepository userRepository;
     private final ClothesAttributeRepository attributeRepository;
+    private final AuthService authService;
 
     /**
      * 특정 사용자의 의상 목록을 조회한다.
@@ -321,5 +321,23 @@ public class ClothesServiceImpl implements ClothesService {
         }
     }
 
+    @Transactional
+    @Override
+    public void delete(UUID clothesId) {
+        UUID currentUserId = authService.getCurrentUserId();
+
+        Clothes clothes = clothesRepository.findById(clothesId)
+            .orElseThrow(() -> {
+                log.warn("[clothes] 삭제 실패 - 존재하지 않는 clothesId: {}", clothesId);
+                throw ClothesNotFoundException.withId(clothesId);
+            });
+
+        if (!clothes.getOwner().getId().equals(currentUserId)) {
+            throw new SecurityException();
+        }
+
+        clothesRepository.deleteById(clothesId);
+        log.info("[clothes] 삭제 완료 - ownerId={}", currentUserId);
+    }
 
 }

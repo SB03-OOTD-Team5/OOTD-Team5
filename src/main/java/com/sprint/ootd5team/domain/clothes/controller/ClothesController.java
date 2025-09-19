@@ -65,7 +65,12 @@ public class ClothesController implements ClothesApi {
 
     @Override
     public ResponseEntity<Void> deleteClothes(UUID clothesId) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        log.info("[ClothesController] 삭제 요청 수신: clothesId={}", clothesId);
+        clothesService.delete(clothesId);
+
+        log.info("[ClothesController] 삭제 응답 완료");
+
+        return ResponseEntity.noContent().build();
     }
 
     @Override

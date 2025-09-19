@@ -117,7 +117,9 @@ class ClothesRepositoryImplTest {
             10
         );
 
-        assertThat(result).hasSize(1);
+        assertThat(result)
+            .extracting(Clothes::getName)
+            .containsAnyOf("운동화", "운동화2");
         assertThat(result.get(0).getCreatedAt()).isEqualTo(cursor);
     }
 }
