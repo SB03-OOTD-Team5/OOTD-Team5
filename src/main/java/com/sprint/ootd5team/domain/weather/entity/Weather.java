@@ -2,6 +2,7 @@ package com.sprint.ootd5team.domain.weather.entity;
 
 
 import com.sprint.ootd5team.base.entity.BaseEntity;
+import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.enums.SkyStatus;
 import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
@@ -9,6 +10,11 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -82,11 +88,12 @@ public class Weather extends BaseEntity {
     @Column
     private Double windspeed;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "windspeed_level")
     private WindspeedLevel windspeedLevel;
 
-//    @ManyToOne(fetch = FetchType.LAZY )
-//    @JoinColumn(name = "profile_id", nullable = false)
-//    private Profile profile;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id", nullable = false)
+    private Profile profile;
 
 }
