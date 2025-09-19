@@ -13,9 +13,9 @@ public abstract class ProfileMapper {
     @Mapping(target = "location", expression = "java(getLocation(profile))")
     public abstract ProfileDto toDto(Profile profile);
 
-    protected Location getLocation(Profile profile){
-        return new Location(profile.getLatitude(),profile.getLongitude(),profile.getXCoord(),
-            profile.getYCoord(), profile.getLocationNames());
+    protected Location getLocation(Profile profile) {
+        return new Location(profile.getLatitude(), profile.getLongitude(), profile.getXCoord(),
+            profile.getYCoord(), profile.getLocationNames(), null);
     }
 
 }
