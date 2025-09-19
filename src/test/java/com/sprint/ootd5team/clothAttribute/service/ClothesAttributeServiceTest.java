@@ -18,6 +18,7 @@ import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
 import com.sprint.ootd5team.domain.clothattribute.mapper.ClothesAttributeMapper;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
+import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeValueRepository;
 import com.sprint.ootd5team.domain.clothattribute.service.BasicClothesAttributeService;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
@@ -49,6 +50,9 @@ class ClothesAttributeServiceTest {
 
 	@Mock
 	private ClothesAttributeMapper clothesAttributeMapper;
+
+	@Mock
+	private ClothesAttributeValueRepository clothesAttributeValueRepository;
 
 	@Mock
 	private EntityManager entityManager;
@@ -305,6 +309,7 @@ class ClothesAttributeServiceTest {
 			attribute.addDef(new ClothesAttributeDef(attribute, "면"));
 
 			when(clothesAttributeRepository.findById(attributeId)).thenReturn(Optional.of(attribute));
+			when(clothesAttributeValueRepository.existsByAttribute_Id(attributeId)).thenReturn(false);
 			doNothing().when(entityManager).flush();
 
 			service.delete(attributeId);
@@ -328,6 +333,19 @@ class ClothesAttributeServiceTest {
 
 				assertThatThrownBy(() -> service.delete(attributeId))
 					.isInstanceOf(AttributeNotFoundException.class);
+				verify(clothesAttributeRepository, never()).delete(any());
+			}
+
+			@Test
+			@DisplayName("4_2_2 삭제 예외: 속성에 연결된 정의가 존재하면 InvalidAttributeException")
+			void attributeInUse() {
+				UUID attributeId = UUID.randomUUID();
+				ClothesAttribute attribute = new ClothesAttribute("소재");
+				when(clothesAttributeRepository.findById(attributeId)).thenReturn(Optional.of(attribute));
+				when(clothesAttributeValueRepository.existsByAttribute_Id(attributeId)).thenReturn(true);
+
+				assertThatThrownBy(() -> service.delete(attributeId))
+					.isInstanceOf(InvalidAttributeException.class);
 				verify(clothesAttributeRepository, never()).delete(any());
 			}
 		}
