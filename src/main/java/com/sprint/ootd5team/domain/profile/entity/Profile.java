@@ -52,10 +52,4 @@ public class Profile extends BaseUpdatableEntity {
     @Column(name = "temperature_sensitivity")
     private Integer temperatureSensitivity;
 
-    @PrePersist
-    void prePersist() {
-        if (temperatureSensitivity == null) {
-            temperatureSensitivity = 2;
-        }
-    }
 }
