@@ -160,7 +160,7 @@ public class WeatherServiceImpl implements WeatherService {
             ConvertCoordFailException ex = new ConvertCoordFailException();
             ex.addDetail("latitude", latitude);
             ex.addDetail("longitude", longitude);
-            throw e;
+            throw ex;
         }
     }
 

@@ -133,15 +133,18 @@ public class WeatherBuilder {
     }
 
     private SkyStatus toSkyStatus(String fcstValue) {
-        int skyInt = Integer.parseInt(fcstValue);
-        if (skyInt < 6) {
+        int code;
+        try {
+            code = Integer.parseInt(fcstValue.trim());
+        } catch (NumberFormatException e) {
             return SkyStatus.CLEAR;
-        } else if (skyInt < 9) {
-            return SkyStatus.MOSTLY_CLOUDY;
-        } else {
-            return SkyStatus.CLOUDY;
         }
-
+        return switch (code) {
+            case 1 -> SkyStatus.CLEAR;
+            case 3 -> SkyStatus.MOSTLY_CLOUDY;
+            case 4 -> SkyStatus.CLOUDY;
+            default -> SkyStatus.CLEAR;
+        };
     }
 
     private PrecipitationType toPrecipitationType(String fcstValue) {
