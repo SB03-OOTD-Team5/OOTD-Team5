@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -21,7 +20,6 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  *
  * 이렇게 분리해야 토큰 같은 단순 문자열이 "\"token\"" 으로 저장되는 문제를 방지할 수 있음.
  */
-@ConditionalOnProperty(name="spring.data.redis.repositories.enabled", havingValue="true", matchIfMissing=true)
 @Configuration
 public class RedisConfig {
     // RedisTemplate을 Spring Bean으로 등록
