@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS tbl_profiles
     x_coord                  INTEGER,
     y_coord                  INTEGER,
     location_names           VARCHAR(100),
-    temperature_sensitivity  INT                      NOT NULL DEFAULT 2,
+    temperature_sensitivity  INT                      ,
     created_at               TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at               TIMESTAMP WITH TIME ZONE,
     -- constraints

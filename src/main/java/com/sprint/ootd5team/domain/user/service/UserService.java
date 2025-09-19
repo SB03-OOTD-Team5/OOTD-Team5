@@ -2,6 +2,8 @@ package com.sprint.ootd5team.domain.user.service;
 
 import com.sprint.ootd5team.base.exception.user.UserAlreadyExistException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
+import com.sprint.ootd5team.domain.profile.entity.Profile;
+import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
 
@@ -40,6 +43,10 @@ public class UserService {
         User user = userRepository.save(
             new User(request.name(), request.email(), passwordEncoder.encode(request.password()),
                 Role.USER));
+
+        // 프로필 생성해서 저장
+        Profile profile = new Profile(user.getId(),user.getName(),null,null,null,null,null,null,null,null,null);
+        profileRepository.save(profile);
 
         return userMapper.toDto(user);
     }

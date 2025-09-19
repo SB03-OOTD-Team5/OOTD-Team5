@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.profile.dto.request;
 
+import com.sprint.ootd5team.domain.location.entity.Location;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -8,7 +9,7 @@ public record ProfileDto(
     String name,
     String gender,
     LocalDate birthDate,
-//    LocationDto location,
+    Location location,
     int temperatureSensitivity,
     String profileImageUrl
 ) { }
