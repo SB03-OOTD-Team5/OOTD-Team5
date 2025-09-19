@@ -20,4 +20,6 @@ public interface ClothesAttributeValueRepository extends JpaRepository<ClothesAt
 
 	@Query("select cav from ClothesAttributeValue cav where cav.clothes.id = :clothesId and cav.attribute.id = :attributeId")
 	Optional<ClothesAttributeValue> findByClothesIdAndAttributeId(@Param("clothesId") UUID clothesId, @Param("attributeId")UUID attributeId);
+
+	boolean existsByAttribute_Id(UUID attributeId);
 }
