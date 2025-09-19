@@ -77,7 +77,7 @@ public interface ClothesAttributeApi {
 	})
 	@PatchMapping("/{definitionId}")
 	ClothesAttributeDefDto update(
-		@Parameter(description = "의상 속성 정의 ID") @PathVariable UUID id,
+		@Parameter(description = "의상 속성 정의 ID") @PathVariable("definitionId") UUID id,
 		@Parameter(description = "의상 속성 정의 수정 요청")
 		@Valid @RequestBody ClothesAttributeDefUpdateRequest request
 	);
@@ -91,5 +91,5 @@ public interface ClothesAttributeApi {
 	})
 	@DeleteMapping("/{definitionId}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	void delete(@Parameter(description = "의상 속성 정의 ID") @PathVariable UUID id);
+	void delete(@Parameter(description = "의상 속성 정의 ID") @PathVariable("definitionId") UUID id);
 }
