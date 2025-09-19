@@ -9,11 +9,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException;
 import com.sprint.ootd5team.base.exception.clothes.ClothesSaveFailedException;
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundException;
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeValueNotAllowedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.clothes.fixture.ClothesFixture;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
@@ -69,6 +71,9 @@ class ClothesServiceTest {
 
     @Mock
     private FileStorage fileStorage;
+
+    @Mock
+    private AuthService authService;
 
     @InjectMocks
     private ClothesServiceImpl clothesService;
@@ -514,5 +519,52 @@ class ClothesServiceTest {
 
         // then
         assertThat(result.attributes()).extracting("value").containsExactly("겨울");
+    }
+
+
+    @Test
+    void 의상_삭제_성공() {
+        // given
+        UUID clothesId = UUID.randomUUID();
+        UUID currentUserId = ownerId; // 동일 사용자
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "셔츠", ClothesType.TOP, null);
+
+        given(authService.getCurrentUserId()).willReturn(currentUserId);
+        given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
+
+        // when
+        clothesService.delete(clothesId);
+
+        // then
+        verify(clothesRepository).deleteById(clothesId);
+    }
+
+    @Test
+    void 의상_삭제시_존재하지않으면_예외() {
+        // given
+        UUID clothesId = UUID.randomUUID();
+        given(authService.getCurrentUserId()).willReturn(ownerId);
+        given(clothesRepository.findById(clothesId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> clothesService.delete(clothesId))
+            .isInstanceOf(ClothesNotFoundException.class);
+        verify(clothesRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void 의상_삭제시_소유자아니면_예외() {
+        // given
+        UUID clothesId = UUID.randomUUID();
+        UUID anotherUserId = UUID.randomUUID(); // 다른 사용자
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "청바지", ClothesType.BOTTOM, null);
+
+        given(authService.getCurrentUserId()).willReturn(anotherUserId);
+        given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
+
+        // when & then
+        assertThatThrownBy(() -> clothesService.delete(clothesId))
+            .isInstanceOf(SecurityException.class);
+        verify(clothesRepository, never()).deleteById(any());
     }
 }
