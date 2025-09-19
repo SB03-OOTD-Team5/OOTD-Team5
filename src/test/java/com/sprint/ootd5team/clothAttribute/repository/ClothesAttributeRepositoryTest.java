@@ -12,8 +12,10 @@ import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -28,6 +30,7 @@ import org.springframework.test.context.ActiveProfiles;
 @DisplayName("ClothesAttributeRepository 테스트")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @DirtiesContext(classMode = AFTER_CLASS)
+@TestClassOrder(ClassOrderer.DisplayName.class)
 class ClothesAttributeRepositoryTest{
 
 	@Autowired
@@ -36,7 +39,7 @@ class ClothesAttributeRepositoryTest{
 	EntityManager em;
 
 	@Test
-	@DisplayName("같은 속성 내 att_def 중복 저장 시 UNIQUE(attribute_id, att_def) 위반")
+	@DisplayName("2. 고유값 검증 : 같은 속성 내 att_def 중복 저장 시 UNIQUE(attribute_id, att_def) 위반")
 	void uniqueOnAttributeAndAttdef() {
 		// given
 		ClothesAttribute attr = new ClothesAttribute("소재");
@@ -49,7 +52,7 @@ class ClothesAttributeRepositoryTest{
 	}
 
 	@Test
-	@DisplayName("허용값 목록 저장/조회")
+	@DisplayName("1. 저장/조회: 정의 목록 저장 및 조회")
 	void saveAndLoadDefs() {
 		// given
 		ClothesAttribute attr = new ClothesAttribute("계절");
