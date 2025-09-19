@@ -47,11 +47,14 @@ class ClothesAttributeValueRepositoryTest{
 
 	@BeforeEach
 	void setUpOwner() {
-		owner = userRepo.save(new User("유저","test@test.com","password", Role.USER));
+		owner = new User("유저","test@test.com","password", Role.USER);
+		// User 엔티티의 NOT NULL 필드들(예: email, nickname 등)이 있다면 반드시 채워주세요.
+		// ReflectionTestUtils.setField(owner, "id", ownerId); // 필요하면 수동 ID도 가능
+		owner = userRepo.save(owner); // 영속화
 	}
 
 	@Test
-	@DisplayName("1. 통합조회: findAllByClothesId: attribute/defs을 fetch join으로 함께 조회")
+	@DisplayName("findAllByClothesId: attribute/defs가 fetch join으로 함께 조회된다")
 	void findAllByClothesId_fetchJoin() {
 		// given
 		Clothes clothes = saveClothes("블랙 티셔츠", ClothesType.TOP);
@@ -73,7 +76,7 @@ class ClothesAttributeValueRepositoryTest{
 	}
 
 	@Test
-	@DisplayName("2. 고유값 검증: UNIQUE(clothes_id, attribute_id): 동일 조합 중복 저장 시 제약 위반")
+	@DisplayName("UNIQUE(clothes_id, attribute_id): 동일 조합 중복 저장 시 제약 위반")
 	void uniqueOnClothesAndAttribute() {
 		// given
 		Clothes clothes = saveClothes("화이트 셔츠", ClothesType.TOP);
@@ -100,9 +103,10 @@ class ClothesAttributeValueRepositoryTest{
 	}
 
 	private ClothesAttribute saveAttributeWithDefs(String name, String... defs) {
-		ClothesAttribute attr = new ClothesAttribute(name);
+		ClothesAttribute attr = attributeRepo.save(new ClothesAttribute(name));
 		Arrays.stream(defs)
-			.forEach(value -> attr.addDef(new ClothesAttributeDef(attr, value)));
+			.map(v -> new ClothesAttributeDef(attr, v))
+			.forEach(attr.getDefs()::add);
 		return attributeRepo.saveAndFlush(attr);
 	}
 }
