@@ -7,5 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProfileRepository extends JpaRepository<Profile, UUID> {
 
+    Optional<Profile> findById(UUID id);
+
     Optional<Profile> findByUserId(UUID userId);
+
 }

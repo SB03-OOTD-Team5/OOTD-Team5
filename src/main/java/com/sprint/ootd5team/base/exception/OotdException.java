@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public class OotdException extends RuntimeException {
+
     private final Instant timestamp;
     private final ErrorCode errorCode;
     private final Map<String, Object> details;
@@ -21,6 +22,14 @@ public class OotdException extends RuntimeException {
         this.errorCode = errorCode;
         this.details = new HashMap<>();
     }
+
+    public OotdException(ErrorCode errorCode, String customMessage) {
+        super(customMessage);
+        this.timestamp = Instant.now();
+        this.errorCode = errorCode;
+        this.details = new HashMap<>();
+    }
+
 
     public OotdException(ErrorCode errorCode, Throwable cause) {
         super(errorCode.getMessage(), cause);
