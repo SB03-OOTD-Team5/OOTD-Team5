@@ -327,12 +327,12 @@ public class ClothesServiceImpl implements ClothesService {
      * @param reason 삭제 사유 (로그 용도)
      */
     private void deleteFileSafely(String key, String reason) {
-        if (key == null) return;
+        if (!hasText(key)) return;
         try {
             fileStorage.delete(key);
             log.info("[clothes] 파일 삭제 성공 - key={}, reason={}", key, reason);
         } catch (Exception e) {
-            log.warn("[clothes] 파일 삭제 실패 - key={}, reason={}, cause={}", key, reason, e);
+            log.warn("[clothes] 파일 삭제 실패 - key={}, reason={}", key, reason, e);
         }
     }
 
