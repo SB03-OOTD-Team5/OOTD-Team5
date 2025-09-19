@@ -12,6 +12,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -22,6 +24,7 @@ import com.sprint.ootd5team.base.security.OotdUserDetails;
 import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.feed.controller.FeedController;
 import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
+import com.sprint.ootd5team.domain.feed.dto.request.FeedCreateRequest;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedUpdateRequest;
 import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
@@ -37,6 +40,7 @@ import com.sprint.ootd5team.domain.weather.enums.SkyStatus;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -188,5 +192,52 @@ public class FeedControllerTest {
 
         then(authService).should().getCurrentUserId();
         then(feedService).should().update(eq(feedId), any(FeedUpdateRequest.class), eq(userId));
+    }
+
+    @Test
+    @DisplayName("피드 등록 성공")
+    void createFeed_success() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID feedId = UUID.randomUUID();
+        UUID weatherId = UUID.randomUUID();
+        UUID clothesId1 = UUID.randomUUID();
+        UUID clothesId2 = UUID.randomUUID();
+
+        FeedCreateRequest request = new FeedCreateRequest(
+            userId,
+            weatherId,
+            Set.of(clothesId1, clothesId2),
+            "오늘의 피드 내용"
+        );
+
+        FeedDto responseDto = new FeedDto(
+            feedId,
+            Instant.now(),
+            Instant.now(),
+            new AuthorDto(userId, "tester", "profile.png"),
+            new WeatherSummaryDto(weatherId, SkyStatus.CLEAR, null, null),
+            List.of(),
+            "오늘의 피드 내용",
+            0L,
+            0L,
+            false
+        );
+
+        given(authService.getCurrentUserId()).willReturn(userId);
+        given(feedService.create(any(FeedCreateRequest.class), eq(userId))).willReturn(responseDto);
+
+        // when & then
+        mockMvc.perform(post("/api/feeds")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value(feedId.toString()))
+            .andExpect(jsonPath("$.content").value("오늘의 피드 내용"))
+            .andExpect(jsonPath("$.author.userId").value(userId.toString()))
+            .andDo(print());
+
+        then(feedService).should().create(any(FeedCreateRequest.class), eq(userId));
+        then(authService).should().getCurrentUserId();
     }
 }
