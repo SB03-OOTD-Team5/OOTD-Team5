@@ -7,6 +7,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -56,6 +57,20 @@ public class Profile extends BaseUpdatableEntity {
     void prePersist() {
         if (temperatureSensitivity == null) {
             temperatureSensitivity = 2;
+        }
+    }
+
+    public void relocate(BigDecimal latitude, BigDecimal longitude, String locationNames) {
+        if (!Objects.equals(this.latitude, latitude) && latitude != null) {
+            this.latitude = latitude;
+        }
+
+        if (!Objects.equals(this.longitude, longitude) && longitude != null) {
+            this.longitude = longitude;
+        }
+
+        if (!Objects.equals(this.locationNames, locationNames) && locationNames != null) {
+            this.locationNames = locationNames;
         }
     }
 }
