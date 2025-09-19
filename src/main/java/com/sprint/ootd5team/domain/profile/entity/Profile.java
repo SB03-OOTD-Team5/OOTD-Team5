@@ -49,7 +49,7 @@ public class Profile extends BaseUpdatableEntity {
     @Column(name = "location_names", length = 100)
     private String locationNames;
 
-    @Column(name = "temperature_sensitivity", nullable = false)
+    @Column(name = "temperature_sensitivity")
     private Integer temperatureSensitivity;
 
     @PrePersist
