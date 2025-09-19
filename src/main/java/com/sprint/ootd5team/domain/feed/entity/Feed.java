@@ -30,4 +30,8 @@ public class Feed extends BaseUpdatableEntity {
 
     @Column(name = "like_count", nullable = false)
     private long likeCount = 0;
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
 }

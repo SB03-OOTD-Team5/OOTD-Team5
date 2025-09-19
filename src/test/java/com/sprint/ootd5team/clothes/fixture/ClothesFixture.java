@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.clothes.fixture;
 
+import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
@@ -29,7 +30,7 @@ public class ClothesFixture {
     }
 
     public static ClothesDto createClothesDto(UUID id, UUID ownerId, String name,
-        ClothesType type, String imageUrl, Instant createdAt, Instant updatedAt) {
+        ClothesType type, String imageUrl) {
 
         return ClothesDto.builder()
             .id(id)
@@ -38,8 +39,6 @@ public class ClothesFixture {
             .type(type)
             .imageUrl(imageUrl)
             .attributes(List.of())
-            .createdAt(createdAt)
-            .updatedAt(updatedAt)
             .build();
     }
 
@@ -58,21 +57,27 @@ public class ClothesFixture {
             .name(clothes.getName())
             .type(clothes.getType())
             .imageUrl(clothes.getImageUrl())
-            .attributes(List.of())
-            .createdAt(clothes.getCreatedAt())
-            .updatedAt(clothes.getUpdatedAt())
+            .attributes(
+                clothes.getClothesAttributeValues().stream()
+                    .map(v -> new ClothesAttributeWithDefDto(
+                        v.getAttribute().getId(),
+                        v.getAttribute().getName(),
+                        v.getAttribute().getDefs().stream()
+                            .map(def -> def.getAttDef())
+                            .toList(),
+                        v.getDefValue()
+                    ))
+                    .toList()
+            )
             .build();
     }
 
     public static List<ClothesDto> createTestClothesDtos(UUID ownerId) {
         Instant now = Instant.now();
         return List.of(
-            createClothesDto(UUID.randomUUID(), ownerId, "흰 티셔츠", ClothesType.TOP, null,
-                now.minusSeconds(3600), now.minusSeconds(1800)),
-            createClothesDto(UUID.randomUUID(), ownerId, "청바지", ClothesType.BOTTOM, null,
-                now.minusSeconds(7200), now.minusSeconds(3600)),
-            createClothesDto(UUID.randomUUID(), ownerId, "운동화", ClothesType.SHOES, null,
-                now.minusSeconds(10800), now.minusSeconds(5400))
+            createClothesDto(UUID.randomUUID(), ownerId, "흰 티셔츠", ClothesType.TOP, null),
+            createClothesDto(UUID.randomUUID(), ownerId, "청바지", ClothesType.BOTTOM, null),
+            createClothesDto(UUID.randomUUID(), ownerId, "운동화", ClothesType.SHOES, null)
         );
     }
 

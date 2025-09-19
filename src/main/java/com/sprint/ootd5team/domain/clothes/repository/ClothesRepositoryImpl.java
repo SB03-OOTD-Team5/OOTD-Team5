@@ -51,19 +51,20 @@ public class ClothesRepositoryImpl implements ClothesRepositoryCustom {
 
         if (cursor != null) {
             BooleanBuilder cursorCondition = new BooleanBuilder()
-                .or(clothes.createdAt.lt(cursor));
+                .and(clothes.createdAt.lt(cursor));
 
             if (idAfter != null) {
-                cursorCondition.or(clothes.createdAt.eq(cursor)
-                    .and(clothes.id.lt(idAfter)));
+                cursorCondition.or(
+                    clothes.createdAt.eq(cursor).and(clothes.id.lt(idAfter)));
                 log.debug("[ClothesRepository] idAfter 필터 적용: id < {}", idAfter);
             }
-            where.and(clothes.owner.id.eq(ownerId));
+            where.and(cursorCondition);
 
             log.debug("[ClothesRepository] cursor 필터 적용: createdAt < {}", cursor);
         }
 
-        log.info("[ClothesRepository] 옷 목록 조회 실행: ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
+        log.info("[ClothesRepository] 옷 목록 조회 실행: "
+                + "ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
             ownerId, type, cursor, idAfter, limit);
 
         List<Clothes> result = queryFactory

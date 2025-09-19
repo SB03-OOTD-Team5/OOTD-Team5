@@ -7,6 +7,7 @@ import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.RedisJwtRegistry;
 import com.sprint.ootd5team.base.security.RedisLockProvider;
+import com.sprint.ootd5team.base.security.SpaCsrfTokenRequestHandler;
 import com.sprint.ootd5team.base.security.handler.Http403ForbiddenAccessDeniedHandler;
 import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
 import com.sprint.ootd5team.base.security.handler.JwtLoginSuccessHandler;
