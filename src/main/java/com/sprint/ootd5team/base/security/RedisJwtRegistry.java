@@ -15,7 +15,7 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Scheduled;
 
-@ConditionalOnProperty(name = "app.security.enabled", havingValue = "true")
+@ConditionalOnProperty(name="spring.data.redis.repositories.enabled", havingValue="true", matchIfMissing=true)
 @Slf4j
 @RequiredArgsConstructor
 public class RedisJwtRegistry implements JwtRegistry {

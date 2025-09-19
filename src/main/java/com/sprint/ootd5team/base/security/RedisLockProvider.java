@@ -8,7 +8,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Component;
 
-@ConditionalOnProperty(name = "app.security.enabled", havingValue = "true")
+@ConditionalOnProperty(name="spring.data.redis.repositories.enabled", havingValue="true", matchIfMissing=true)
 @Slf4j
 @RequiredArgsConstructor
 @Component
