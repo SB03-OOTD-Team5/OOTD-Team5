@@ -13,13 +13,11 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.unit.DataSize;
@@ -34,7 +32,7 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "ootd.storage.type", havingValue = "s3")
-public class S3FileStorage implements FileStorage{
+public class S3FileStorage implements FileStorage {
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
@@ -65,6 +63,8 @@ public class S3FileStorage implements FileStorage{
         if (filename != null && filename.contains(".")) {
             extension = filename.substring(filename.lastIndexOf('.'));
         }
+
+        contentType = resolveContentType(filename, extension, contentType);
 
         String key = "clothes/" + UUID.randomUUID() + extension;
         Path tempFile = null;
@@ -119,7 +119,8 @@ public class S3FileStorage implements FileStorage{
             if (tempFile != null) {
                 try {
                     Files.deleteIfExists(tempFile);
-                } catch (IOException ignore) {}
+                } catch (IOException ignore) {
+                }
             }
         }
     }
@@ -180,16 +181,33 @@ public class S3FileStorage implements FileStorage{
         return path != null ? download(path) : null;
     }
 
-    /**
-     * 업로드 재시도 실패 시 복구 처리
-     */
-    @Recover
-    public String recover(Exception e, String filename, InputStream inputStream, String contentType) {
-        String requestId = MDC.get("requestId");
-        log.error("[S3] 업로드 모든 재시도 실패 - filename={}, requestId={}, cause={}",
-            filename, requestId, e.toString(), e);
+    private String resolveContentType(String filename, String extension, String contentType) {
+        if (contentType != null && !contentType.equals("application/octet-stream")) {
+            return contentType;
+        }
 
-        throw FilePermanentSaveFailedException.withFileName(filename);
+        try {
+            String probed = Files.probeContentType(Path.of(filename));
+            if (probed != null) {
+                return probed;
+            }
+        } catch (IOException ignore) {
+        }
+
+        // 확장자 기반 fallback
+        if (".png".equalsIgnoreCase(extension)) {
+            return "image/png";
+        }
+        if (".jpg".equalsIgnoreCase(extension) || ".jpeg".equalsIgnoreCase(extension)) {
+            return "image/jpeg";
+        }
+        if (".gif".equalsIgnoreCase(extension)) {
+            return "image/gif";
+        }
+        if (".webp".equalsIgnoreCase(extension)) {
+            return "image/webp";
+        }
+        return "application/octet-stream";
     }
 
 }
