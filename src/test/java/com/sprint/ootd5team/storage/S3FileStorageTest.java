@@ -183,7 +183,8 @@ class S3FileStorageTest {
     @Test
     void 업로드_실패_용량초과() {
         // given
-        S3FileStorage smallLimitStorage = new S3FileStorage(s3Client, s3Presigner, DataSize.ofBytes(1));
+        S3FileStorage smallLimitStorage = new S3FileStorage(s3Client, s3Presigner,
+            DataSize.ofBytes(1));
         ReflectionTestUtils.setField(smallLimitStorage, "bucket", "test-bucket");
 
         InputStream inputStream = new ByteArrayInputStream("hello".getBytes());
@@ -211,10 +212,18 @@ class S3FileStorageTest {
     }
 
     @Test
-    void recover_항상_FilePermanentSaveFailedException발생() {
-        // when & then
-        assertThatThrownBy(() ->
-            s3FileStorage.recover(new RuntimeException("fail"), "bad.png", null, "image/png")
-        ).isInstanceOf(FilePermanentSaveFailedException.class);
+    void 업로드시_png확장자이면_imagePng으로설정된다() {
+        // given
+        InputStream inputStream = new ByteArrayInputStream("data".getBytes());
+
+        // when
+        s3FileStorage.upload("test.png", inputStream, "application/octet-stream");
+
+        // then
+        ArgumentCaptor<PutObjectRequest> captor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        verify(s3Client).putObject(captor.capture(), any(RequestBody.class));
+
+        assertThat(captor.getValue().contentType()).isEqualTo("image/png");
     }
+
 }

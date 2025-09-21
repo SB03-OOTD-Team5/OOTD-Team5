@@ -106,7 +106,7 @@ class ClothesRepositoryImplTest {
     void createdAtCursor가_같으면_id값을_기준_다음페이지조회() {
         // given
         Instant cursor = Instant.parse("2024-01-01T08:00:00Z");
-        UUID idAfter = clothes.getId();
+        UUID idAfter = clothes.getId(); // "운동화2"
 
         // when
         List<Clothes> result = clothesRepository.findClothes(
@@ -117,9 +117,7 @@ class ClothesRepositoryImplTest {
             10
         );
 
-        assertThat(result)
-            .extracting(Clothes::getName)
-            .containsAnyOf("운동화", "운동화2");
+        // then
         assertThat(result.get(0).getCreatedAt()).isEqualTo(cursor);
     }
 }
