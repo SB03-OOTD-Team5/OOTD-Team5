@@ -6,6 +6,7 @@ import com.sprint.ootd5team.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
+import com.sprint.ootd5team.domain.clothes.extractor.ClothesExtractionService;
 import com.sprint.ootd5team.domain.clothes.service.ClothesService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class ClothesController implements ClothesApi {
 
     private final ClothesService clothesService;
+    private final ClothesExtractionService clothesExtractionService;
 
     @Override
     public ResponseEntity<ClothesDtoCursorResponse> getClothes(
@@ -89,6 +91,14 @@ public class ClothesController implements ClothesApi {
 
     @Override
     public ResponseEntity<ClothesDto> extractByUrl(String url) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        log.info("[ClothesController] extractByUrl 요청 url={}", url);
+
+        ClothesDto clothesDto = clothesExtractionService.extractByUrl(url);
+
+        log.info("[ClothesController] 추출 결과 name={}, imageUrl={}",
+            clothesDto.name(), clothesDto.imageUrl());
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(clothesDto);
     }
 }

@@ -82,6 +82,8 @@ dependencies {
     //mail
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
+    // 웹 스크래핑
+    implementation 'org.jsoup:jsoup:1.18.1'
 
 }
 
