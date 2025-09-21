@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.security;
+package com.sprint.ootd5team.base.security;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
