@@ -16,9 +16,9 @@ import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
+import com.sprint.ootd5team.domain.clothes.extractor.ClothesExtractionService;
 import com.sprint.ootd5team.domain.clothes.service.ClothesService;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +47,9 @@ class ClothesControllerTest {
 
     @MockitoBean
     private ClothesService clothesService;
+
+    @MockitoBean
+    private ClothesExtractionService clothesExtractionService;
 
     private UUID ownerId;
     private List<ClothesDto> mockClothes;
@@ -173,19 +176,19 @@ class ClothesControllerTest {
         UUID attributeId = UUID.randomUUID();
 
         String requestJson = """
-        {
-          "name": "수정된 패딩",
-          "type": "OUTER",
-          "attributes": [
             {
-              "definitionId": "%s",
-              "definitionName": "계절",
-              "selectableValues": ["봄","여름","가을","겨울"],
-              "value": "봄"
+              "name": "수정된 패딩",
+              "type": "OUTER",
+              "attributes": [
+                {
+                  "definitionId": "%s",
+                  "definitionName": "계절",
+                  "selectableValues": ["봄","여름","가을","겨울"],
+                  "value": "봄"
+                }
+              ]
             }
-          ]
-        }
-        """.formatted(attributeId);
+            """.formatted(attributeId);
 
         MockMultipartFile requestPart = new MockMultipartFile(
             "request", "", "application/json", requestJson.getBytes(StandardCharsets.UTF_8)
@@ -201,7 +204,7 @@ class ClothesControllerTest {
             "clothes/uuid_new_coat.png",
             ClothesType.OUTER,
             List.of(new ClothesAttributeWithDefDto(
-                attributeId, "계절", List.of("봄","여름","가을","겨울"), "봄"
+                attributeId, "계절", List.of("봄", "여름", "가을", "겨울"), "봄"
             ))
         );
 
@@ -224,5 +227,41 @@ class ClothesControllerTest {
             .andExpect(jsonPath("$.attributes[0].value").value("봄"));
 
         verify(clothesService).update(eq(clothesId), any(), any(MultipartFile.class));
+    }
+
+    @Test
+    void 의상_url로_추출하면_이름과_이미지를_포함한_ClothesDto를_반환한다() throws Exception {
+        // given
+        String url = "https://dummy.com/product/1";
+        ClothesDto dto = ClothesDto.builder()
+            .name("테스트 상품")
+            .imageUrl("https://dummy.com/image.png")
+            .type(null)
+            .build();
+
+        given(clothesExtractionService.extractByUrl(url)).willReturn(dto);
+
+        // when & then
+        mockMvc.perform(get("/api/clothes/extractions")
+                .param("url", url))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("테스트 상품"))
+            .andExpect(jsonPath("$.imageUrl").value("https://dummy.com/image.png"))
+            .andExpect(jsonPath("$.type").doesNotExist());
+    }
+
+    @Test
+    void 잘못된_URL이면_400을_반환한다() throws Exception {
+        mockMvc.perform(get("/api/clothes/extractions")
+                .param("url", "ftp://malicious.com"))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/clothes/extractions")
+                .param("url", ""))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/clothes/extractions")
+                .param("url", "ht!tp://bad-url"))
+            .andExpect(status().isBadRequest());
     }
 }

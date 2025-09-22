@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -521,12 +522,11 @@ class ClothesServiceTest {
         assertThat(result.attributes()).extracting("value").containsExactly("겨울");
     }
 
-
     @Test
     void 의상_삭제_성공() {
         // given
         UUID clothesId = UUID.randomUUID();
-        UUID currentUserId = ownerId; // 동일 사용자
+        UUID currentUserId = ownerId;
         Clothes clothes = ClothesFixture.createClothesEntity(owner, "셔츠", ClothesType.TOP, null);
 
         given(authService.getCurrentUserId()).willReturn(currentUserId);
@@ -538,6 +538,59 @@ class ClothesServiceTest {
         // then
         verify(clothesRepository).deleteById(clothesId);
     }
+
+    @Test
+    void 의상_삭제시_이미지가_있으면_스토리지에서도_삭제된다() {
+        // given
+        UUID clothesId = UUID.randomUUID();
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "셔츠", ClothesType.TOP, "image.png");
+
+        given(authService.getCurrentUserId()).willReturn(ownerId);
+        given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
+
+        // when
+        clothesService.delete(clothesId);
+
+        // then
+        verify(fileStorage).delete("image.png");
+        verify(clothesRepository).deleteById(clothesId);
+    }
+
+    @Test
+    void 의상_삭제시_이미지삭제에_실패해도_DB삭제는_진행된다() {
+        // given
+        UUID clothesId = UUID.randomUUID();
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "셔츠", ClothesType.TOP, "image.png");
+
+        given(authService.getCurrentUserId()).willReturn(ownerId);
+        given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
+        willThrow(new RuntimeException("스토리지 오류")).given(fileStorage).delete("image.png");
+
+        // when
+        clothesService.delete(clothesId);
+
+        // then
+        verify(fileStorage).delete("image.png");
+        verify(clothesRepository).deleteById(clothesId);
+    }
+
+    @Test
+    void 의상_삭제시_이미지가없으면_스토리지호출없음() {
+        // given
+        UUID clothesId = UUID.randomUUID();
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "셔츠", ClothesType.TOP, null);
+
+        given(authService.getCurrentUserId()).willReturn(ownerId);
+        given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
+
+        // when
+        clothesService.delete(clothesId);
+
+        // then
+        verify(fileStorage, never()).delete(any());
+        verify(clothesRepository).deleteById(clothesId);
+    }
+
 
     @Test
     void 의상_삭제시_존재하지않으면_예외() {
