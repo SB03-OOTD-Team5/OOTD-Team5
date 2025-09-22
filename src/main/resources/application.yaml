@@ -21,8 +21,8 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 20MB        # 업로드 허용 파일 크기
-      max-request-size: 20MB     # 요청 전체 크기
+      max-file-size: 50MB        # 스프링 전역 업로드 허용 파일 크기
+      max-request-size: 50MB     # 요청 전체 크기
 
 # SecurityConfig 비활성화/활성화 on off
 app:
@@ -78,4 +78,4 @@ ootd:
       region: ${AWS_REGION:ap-northeast-2}
       bucket: ${AWS_S3_BUCKET:zzootd-s3}
       presigned-url-expiration: ${AWS_S3_PRESIGNED_URL_EXPIRATION:600}
-      max-upload-size: 20MB
+      max-upload-size: 20MB   # 실제 정책상 허용할 크기
