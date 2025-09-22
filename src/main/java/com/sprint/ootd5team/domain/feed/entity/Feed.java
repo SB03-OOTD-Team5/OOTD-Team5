@@ -8,7 +8,9 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
+@ToString
 @Table(name = "tbl_feeds")
 @AllArgsConstructor
 @NoArgsConstructor
@@ -45,5 +47,13 @@ public class Feed extends BaseUpdatableEntity {
 
     public void updateContent(String content) {
         this.content = content;
+    }
+
+    public void like() {
+        this.likeCount++;
+    }
+
+    public void unLike() {
+        this.likeCount--;
     }
 }
