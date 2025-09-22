@@ -13,8 +13,8 @@ import org.springframework.web.util.DefaultUriBuilderFactory;
 public class WebclientConfig {
 
 
-    @Bean("kmaApiClient")
-    public WebClient kmaApiClient(
+    @Bean("KmaWebClient")
+    public WebClient KmaWebClient(
         @Value("${weather.kma.base-url}") String baseUrl,
         @Value("${weather.kma.client-secret}") String secretKey
     ) {
@@ -37,8 +37,8 @@ public class WebclientConfig {
     }
 
 
-    @Bean("kakaoApiClient")
-    public WebClient kakaoApiClient(
+    @Bean("kakaoWebClient")
+    public WebClient kakaoWebClient(
         @Value("${weather.kakao.base-url}") String baseUrl,
         @Value("${weather.kakao.client-secret}") String secretKey
     ) {
