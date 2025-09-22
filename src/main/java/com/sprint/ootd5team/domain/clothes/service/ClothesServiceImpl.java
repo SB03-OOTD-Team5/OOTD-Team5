@@ -171,7 +171,7 @@ public class ClothesServiceImpl implements ClothesService {
             return clothesMapper.toDto(clothes);
         } catch (RuntimeException e) {
             deleteFileSafely(imageUrl, "의상 저장 실패 롤백");
-            throw ClothesSaveFailedException.withId(clothes.getId());
+            throw ClothesSaveFailedException.withoutId(e);
         }
     }
 
@@ -272,7 +272,7 @@ public class ClothesServiceImpl implements ClothesService {
             .collect(Collectors.toSet());
 
         for (ClothesAttributeDto dto : newAttributes) {
-            ClothesAttributeValue newCav = toClothesAttributeValue(dto); // <-- 공통 메서드 활용
+            ClothesAttributeValue newCav = toClothesAttributeValue(dto);
             ClothesAttributeValue existing = currentMap.get(dto.definitionId());
 
             if (existing == null) {
@@ -311,16 +311,36 @@ public class ClothesServiceImpl implements ClothesService {
             .collect(Collectors.toList());
     }
 
+    /**
+     * 파일 스토리지에서 안전하게 파일을 삭제한다.
+     * <p>
+     * 처리 정책:
+     * <ul>
+     *   <li>파일이 null이면 아무 작업도 하지 않는다.</li>
+     *   <li>삭제 시도 중 예외가 발생해도 예외를 다시 던지지 않고 경고 로그만 남긴다.</li>
+     *   <li>따라서 DB 트랜잭션은 영향을 받지 않으며,
+     *       삭제 실패 시 고아 파일이 남을 수 있다.</li>
+     *   <li>필요 시 배치 작업이나 로그 기반 모니터링으로 후처리 가능하다.</li>
+     * </ul>
+     *
+     * @param key    삭제할 파일의 key (null 허용)
+     * @param reason 삭제 사유 (로그 용도)
+     */
     private void deleteFileSafely(String key, String reason) {
-        if (key == null) return;
+        if (!hasText(key)) return;
         try {
             fileStorage.delete(key);
             log.info("[clothes] 파일 삭제 성공 - key={}, reason={}", key, reason);
         } catch (Exception e) {
-            log.warn("[clothes] 파일 삭제 실패 - key={}, reason={}, cause={}", key, reason, e.toString());
+            log.warn("[clothes] 파일 삭제 실패 - key={}, reason={}", key, reason, e);
         }
     }
 
+    /**
+     * 의상 삭제
+     * 이미지 파일 삭제는 {@link #deleteFileSafely(String, String)}에서 처리
+     *
+     */
     @Transactional
     @Override
     public void delete(UUID clothesId) {
@@ -336,6 +356,7 @@ public class ClothesServiceImpl implements ClothesService {
             throw new SecurityException();
         }
 
+        deleteFileSafely(clothes.getImageUrl(), "의상 삭제");
         clothesRepository.deleteById(clothesId);
         log.info("[clothes] 삭제 완료 - ownerId={}", currentUserId);
     }
