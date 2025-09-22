@@ -89,9 +89,36 @@ public class ClothesController implements ClothesApi {
             .body(clothesDto);
     }
 
+    /**
+     * 의상 정보 추출 API.
+     *
+     * <p>외부 URL을 입력받아 해당 페이지에서 의상 정보를 크롤링한다.
+     * <br>요청 시 기본 검증:
+     * <ul>
+     *   <li>null/빈 문자열 차단</li>
+     *   <li>스킴은 http/https만 허용</li>
+     *   <li>잘못된 URI 형식은 400 Bad Request 응답</li>
+     * </ul>
+     *
+     * @param url 의상 페이지 URL
+     * @return 추출된 의상 정보 DTO (성공 시 200 OK, 잘못된 입력 시 400 Bad Request)
+     */
     @Override
     public ResponseEntity<ClothesDto> extractByUrl(String url) {
         log.info("[ClothesController] extractByUrl 요청 url={}", url);
+        if (url == null || url.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+            var u = java.net.URI.create(url);
+            String scheme = u.getScheme();
+            if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase(
+                "https"))) {
+                return ResponseEntity.badRequest().build();
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
 
         ClothesDto clothesDto = clothesExtractionService.extractByUrl(url);
 

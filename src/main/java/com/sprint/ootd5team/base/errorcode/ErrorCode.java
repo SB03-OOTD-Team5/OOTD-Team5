@@ -10,8 +10,8 @@ public enum ErrorCode {
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "권한이 없는 사용자입니다."),
     INVALID_USER_CREDENTIALS(HttpStatus.UNAUTHORIZED, "잘못된 사용자 인증 정보입니다."),
     UNSUPPORTED_PRINCIPAL(HttpStatus.UNAUTHORIZED, "지원하지 않는 사용자 인증 타입입니다."),
-    INVALID_TOKEN(HttpStatus.BAD_REQUEST,"잘못된 토큰입니다."),
-    INVALID_USER_DETAILS(HttpStatus.BAD_REQUEST,"잘못된 유저 Details입니다."),
+    INVALID_TOKEN(HttpStatus.BAD_REQUEST, "잘못된 토큰입니다."),
+    INVALID_USER_DETAILS(HttpStatus.BAD_REQUEST, "잘못된 유저 Details입니다."),
 
     // User 관련 에러코드
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
@@ -39,20 +39,22 @@ public enum ErrorCode {
     FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 크기 초과"),
 
     //기타 에러코드
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"알 수 없는 오류가 발생했습니다."),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "알 수 없는 오류가 발생했습니다."),
 
     // Clothes 관련 에러코드
     CLOTHES_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 의상입니다."),
     CLOTHES_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "옷 저장에 실패했습니다."),
-
+    CLOTHES_EXTRACTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "의상 정보 추출에 실패했습니다."),
 
     // ClothesAttribute 관련 에러코드
     ATTRIBUTE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 속성입니다."),
     ATTRIBUTE_ALREADY_EXIST(HttpStatus.CONFLICT, "이미 존재하는 속성입니다."),
     INVALID_ATTRIBUTE_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 속성명입니다."),
     CLOTHES_ATTRIBUTE_VALUE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "허용되지 않은 속성값입니다."),
-    INVALID_ATTRIBUTE(HttpStatus.BAD_REQUEST, "유효하지 않은 속성입니다.")
+    INVALID_ATTRIBUTE(HttpStatus.BAD_REQUEST, "유효하지 않은 속성입니다."),
 
+    // 웹 크롤링 관련 에러코드
+    SCRAPING_FAILED(HttpStatus.BAD_GATEWAY, "웹 스크래핑 실패"),
 
     ;
     private final HttpStatus status;
