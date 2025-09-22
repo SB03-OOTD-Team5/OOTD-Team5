@@ -10,7 +10,7 @@ public class FileTooLargeException extends FileException {
 
     public static FileTooLargeException withSize(long fileSize, long maxSize) {
         FileTooLargeException exception = new FileTooLargeException();
-        exception.addDetail("fileSize", fileSize);
+        exception.addDetail("fileSize", fileSize == -1 ? "unknown" : fileSize);
         exception.addDetail("maxSize", maxSize);
         return exception;
     }
