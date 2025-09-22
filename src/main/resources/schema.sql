@@ -194,6 +194,28 @@ CREATE TABLE IF NOT EXISTS tbl_locations
     created_at                TIMESTAMP WITH TIME ZONE NOT NULL
 
 );
+/****** DM ******/
+-- DM 채팅방
+CREATE TABLE IF NOT EXISTS tbl_dm_rooms (
+    id                        UUID                     PRIMARY KEY,
+    dm_key                    VARCHAR(80)              NOT NULL UNIQUE,
+    user1_id                  UUID
+        REFERENCES tbl_users(id) ON DELETE SET NULL, -- 탈퇴 시 NULL
+    user2_id                  UUID
+        REFERENCES tbl_users(id) ON DELETE SET NULL, -- 탈퇴 시 NULL
+    created_at                TIMESTAMPTZ              NOT NULL DEFAULT now()
+);
+
+-- DM 메시지
+CREATE TABLE IF NOT EXISTS tbl_dm_messages (
+    id                        UUID                     PRIMARY KEY,
+    room_id                   UUID                     NOT NULL
+        REFERENCES tbl_dm_rooms(id) ON DELETE CASCADE,
+    sender_id                 UUID
+        REFERENCES tbl_users(id) ON DELETE SET NULL,
+    content                   TEXT                     NOT NULL,
+    created_at                TIMESTAMPTZ              NOT NULL DEFAULT now()
+);
 
 /* 인덱스 설정 */
 -- tbl_weathers index
@@ -210,3 +232,7 @@ CREATE INDEX idx_tbl_locations_lat_lon
 -- tbl_clothes index
 CREATE INDEX idx_tbl_clothes_owner_id
     ON tbl_clothes (owner_id);
+
+-- DM 메세지 인덱스 (마지막 메세지부터 조회)
+CREATE INDEX IF NOT EXISTS idx_dm_messages_room_created
+    ON tbl_dm_messages(room_id, created_at DESC);
