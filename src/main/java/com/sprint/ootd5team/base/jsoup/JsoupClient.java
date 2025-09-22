@@ -4,6 +4,7 @@ import com.sprint.ootd5team.base.exception.jsoup.JsoupFetchException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Component;
  * </ul>
  */
 @Component
+@Slf4j
 public class JsoupClient {
 
     private final int timeoutMillis;
@@ -38,19 +40,42 @@ public class JsoupClient {
     public Document get(String url) {
         try {
             URI uri = URI.create(url);
-            InetAddress addr = InetAddress.getByName(uri.getHost());
 
-            if (isBlockedAddress(addr)) {
-                throw new SecurityException("SSRF 차단: 접근 불가 host=" + uri.getHost());
+            // 1. 스킴 검증
+            String scheme = uri.getScheme();
+            if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
+                throw new JsoupFetchException(url, new IllegalArgumentException("unsupported scheme: " + scheme));
             }
 
+            // 2. 호스트 검증
+            String host = uri.getHost();
+            if (host == null || host.isBlank()) {
+                throw new JsoupFetchException(url, new IllegalArgumentException("missing host"));
+            }
+
+            // 3. 포트 검증
+            int port = uri.getPort();
+            if (port != -1 && port != 80 && port != 443) {
+                throw new JsoupFetchException(url, new IllegalArgumentException("blocked port: " + port));
+            }
+
+            // 4. 모든 IP 레코드 검사 (DNS rebinding 방어)
+            for (InetAddress a : InetAddress.getAllByName(host)) {
+                if (isBlockedAddress(a)) {
+                    throw new JsoupFetchException(url, new IOException("SSRF blocked host=" + host + " addr=" + a.getHostAddress()));
+                }
+            }
+
+            // 5. Jsoup 요청
             return Jsoup.connect(url)
                 .userAgent(userAgent)
                 .timeout(timeoutMillis)
-                .followRedirects(false) // 리다이렉트도 나중에 검증 후 허용
+                .maxBodySize(2 * 1024 * 1024) // 2MB 제한 예시
+                .followRedirects(false)
                 .get();
 
         } catch (IOException e) {
+            log.error("[JsoupClient] SSRF 방어 차단: url={}, reason={}", url, e.getMessage());
             throw new JsoupFetchException(url, e);
         }
     }
