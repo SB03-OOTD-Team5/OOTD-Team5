@@ -58,7 +58,7 @@ public class WeatherFactory {
         String locationNames = locationQueryService.getLocationNames(latitude, longitude);
 
         List<Weather> newWeathers = buildWeathersFromKmaResponse(kmaResponse, profile, latitude,
-            longitude, locationNames);
+            longitude, locationNames, baseDate);
 
         return weatherRepository.saveAll(newWeathers);
     }
@@ -76,7 +76,7 @@ public class WeatherFactory {
     }
 
     private List<Weather> buildWeathersFromKmaResponse(KmaResponseDto kmaResponse, Profile profile,
-        BigDecimal latitude, BigDecimal longitude, String locationNames) {
+        BigDecimal latitude, BigDecimal longitude, String locationNames, String baseDate) {
 
         List<WeatherItem> allItems = kmaResponse.response().body().items().weatherItems();
         if (allItems == null || allItems.isEmpty()) {
@@ -103,12 +103,28 @@ public class WeatherFactory {
             }
 
             // 데이터에 존재하는 날짜 뽑기
-            List<String> availableTimes = itemsOfDate.stream().map(WeatherItem::fcstTime).distinct()
-                .sorted().toList();
+            List<String> availableTimes = itemsOfDate.stream()
+                .map(WeatherItem::fcstTime)
+                .distinct()
+                .sorted()
+                .toList();
+            if (availableTimes.isEmpty()) {
+                continue;
+            }
 
-            // 현재 시간과 비교해서 가장 가까운 시간대 가져오기
-            String targetTime = pickNearestPastOrFirst(availableTimes, currentTime);
-            log.debug("[Weather] availableTimes:{}, targetTime:{}", availableTimes, targetTime);
+            String forecastDate = entry.getKey();
+            boolean isToday = baseDate.equals(forecastDate);
+
+            // 오늘 날짜만 현재 시간과 비교해서 가장 가까운 시간대 선택
+            String targetTime = isToday
+                ? pickNearestPastOrFirst(availableTimes, currentTime)
+                : availableTimes.get(0);
+            log.debug(
+                "[Weather] forecastDate:{}, availableTimes:{}, targetTime:{}",
+                forecastDate,
+                availableTimes,
+                targetTime
+            );
 
             List<WeatherItem> itemsForTargetSlot = itemsOfDate.stream()
                 .filter(it -> targetTime.equals(it.fcstTime()))
@@ -125,7 +141,7 @@ public class WeatherFactory {
                 longitude, locationNames, yesterdayWeather);
             result.add(currentWeather);
 
-            // 다음날 날씨에 현재 날시 전달
+            // 다음날 날씨에 현재 날씨 전달
             yesterdayWeather = currentWeather;
         }
         return result;
@@ -253,6 +269,7 @@ public class WeatherFactory {
             .build();
     }
 
+    //현재시간과 fcstTime비교
     private String pickNearestPastOrFirst(List<String> sortedTimesAsc, String currentTime) {
         String target = null;
         for (String time : sortedTimesAsc) {
