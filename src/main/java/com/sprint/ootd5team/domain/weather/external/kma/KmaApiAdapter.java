@@ -21,13 +21,13 @@ public class KmaApiAdapter {
     private static final String[] baseTimes = {"2300", "2000", "1700", "1400", "1100", "0800",
         "0500",
         "0200"};
-    private final WebClient KmaWebClient;
+    private final WebClient kmaWebClient;
     private final ObjectMapper mapper;
 
 
-    public KmaApiAdapter(@Qualifier("KmaWebClient") WebClient KmaWebClient,
+    public KmaApiAdapter(@Qualifier("kmaWebClient") WebClient kmaWebClient,
         ObjectMapper mapper) {
-        this.KmaWebClient = KmaWebClient;
+        this.kmaWebClient = kmaWebClient;
         this.mapper = mapper;
     }
 
@@ -67,7 +67,7 @@ public class KmaApiAdapter {
                 longitude, latitude,
                 kmaXY.x(), kmaXY.y(), baseDate, baseTime);
 
-            String response = KmaWebClient.get()
+            String response = kmaWebClient.get()
                 .uri(uriBuilder -> uriBuilder
                     .queryParam("pageNo", 1)
                     .queryParam("numOfRows", 1000)
