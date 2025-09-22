@@ -2,8 +2,8 @@ package com.sprint.ootd5team.domain.like.service;
 
 import com.sprint.ootd5team.base.exception.feed.AlreadyLikedException;
 import com.sprint.ootd5team.base.exception.feed.FeedNotFoundException;
+import com.sprint.ootd5team.base.exception.feed.LikeCountUnderflowException;
 import com.sprint.ootd5team.base.exception.feed.LikeNotFoundException;
-import com.sprint.ootd5team.domain.feed.entity.Feed;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.like.entity.FeedLike;
 import com.sprint.ootd5team.domain.like.repository.FeedLikeRepository;
@@ -25,32 +25,34 @@ public class FeedLikeServiceImpl implements FeedLikeService {
     public void like(UUID feedId, UUID currentUserId) {
         log.info("[FeedLikeService] 피드 좋아요 활성화 시작 - feedId = {}, currentUserId = {}", feedId, currentUserId);
 
-        Feed feed = validateFeed(feedId);
+        validateFeed(feedId);
         validateNotLiked(feedId, currentUserId);
 
         FeedLike feedLike = new FeedLike(feedId, currentUserId);
         feedLikeRepository.save(feedLike);
         log.debug("[FeedLikeService] 저장된 FeedLike: {}", feedLike);
 
-        int likeCount = feedRepository.incrementLikeCount(feedId);
-        log.debug("[FeedLikeService] 변경된 피드 좋아요 수 - likeCount:{}", likeCount);
+        feedRepository.incrementLikeCount(feedId);
     }
 
     @Transactional
     public void unLike(UUID feedId, UUID currentUserId) {
         log.info("[FeedLikeService] 피드 좋아요 비활성화 시작 - feedId = {}, currentUserId = {}", feedId, currentUserId);
 
-        Feed feed = validateFeed(feedId);
+        validateFeed(feedId);
         validateLiked(feedId, currentUserId);
 
         feedLikeRepository.deleteByFeedIdAndUserId(feedId, currentUserId);
 
-        int likeCount = feedRepository.decrementLikeCount(feedId);
-        log.debug("[FeedLikeService] 변경된 피드 좋아요 수 - likeCount:{}", likeCount);
+        int updatedRows = feedRepository.decrementLikeCount(feedId);
+        if (updatedRows == 0) {
+            log.error("[FeedLikeService] 좋아요 수 감소 실패");
+            throw LikeCountUnderflowException.withFeedId(feedId);
+        }
     }
 
-    private Feed validateFeed(UUID feedId) {
-        return feedRepository.findById(feedId)
+    private void validateFeed(UUID feedId) {
+        feedRepository.findById(feedId)
             .orElseThrow(() -> {
                 log.warn("[FeedLikeService] 피드가 존재하지 않습니다.");
                 return FeedNotFoundException.withId(feedId);

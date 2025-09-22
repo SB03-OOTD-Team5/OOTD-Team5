@@ -25,6 +25,7 @@ public enum ErrorCode {
     INVALID_SORT_OPTION(HttpStatus.BAD_REQUEST, "유효하지 않은 정렬 옵션입니다."),
     ALREADY_LIKED_EXCEPTION(HttpStatus.BAD_REQUEST, "이미 좋아요 처리된 피드입니다."),
     LIKE_NOT_FOUND_EXCEPTION(HttpStatus.NOT_FOUND, "존재하지 않는 좋아요입니다."),
+    LIKE_COUNT_UNDER_FLOW_EXCEPTION(HttpStatus.BAD_REQUEST, "좋아요 수가 음수일 수 없습니다."),
 
     // Weather 관련 에러코드
     WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당하는 날씨 데이터가 없습니다."),
