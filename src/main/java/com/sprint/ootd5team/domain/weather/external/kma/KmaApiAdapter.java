@@ -6,6 +6,8 @@ import com.sprint.ootd5team.domain.weather.exception.WeatherKmaFetchException;
 import com.sprint.ootd5team.domain.weather.exception.WeatherKmaParseException;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaGridConverter.GridXY;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -15,9 +17,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Component
 public class KmaApiAdapter {
 
+    private static final ZoneId SEOUL_ZONE_ID = ZoneId.of("Asia/Seoul");
+    private static final String[] baseTimes = {"2300", "2000", "1700", "1400", "1100", "0800",
+        "0500",
+        "0200"};
     private final WebClient KmaWebClient;
     private final ObjectMapper mapper;
-    private final String baseTime = "0200";
+
 
     public KmaApiAdapter(@Qualifier("KmaWebClient") WebClient KmaWebClient,
         ObjectMapper mapper) {
@@ -25,15 +31,34 @@ public class KmaApiAdapter {
         this.mapper = mapper;
     }
 
-    public KmaResponseDto fetchWeatherFromKma(String baseDate, BigDecimal latitude,
+    public String getBaseTime(String baseDate) {
+        // 발표 시간 파라미터 현재 시간 기준으로 자동 설정
+        LocalDateTime now = LocalDateTime.now(SEOUL_ZONE_ID);
+
+        String baseTime = "0200";
+        for (String t : baseTimes) {
+            int hh = Integer.parseInt(t.substring(0, 2));
+            int mm = Integer.parseInt(t.substring(2, 4));
+            LocalDateTime cand = now.withHour(hh).withMinute(mm).withSecond(0).withNano(0);
+            if (now.isAfter(cand.plusMinutes(10))) {
+                baseTime = t;
+                break;
+            }
+        }
+
+        return baseTime;
+    }
+
+    public KmaResponseDto fetchWeatherFromKma(String baseDate, String baseTime, BigDecimal latitude,
         BigDecimal longitude) {
-        String responseJson = fetchRawWeatherData(baseDate, latitude, longitude);
+        String responseJson = fetchRawWeatherData(baseDate, baseTime, latitude, longitude);
         KmaResponseDto kmaResponseDto = parseToKmaResponseDto(responseJson);
         validateKmaData(kmaResponseDto);
         return kmaResponseDto;
     }
 
-    private String fetchRawWeatherData(String baseDate, BigDecimal latitude, BigDecimal longitude) {
+    private String fetchRawWeatherData(String baseDate, String baseTime, BigDecimal latitude,
+        BigDecimal longitude) {
         GridXY kmaXY = convertGridXY(latitude, longitude);
 
         try {
