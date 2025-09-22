@@ -29,7 +29,8 @@ public class DirectMessageRoom extends BaseEntity {
 	private UUID user2Id;   // 참여자2 (onDelete = null)
 
 	// 양방향 매핑 - 해당 채팅방 내 메세지 조회
-	@OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(mappedBy = "directMessageRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OrderBy("createdAt ASC, id ASC")
 	@Builder.Default
 	private List<DirectMessage> messages = new ArrayList<>();
 

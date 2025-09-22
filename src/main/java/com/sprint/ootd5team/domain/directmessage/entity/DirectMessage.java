@@ -18,7 +18,7 @@ public class DirectMessage extends BaseEntity {
 	@JoinColumn(name = "room_id", nullable = false)
 	private DirectMessageRoom directMessageRoom;   // FK로 채팅방 참조
 
-	@Column(name = "sender_id")
+	@Column(name = "sender_id", nullable = false)
 	private UUID senderId;   // 메세지 송신자 (onDelete = null)
 
 	@Column(name = "content", nullable = false, columnDefinition = "TEXT")
