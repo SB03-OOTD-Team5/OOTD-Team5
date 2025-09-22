@@ -87,11 +87,9 @@ dependencies {
 
 }
 
-tasks.named('test') {
-    useJUnitPlatform()
-}
-
 test {
+    useJUnitPlatform()
+    systemProperty "file.encoding", "UTF-8"
     finalizedBy jacocoTestReport
 }
 
@@ -106,7 +104,7 @@ clean {
 //QueryDsl : 자바 컴파일할때, 자동 생성된 Q 클래스를 querydslSrcDir 경로에 생성
 tasks.withType(JavaCompile) {
     options.generatedSourceOutputDirectory = file(querydslDir)
-
+    options.encoding = 'UTF-8'
 }
 
 jacocoTestReport {
