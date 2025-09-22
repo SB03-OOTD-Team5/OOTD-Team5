@@ -249,4 +249,19 @@ class ClothesControllerTest {
             .andExpect(jsonPath("$.imageUrl").value("https://dummy.com/image.png"))
             .andExpect(jsonPath("$.type").doesNotExist());
     }
+
+    @Test
+    void 잘못된_URL이면_400을_반환한다() throws Exception {
+        mockMvc.perform(get("/api/clothes/extractions")
+                .param("url", "ftp://malicious.com"))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/clothes/extractions")
+                .param("url", ""))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/clothes/extractions")
+                .param("url", "ht!tp://bad-url"))
+            .andExpect(status().isBadRequest());
+    }
 }
