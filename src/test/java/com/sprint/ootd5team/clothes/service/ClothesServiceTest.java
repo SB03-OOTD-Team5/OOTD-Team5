@@ -50,6 +50,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -58,28 +59,21 @@ import org.springframework.web.multipart.MultipartFile;
 @DisplayName("ClothesService 단위 테스트")
 class ClothesServiceTest {
 
+    private final UUID ownerId = UUID.fromString("11111111-1111-1111-1111-111111111111");
     @Mock
     private ClothesRepository clothesRepository;
-
     @Mock
     private ClothesMapper clothesMapper;
-
     @Mock
     private ClothesAttributeRepository clothesAttributeRepository;
-
     @Mock
     private UserRepository userRepository;
-
     @Mock
     private FileStorage fileStorage;
-
     @Mock
     private AuthService authService;
-
     @InjectMocks
     private ClothesServiceImpl clothesService;
-
-    private final UUID ownerId = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private User owner;
 
     @BeforeEach
@@ -92,17 +86,19 @@ class ClothesServiceTest {
     void 옷_전체목록조회() {
         // given
         List<Clothes> fakeClothes = ClothesFixture.createTestClothes(owner);
-        given(clothesRepository.findClothes(eq(ownerId), eq(null), eq(null), eq(null), anyInt()))
+        given(clothesRepository.findByUserWithCursor(eq(ownerId), eq(null), eq(null), eq(null),
+            anyInt(), eq(Direction.DESC)))
             .willReturn(fakeClothes);
         given(clothesMapper.toDto(any(Clothes.class)))
             .willAnswer(invocation -> {
                 Clothes c = invocation.getArgument(0);
                 return ClothesFixture.toDto(c);
             });
+        given(clothesRepository.countByOwner_Id(ownerId)).willReturn(3L);
 
         // when
         ClothesDtoCursorResponse response = clothesService.getClothes(ownerId, null, null, null,
-            10);
+            10, Direction.DESC);
 
         // then
         assertThat(response).isNotNull();
@@ -121,7 +117,8 @@ class ClothesServiceTest {
         int limit = 2;
 
         List<Clothes> fakeClothes = ClothesFixture.createTestClothes(owner);
-        given(clothesRepository.findClothes(eq(ownerId), eq(null), eq(cursor), eq(null), anyInt()))
+        given(clothesRepository.findByUserWithCursor(eq(ownerId), eq(null), eq(cursor), eq(null),
+            anyInt(), eq(Direction.DESC)))
             .willReturn(fakeClothes);
 
         given(clothesMapper.toDto(any(Clothes.class)))
@@ -132,7 +129,7 @@ class ClothesServiceTest {
 
         // when
         ClothesDtoCursorResponse response =
-            clothesService.getClothes(ownerId, null, cursor.toString(), null, limit);
+            clothesService.getClothes(ownerId, null, cursor, null, limit, Direction.DESC);
 
         // then
         assertThat(response).isNotNull();
@@ -146,8 +143,9 @@ class ClothesServiceTest {
     void 옷_타입별조회_TOP() {
         // given
         List<Clothes> fakeClothes = ClothesFixture.createTestClothes(owner);
-        given(clothesRepository.findClothes(eq(ownerId), eq(ClothesType.TOP), eq(null), eq(null),
-            anyInt()))
+        given(clothesRepository.findByUserWithCursor(eq(ownerId), eq(ClothesType.TOP), eq(null),
+            eq(null),
+            anyInt(), eq(Direction.DESC)))
             .willReturn(
                 fakeClothes.stream()
                     .filter(c -> c.getType() == ClothesType.TOP)
@@ -158,7 +156,7 @@ class ClothesServiceTest {
 
         // when
         ClothesDtoCursorResponse response =
-            clothesService.getClothes(ownerId, ClothesType.TOP, null, null, 10);
+            clothesService.getClothes(ownerId, ClothesType.TOP, null, null, 10, Direction.DESC);
 
         // then
         assertThat(response.data()).hasSize(1);
@@ -184,12 +182,13 @@ class ClothesServiceTest {
             })
             .toList();
 
-        given(clothesRepository.findClothes(eq(ownerId), any(), any(), any(), anyInt()))
+        given(clothesRepository.findByUserWithCursor(eq(ownerId), any(), any(), any(), anyInt(),
+            eq(Direction.DESC)))
             .willReturn(clothesList);
 
         // when
         ClothesDtoCursorResponse response = clothesService.getClothes(ownerId, null, null, null,
-            10);
+            10, Direction.DESC);
 
         // then
         assertThat(response.hasNext()).isTrue();
@@ -543,7 +542,8 @@ class ClothesServiceTest {
     void 의상_삭제시_이미지가_있으면_스토리지에서도_삭제된다() {
         // given
         UUID clothesId = UUID.randomUUID();
-        Clothes clothes = ClothesFixture.createClothesEntity(owner, "셔츠", ClothesType.TOP, "image.png");
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "셔츠", ClothesType.TOP,
+            "image.png");
 
         given(authService.getCurrentUserId()).willReturn(ownerId);
         given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
@@ -560,7 +560,8 @@ class ClothesServiceTest {
     void 의상_삭제시_이미지삭제에_실패해도_DB삭제는_진행된다() {
         // given
         UUID clothesId = UUID.randomUUID();
-        Clothes clothes = ClothesFixture.createClothesEntity(owner, "셔츠", ClothesType.TOP, "image.png");
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "셔츠", ClothesType.TOP,
+            "image.png");
 
         given(authService.getCurrentUserId()).willReturn(ownerId);
         given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
@@ -610,7 +611,8 @@ class ClothesServiceTest {
         // given
         UUID clothesId = UUID.randomUUID();
         UUID anotherUserId = UUID.randomUUID(); // 다른 사용자
-        Clothes clothes = ClothesFixture.createClothesEntity(owner, "청바지", ClothesType.BOTTOM, null);
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "청바지", ClothesType.BOTTOM,
+            null);
 
         given(authService.getCurrentUserId()).willReturn(anotherUserId);
         given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));

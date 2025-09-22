@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
@@ -39,7 +40,8 @@ class ClothesRepositoryImplTest {
         ClothesType type = ClothesType.TOP;
 
         // when
-        List<Clothes> result = clothesRepository.findClothes(ownerId, type, null, null, 10);
+        List<Clothes> result = clothesRepository.findByUserWithCursor(ownerId, type, null, null, 10,
+            Direction.DESC);
 
         // then
         assertThat(result).hasSize(1);
@@ -52,12 +54,13 @@ class ClothesRepositoryImplTest {
         Instant after = Instant.parse("2024-01-01T09:00:00Z");
 
         // when
-        List<Clothes> result = clothesRepository.findClothes(
+        List<Clothes> result = clothesRepository.findByUserWithCursor(
             ownerId,
             null,
             after,
             null,
-            10
+            10,
+            Direction.DESC
         );
 
         // then
@@ -74,12 +77,13 @@ class ClothesRepositoryImplTest {
         UUID idAfter = UUID.fromString("22222222-2222-2222-2222-222222222222"); // 운동화2
 
         // when
-        List<Clothes> result = clothesRepository.findClothes(
+        List<Clothes> result = clothesRepository.findByUserWithCursor(
             UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
             null,
             cursor,
             idAfter,
-            10
+            10,
+            Direction.DESC
         );
 
         // then

@@ -93,7 +93,7 @@ class ClothesControllerTest {
     @Test
     void 옷_목록을_기본값으로_조회한다() throws Exception {
         // given
-        given(clothesService.getClothes(eq(ownerId), any(), any(), any(), anyInt()))
+        given(clothesService.getClothes(eq(ownerId), any(), any(), any(), anyInt(), any()))
             .willReturn(mockResponse);
 
         // when
