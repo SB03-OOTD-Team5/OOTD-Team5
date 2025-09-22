@@ -12,6 +12,9 @@ import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
 import com.sprint.ootd5team.domain.clothattribute.mapper.ClothesAttributeMapper;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeValueRepository;
+import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
+import com.sprint.ootd5team.domain.notification.enums.NotificationType;
+import com.sprint.ootd5team.domain.notification.service.NotificationService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.Comparator;
@@ -30,150 +33,173 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BasicClothesAttributeService implements ClothesAttributeService {
 
-	private final ClothesAttributeRepository clothesAttributeRepository;
-	private final ClothesAttributeValueRepository clothesAttributeValueRepository;
-	private final ClothesAttributeMapper mapper;
+    private final ClothesAttributeRepository clothesAttributeRepository;
+    private final ClothesAttributeValueRepository clothesAttributeValueRepository;
+    private final ClothesAttributeMapper mapper;
+    private final NotificationService notificationService;
 
-	@PersistenceContext
-	private EntityManager em;
+    @PersistenceContext
+    private EntityManager em;
 
-	@Override
-	@Transactional
-	public ClothesAttributeDefDto create(ClothesAttributeDefCreateRequest request) {
-		log.debug("[ClothesAttributeService] 의상 속성,하위속성 생성 시작.");
+    @Override
+    @Transactional
+    public ClothesAttributeDefDto create(ClothesAttributeDefCreateRequest request) {
+        log.debug("[ClothesAttributeService] 의상 속성,하위속성 생성 시작.");
 
-		String normalizedName = normalizeName(request.name());
-		List<String> sanitizedValues = sanitizeSelectableValues(request.selectableValues());
+        String normalizedName = normalizeName(request.name());
+        List<String> sanitizedValues = sanitizeSelectableValues(request.selectableValues());
 
-		if (clothesAttributeRepository.existsByNameIgnoreCase(normalizedName)) {
-			throw AttributeAlreadyExistException.withName(normalizedName);
-		}
+        if (clothesAttributeRepository.existsByNameIgnoreCase(normalizedName)) {
+            throw AttributeAlreadyExistException.withName(normalizedName);
+        }
 
-		ClothesAttribute createdAttribute = new ClothesAttribute(normalizedName);
-		sanitizedValues.forEach(value -> createdAttribute.addDef(new ClothesAttributeDef(createdAttribute, value)));
+        ClothesAttribute createdAttribute = new ClothesAttribute(normalizedName);
+        sanitizedValues.forEach(
+            value -> createdAttribute.addDef(new ClothesAttributeDef(createdAttribute, value)));
 
-		ClothesAttribute saved = clothesAttributeRepository.save(createdAttribute);
-		log.info("[ClothesAttributeService] 의상 속성 생성됨 : 속성명={}, 하위속성 수={}", saved.getName(), saved.getDefs().size());
-		return mapper.toDto(saved);
-	}
+        ClothesAttribute saved = clothesAttributeRepository.save(createdAttribute);
+        log.info("[ClothesAttributeService] 의상 속성 생성됨 : 속성명={}, 하위속성 수={}", saved.getName(),
+            saved.getDefs().size());
 
-	@Override
-	@Transactional(readOnly = true)
-	public List<ClothesAttributeDefDto> findAll(String sortBy, String sortDirection, String keywordLike) {
-		log.debug("[ClothesAttributeService] 전체 속성&하위속성 검색,정렬조회 시작.");
-		List<ClothesAttributeDefDto> all = clothesAttributeRepository.findAll().stream()
-			.map(mapper::toDto)
-			.toList();
-		int attTotalSize = all.size();
-		// 1. 검색
-		if (keywordLike != null && !keywordLike.isBlank()) {
-			all = all.stream()
-				.filter(dto -> dto.name().contains(keywordLike))
-				.toList();
-		}
+        // 알림 전송
+        notificationService.notifyAllUsers(
+            NotificationType.CLOTHES_ATTRIBUTE_ADDED,
+            NotificationLevel.INFO,
+            saved.getName()
+        );
 
-		// 2. 정렬
-		Comparator<ClothesAttributeDefDto> comparator =
-			"name".equalsIgnoreCase(sortBy)
-				? Comparator.comparing(ClothesAttributeDefDto::name)
-				: Comparator.comparing(ClothesAttributeDefDto::createdAt);
+        return mapper.toDto(saved);
+    }
 
-		if ("DESCENDING".equalsIgnoreCase(sortDirection)) {
-			comparator = comparator.reversed();
-		}
-		List<ClothesAttributeDefDto> result = all.stream().sorted(comparator).toList();
-		log.info("[ClothesAttributeService] 전체 속성&하위속성 검색,정렬조회 성공: 전체 속성 수= {}rows, 검색된 속성 수={}rows ", attTotalSize, result.size());
-		return result;
-	}
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClothesAttributeDefDto> findAll(String sortBy, String sortDirection,
+        String keywordLike) {
+        log.debug("[ClothesAttributeService] 전체 속성&하위속성 검색,정렬조회 시작.");
+        List<ClothesAttributeDefDto> all = clothesAttributeRepository.findAll().stream()
+            .map(mapper::toDto)
+            .toList();
+        int attTotalSize = all.size();
+        // 1. 검색
+        if (keywordLike != null && !keywordLike.isBlank()) {
+            all = all.stream()
+                .filter(dto -> dto.name().contains(keywordLike))
+                .toList();
+        }
 
-	@Override
-	@Transactional
-	public ClothesAttributeDefDto update(UUID id, ClothesAttributeDefUpdateRequest request) {
-		log.debug("[ClothesAttributeService] 의상 속성,하위속성 수정 시작.");
+        // 2. 정렬
+        Comparator<ClothesAttributeDefDto> comparator =
+            "name".equalsIgnoreCase(sortBy)
+                ? Comparator.comparing(ClothesAttributeDefDto::name)
+                : Comparator.comparing(ClothesAttributeDefDto::createdAt);
 
-		ClothesAttribute targetAttribute = clothesAttributeRepository.findById(id)
-			.orElseThrow(AttributeNotFoundException::new);
+        if ("DESCENDING".equalsIgnoreCase(sortDirection)) {
+            comparator = comparator.reversed();
+        }
+        List<ClothesAttributeDefDto> result = all.stream().sorted(comparator).toList();
+        log.info(
+            "[ClothesAttributeService] 전체 속성&하위속성 검색,정렬조회 성공: 전체 속성 수= {}rows, 검색된 속성 수={}rows ",
+            attTotalSize, result.size());
+        return result;
+    }
 
-		String newName = normalizeName(request.name());
-		List<String> sanitizedValues = sanitizeSelectableValues(request.selectableValues());
+    @Override
+    @Transactional
+    public ClothesAttributeDefDto update(UUID id, ClothesAttributeDefUpdateRequest request) {
+        log.debug("[ClothesAttributeService] 의상 속성,하위속성 수정 시작.");
 
-		if (!targetAttribute.getName().equalsIgnoreCase(newName)
-			&& clothesAttributeRepository.existsByNameIgnoreCase(newName)) {
-			throw AttributeAlreadyExistException.withName(newName);
-		}
+        ClothesAttribute targetAttribute = clothesAttributeRepository.findById(id)
+            .orElseThrow(AttributeNotFoundException::new);
 
-		List<ClothesAttributeDef> newDefs = sanitizedValues.stream()
-			.map(value -> new ClothesAttributeDef(targetAttribute, value))
-			.toList();
+        String newName = normalizeName(request.name());
+        List<String> sanitizedValues = sanitizeSelectableValues(request.selectableValues());
 
-		// 새로운 값으로 갱신
-		targetAttribute.clearDefs();
-		em.flush();
-		newDefs.forEach(targetAttribute::addDef);
+        if (!targetAttribute.getName().equalsIgnoreCase(newName)
+            && clothesAttributeRepository.existsByNameIgnoreCase(newName)) {
+            throw AttributeAlreadyExistException.withName(newName);
+        }
 
-		// 속성명 교체
-		targetAttribute.rename(newName);
+        List<ClothesAttributeDef> newDefs = sanitizedValues.stream()
+            .map(value -> new ClothesAttributeDef(targetAttribute, value))
+            .toList();
 
-		// 영속화
-		ClothesAttribute saved = clothesAttributeRepository.save(targetAttribute);
-		log.info("[ClothesAttributeService] 의상 속성 수정됨 : 속성명={}, 하위속성 수={}", saved.getName(), saved.getDefs().size());
-		return mapper.toDto(saved);
-	}
+        // 새로운 값으로 갱신
+        targetAttribute.clearDefs();
+        em.flush();
+        newDefs.forEach(targetAttribute::addDef);
 
-	@Override
-	@Transactional(readOnly = true)
-	public List<ClothesAttributeDto> getValuesByAttributeId(UUID attributeId) {
-		ClothesAttribute attribute = clothesAttributeRepository.findById(attributeId)
-			.orElseThrow(AttributeNotFoundException::new);
+        // 속성명 교체
+        targetAttribute.rename(newName);
 
-		// 자식 엔티티 → DTO 변환
-		return attribute.getDefs().stream()
-			.map(mapper::toDto)
-			.toList();
-	}
+        // 영속화
+        ClothesAttribute saved = clothesAttributeRepository.save(targetAttribute);
+        log.info("[ClothesAttributeService] 의상 속성 수정됨 : 속성명={}, 하위속성 수={}", saved.getName(),
+            saved.getDefs().size());
 
-	@Override
-	@Transactional
-	public void delete(UUID id) {
-		log.debug("[ClothesAttributeService] 의상 속성,하위속성 제거 시작.");
+        // 알림 전송
+        notificationService.notifyAllUsers(
+            NotificationType.CLOTHES_ATTRIBUTE_UPDATE,
+            NotificationLevel.INFO,
+            saved.getName()
+        );
 
-		ClothesAttribute targetAttribute = clothesAttributeRepository.findById(id)
-			.orElseThrow(AttributeNotFoundException::new);
+        return mapper.toDto(saved);
+    }
 
-		if (clothesAttributeValueRepository.existsByAttribute_Id(id)) {
-			throw new InvalidAttributeException();
-		}
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClothesAttributeDto> getValuesByAttributeId(UUID attributeId) {
+        ClothesAttribute attribute = clothesAttributeRepository.findById(attributeId)
+            .orElseThrow(AttributeNotFoundException::new);
 
-		//하위속성 제거
-		targetAttribute.clearDefs();
-		em.flush();
-		// 속성 엔티티 제거
-		String deletedName = targetAttribute.getName();
-		clothesAttributeRepository.delete(targetAttribute);
+        // 자식 엔티티 → DTO 변환
+        return attribute.getDefs().stream()
+            .map(mapper::toDto)
+            .toList();
+    }
 
-		log.info("[ClothesAttributeService] 의상 속성 제거됨: 속성명={}", deletedName);
-	}
+    @Override
+    @Transactional
+    public void delete(UUID id) {
+        log.debug("[ClothesAttributeService] 의상 속성,하위속성 제거 시작.");
 
-	private String normalizeName(String rawName) {
-		String normalized = rawName == null ? "" : rawName.trim();
-		if (normalized.isBlank()) {
-			throw new InvalidAttributeException();
-		}
-		return normalized;
-	}
+        ClothesAttribute targetAttribute = clothesAttributeRepository.findById(id)
+            .orElseThrow(AttributeNotFoundException::new);
 
-	private List<String> sanitizeSelectableValues(List<String> rawValues) {
-		if (rawValues == null) {
-			throw new InvalidAttributeException();
-		}
-		LinkedHashSet<String> sanitized = rawValues.stream()
-			.filter(Objects::nonNull)
-			.map(String::trim)
-			.filter(value -> !value.isBlank())
-			.collect(LinkedHashSet::new, LinkedHashSet::add, LinkedHashSet::addAll);
-		if (sanitized.isEmpty()) {
-			throw new InvalidAttributeException();
-		}
-		return List.copyOf(sanitized);
-	}
+        if (clothesAttributeValueRepository.existsByAttribute_Id(id)) {
+            throw new InvalidAttributeException();
+        }
+
+        //하위속성 제거
+        targetAttribute.clearDefs();
+        em.flush();
+        // 속성 엔티티 제거
+        String deletedName = targetAttribute.getName();
+        clothesAttributeRepository.delete(targetAttribute);
+
+        log.info("[ClothesAttributeService] 의상 속성 제거됨: 속성명={}", deletedName);
+    }
+
+    private String normalizeName(String rawName) {
+        String normalized = rawName == null ? "" : rawName.trim();
+        if (normalized.isBlank()) {
+            throw new InvalidAttributeException();
+        }
+        return normalized;
+    }
+
+    private List<String> sanitizeSelectableValues(List<String> rawValues) {
+        if (rawValues == null) {
+            throw new InvalidAttributeException();
+        }
+        LinkedHashSet<String> sanitized = rawValues.stream()
+            .filter(Objects::nonNull)
+            .map(String::trim)
+            .filter(value -> !value.isBlank())
+            .collect(LinkedHashSet::new, LinkedHashSet::add, LinkedHashSet::addAll);
+        if (sanitized.isEmpty()) {
+            throw new InvalidAttributeException();
+        }
+        return List.copyOf(sanitized);
+    }
 }

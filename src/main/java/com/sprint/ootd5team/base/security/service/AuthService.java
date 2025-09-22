@@ -8,6 +8,9 @@ import com.sprint.ootd5team.base.security.JwtInformation;
 import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.OotdUserDetails;
+import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
+import com.sprint.ootd5team.domain.notification.enums.NotificationType;
+import com.sprint.ootd5team.domain.notification.service.NotificationService;
 import com.sprint.ootd5team.domain.user.dto.TemporaryPasswordCreatedEvent;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ResetPasswordRequest;
@@ -40,6 +43,7 @@ public class AuthService {
     private final JwtRegistry jwtRegistry;
     private final UserDetailsService userDetailsService;
     private final ApplicationEventPublisher eventPublisher;
+    private final NotificationService notificationService;
 
 
     /**
@@ -53,33 +57,47 @@ public class AuthService {
     @Transactional
     public UserDto updateRoleInternal(UUID userId, UserRoleUpdateRequest request) {
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+        Role oldRole = user.getRole();
         user.updateRole(Role.valueOf(request.role()));
+
+        notificationService.createByReceiverId(
+            user.getId(),
+            NotificationType.ROLE_CHANGED,
+            NotificationLevel.INFO,
+            oldRole, request.role()
+        );
+
         return userMapper.toDto(userRepository.save(user));
     }
 
     /**
      * 이메일을 통해 비밀번호를 리셋한다.
      * 3분동안만 임시 비밀번호가 발급된다.
+     *
      * @param request 비밀번호 리셋을 원하는 이메일
      */
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        User user = userRepository.findByEmail(request.email()).orElseThrow((UserNotFoundException::new));
+        User user = userRepository.findByEmail(request.email())
+            .orElseThrow((UserNotFoundException::new));
         user.issueTemporaryPassword();
         userRepository.save(user);
 
         // 이벤트 리스너를 통해 비동기로 메일 보내기를 처리함
-        eventPublisher.publishEvent(new TemporaryPasswordCreatedEvent(user.getTempPassword(),user.getEmail(),user.getName(),user.getTempPasswordExpireAt()));
+        eventPublisher.publishEvent(
+            new TemporaryPasswordCreatedEvent(user.getTempPassword(), user.getEmail(),
+                user.getName(), user.getTempPasswordExpireAt()));
     }
 
     /**
      * 리프레쉬 토큰 재발급 로직
+     *
      * @param refreshToken 재발급 받기 전 리프레쉬토큰
      * @return Jwt 정보
      */
     @Transactional
     public JwtInformation refreshToken(String refreshToken) {
-        log.info("refreshToken : {}",refreshToken);
+        log.info("refreshToken : {}", refreshToken);
         // Validate refresh token
         if (!tokenProvider.validateRefreshToken(refreshToken)
             || !jwtRegistry.hasActiveJwtInformationByRefreshToken(refreshToken)) {
