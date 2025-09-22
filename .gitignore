@@ -35,3 +35,16 @@ out/
 
 ### VS Code ###
 .vscode/
+
+##
+**/generated/*
+/.env.*
+*.env
+!.env.sample
+
+## log
+logs/
+*.log
+**/logs/
+
+/uploads/

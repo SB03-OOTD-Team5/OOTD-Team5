@@ -79,13 +79,17 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.security:spring-security-messaging'
 
-}
+    //mail
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
 
-tasks.named('test') {
-    useJUnitPlatform()
+    // 웹 스크래핑
+    implementation 'org.jsoup:jsoup:1.18.1'
+
 }
 
 test {
+    useJUnitPlatform()
+    systemProperty "file.encoding", "UTF-8"
     finalizedBy jacocoTestReport
 }
 
@@ -100,7 +104,7 @@ clean {
 //QueryDsl : 자바 컴파일할때, 자동 생성된 Q 클래스를 querydslSrcDir 경로에 생성
 tasks.withType(JavaCompile) {
     options.generatedSourceOutputDirectory = file(querydslDir)
-
+    options.encoding = 'UTF-8'
 }
 
 jacocoTestReport {

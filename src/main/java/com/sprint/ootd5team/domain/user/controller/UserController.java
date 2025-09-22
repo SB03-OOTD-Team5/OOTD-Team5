@@ -1,0 +1,76 @@
+package com.sprint.ootd5team.domain.user.controller;
+
+import com.sprint.ootd5team.domain.profile.dto.request.ProfileDto;
+import com.sprint.ootd5team.domain.profile.service.ProfileService;
+import com.sprint.ootd5team.domain.user.controller.api.UserApi;
+import com.sprint.ootd5team.domain.user.dto.UserDto;
+import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
+import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
+import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
+import com.sprint.ootd5team.domain.user.service.UserService;
+import jakarta.validation.Valid;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import software.amazon.awssdk.http.HttpStatusCode;
+
+@RestController
+@RequestMapping("/api/users")
+@RequiredArgsConstructor
+public class UserController implements UserApi {
+
+    private final UserService userService;
+    private final ProfileService profileService;
+
+    @Override
+    @PostMapping
+    public ResponseEntity<UserDto> createUser(@Valid  @RequestBody UserCreateRequest request) {
+        UserDto userDto = userService.create(request);
+        return ResponseEntity
+            .status(HttpStatusCode.CREATED)
+            .body(userDto);
+    }
+
+    @Override
+    public ResponseEntity<UserDtoCursorResponse> getUsers(String cursor, UUID idAfter,
+        Integer limit, String sortBy, String sortDirection, String emailLike, String roleEqual,
+        Boolean locked) {
+        return null;
+    }
+
+    @Override
+    @PatchMapping("/{userId}/password")
+    public ResponseEntity<Void> changePassword(@PathVariable UUID userId,
+        @Valid @RequestBody ChangePasswordRequest request){
+
+        userService.changePassword(userId,request);
+
+        return ResponseEntity
+            .status(HttpStatusCode.NO_CONTENT)
+            .build();
+
+    }
+
+    @Override
+    @GetMapping("/{userId}/profiles")
+    public ResponseEntity<ProfileDto> getUserProfile(@PathVariable UUID userId){
+
+        ProfileDto profile = profileService.getProfile(userId);
+
+        return ResponseEntity
+            .status(HttpStatusCode.OK)
+            .body(profile);
+    }
+
+
+
+
+
+}

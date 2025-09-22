@@ -1,0 +1,54 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+  sql:
+    init:
+      mode: never
+
+# 배치 임시 제외
+  batch:
+    jdbc:
+      initialize-schema: never
+    job:
+      enabled: false
+      #Redis 비활성화
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+  data:
+    redis:
+      repositories:
+        enabled: false
+
+# 테스트환경에서 SecurityConfig 비활성화
+app:
+  security:
+    enabled: false
+
+# Admin 설정
+ootd:
+  admin:
+    username: ${OOTD_ADMIN_USERNAME:admin}
+    password: ${OOTD_ADMIN_PASSWORD:qwe123}
+    email: ${OOTD_ADMIN_EMAIL:admin@test.com}
+
+  # Access Token 및 Refresh Token 비밀키, 만료시간 설정
+  jwt:
+    access-token:
+      expiration-ms: 1800000 # 30분
+      secret: ${JWT_ACCESS_TOKEN_SECRET:test-access-secret-32-bytes-minimum-1234567890abcd}
+
+    refresh-token:
+      expiration-ms: 604800000 # 7일
+      secret: ${JWT_REFRESH_TOKEN_SECRET:test-refresh-secret-32-bytes-minimum-abcdef1234567890}

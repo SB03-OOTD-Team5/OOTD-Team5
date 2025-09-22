@@ -11,8 +11,10 @@ CREATE TABLE IF NOT EXISTS tbl_users
     is_locked                BOOLEAN                  NOT NULL,
     created_at               TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at               TIMESTAMP WITH TIME ZONE,
+    temp_password            VARCHAR(100)             NULL,
+    temp_password_expired_at TIMESTAMP WITH TIME ZONE NULL,
     -- constraints
-    CONSTRAINT check_role CHECK (role IN ('ROLE_USER', 'ROLE_ADMIN'))
+    CONSTRAINT check_role CHECK (role IN ('USER', 'ADMIN'))
 );
 
 -- 인증 테이블
@@ -33,6 +35,7 @@ CREATE TABLE IF NOT EXISTS tbl_profiles
 (
     id                       UUID                     PRIMARY KEY,
     user_id                  UUID                     NOT NULL,
+    name                     VARCHAR(50)              NOT NULL, -- 추후 멀티프로필용 이름 추가
     gender                   VARCHAR(10),
     birth_date               DATE,
     profile_image_url        TEXT,
@@ -41,7 +44,7 @@ CREATE TABLE IF NOT EXISTS tbl_profiles
     x_coord                  INTEGER,
     y_coord                  INTEGER,
     location_names           VARCHAR(100),
-    temperature_sensitivity  INT                      NOT NULL DEFAULT 2,
+    temperature_sensitivity  INT                      ,
     created_at               TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at               TIMESTAMP WITH TIME ZONE,
     -- constraints
@@ -68,34 +71,39 @@ CREATE TABLE IF NOT EXISTS tbl_clothes
 );
 
 -- 의상 속성 테이블
-CREATE TABLE IF NOT EXISTS tbl_cloth_attributes
+CREATE TABLE IF NOT EXISTS tbl_clothes_attributes
 (
     id                        UUID                     PRIMARY KEY,
     name                      VARCHAR(50)              NOT NULL,
-    created_at                TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    -- constraints
+    CONSTRAINT ux_attr_name UNIQUE (name)
 );
 
--- 의상 선택적 하위 속성 테이블
-CREATE TABLE IF NOT EXISTS tbl_cloth_attributes_defs
+-- 의상 선택지 정의 테이블(카테고리별 허용 값)
+CREATE TABLE IF NOT EXISTS tbl_clothes_attributes_defs
 (
     id                        UUID                     PRIMARY KEY,
     attribute_id              UUID                     NOT NULL,
-    values                    VARCHAR(50),
+    att_def                   VARCHAR(50)              NOT NULL,
     created_at                TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     -- constraints
-    CONSTRAINT fk_attributes_defs_attr FOREIGN KEY (attribute_id) REFERENCES tbl_cloth_attributes (id) ON DELETE CASCADE
+    CONSTRAINT fk_attributes_defs_attr FOREIGN KEY (attribute_id) REFERENCES tbl_clothes_attributes (id) ON DELETE CASCADE,
+    CONSTRAINT ux_attrdef_attr_attdef UNIQUE (attribute_id, att_def)
 );
 
 -- 의상 속성 값 연결 테이블
-CREATE TABLE IF NOT EXISTS tbl_cloth_attributes_values
+CREATE TABLE IF NOT EXISTS tbl_clothes_attributes_values
 (
     id                        UUID PRIMARY KEY,
     clothes_id                UUID NOT NULL,
-    attributes_id             UUID NOT NULL,
-    def_value          VARCHAR(50),
+    attribute_id             UUID NOT NULL,
+    def_value                 VARCHAR(50) NOT NULL,
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
     -- constraints
     CONSTRAINT fk_attr_values_clothes FOREIGN KEY (clothes_id) REFERENCES tbl_clothes (id) ON DELETE CASCADE,
-    CONSTRAINT fk_attr_values_attr FOREIGN KEY (attributes_id) REFERENCES tbl_cloth_attributes (id) ON DELETE CASCADE
+    CONSTRAINT fk_attr_values_attr FOREIGN KEY (attribute_id) REFERENCES tbl_clothes_attributes (id) ON DELETE CASCADE,
+    CONSTRAINT uk_cav_clothes_attribute UNIQUE (clothes_id, attribute_id)
 );
 
 /****** 피드 ******/
@@ -121,7 +129,8 @@ CREATE TABLE IF NOT EXISTS tbl_feed_clothes
     created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
     -- constraints
     CONSTRAINT fk_feed_clothes_feed FOREIGN KEY (feed_id) REFERENCES tbl_feeds (id) ON DELETE CASCADE,
-    CONSTRAINT fk_feed_clothes_clothes FOREIGN KEY (clothes_id) REFERENCES tbl_clothes (id) ON DELETE CASCADE
+    CONSTRAINT fk_feed_clothes_clothes FOREIGN KEY (clothes_id) REFERENCES tbl_clothes (id) ON DELETE CASCADE,
+    CONSTRAINT uq_feed_clothes UNIQUE (feed_id, clothes_id)
 );
 
 -- 피드 댓글 테이블
@@ -191,7 +200,10 @@ CREATE TABLE IF NOT EXISTS tbl_locations
     x_coord                   INTEGER,
     y_coord                   INTEGER,
     location_names            VARCHAR(100),
-    created_at                TIMESTAMP WITH TIME ZONE NOT NULL
+    location_code             VARCHAR(20),
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
+    -- constraints
+    CONSTRAINT uq_locations UNIQUE (latitude,longitude)
 
 );
 /****** DM ******/
@@ -236,3 +248,59 @@ CREATE INDEX idx_tbl_clothes_owner_id
 -- DM 메세지 인덱스 (마지막 메세지부터 조회)
 CREATE INDEX IF NOT EXISTS idx_dm_messages_room_created
     ON tbl_dm_messages(room_id, created_at DESC);
+    
+CREATE INDEX IF NOT EXISTS ix_cav_clothes_attr
+    ON tbl_clothes_attributes_values (clothes_id, attribute_id);
+
+CREATE INDEX IF NOT EXISTS ix_cav_attr_defvalue
+    ON tbl_clothes_attributes_values (attribute_id, def_value);
+
+/* tbl_profiles - name 컬럼 추가 & 수정 */
+
+-- 컬럼 없으면 추가
+ALTER TABLE tbl_profiles ADD COLUMN IF NOT EXISTS name VARCHAR(50);
+
+--  NULL인 행만 데이터 채우기
+UPDATE tbl_profiles p
+SET name = (
+    SELECT u.name
+    FROM tbl_users u
+    WHERE u.id = p.user_id
+)
+WHERE p.name IS NULL;
+
+ALTER TABLE tbl_profiles ALTER COLUMN name SET NOT NULL;
+
+
+/* feed 변경 사항 - unique 제약 조건, 인덱스 추가 */
+
+-- tbl_feed index
+CREATE INDEX IF NOT EXISTS idx_feeds_createdat_id
+    ON tbl_feeds(created_at DESC, id DESC);
+
+CREATE INDEX IF NOT EXISTS idx_feeds_likecount_id
+    ON tbl_feeds(like_count DESC, id DESC);
+
+-- tbl_feed_clothes index
+CREATE INDEX IF NOT EXISTS idx_feed_clothes_feed_id
+    ON tbl_feed_clothes(feed_id);
+
+CREATE INDEX IF NOT EXISTS idx_feed_clothes_clothes_id
+    ON tbl_feed_clothes(clothes_id);
+
+-- tbl_feed_comments index
+CREATE INDEX IF NOT EXISTS idx_feed_comments_feed_id
+    ON tbl_feed_comments(feed_id);
+
+-- tbl_feed_likes index
+CREATE INDEX IF NOT EXISTS idx_feed_likes_feed_id
+    ON tbl_feed_likes(feed_id);
+
+ALTER TABLE tbl_feed_clothes
+    ADD CONSTRAINT uq_feed_clothes UNIQUE (feed_id, clothes_id);
+
+ALTER TABLE tbl_locations
+    ADD CONSTRAINT uq_locations UNIQUE (latitude, longitude);
+
+ALTER TABLE tbl_locations
+    ADD COLUMN location_code  VARCHAR(20);
