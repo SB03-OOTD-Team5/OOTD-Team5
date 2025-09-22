@@ -32,8 +32,8 @@ public class FeedLikeServiceImpl implements FeedLikeService {
         feedLikeRepository.save(feedLike);
         log.debug("[FeedLikeService] 저장된 FeedLike: {}", feedLike);
 
-        feed.like();
-        log.debug("[FeedLikeService] 변경된 피드 좋아요 수 - likeCount:{}", feed.getLikeCount());
+        int likeCount = feedRepository.incrementLikeCount(feedId);
+        log.debug("[FeedLikeService] 변경된 피드 좋아요 수 - likeCount:{}", likeCount);
     }
 
     @Transactional
@@ -45,8 +45,8 @@ public class FeedLikeServiceImpl implements FeedLikeService {
 
         feedLikeRepository.deleteByFeedIdAndUserId(feedId, currentUserId);
 
-        feed.unLike();
-        log.debug("[FeedLikeService] 변경된 피드 좋아요 수 - likeCount:{}", feed.getLikeCount());
+        int likeCount = feedRepository.decrementLikeCount(feedId);
+        log.debug("[FeedLikeService] 변경된 피드 좋아요 수 - likeCount:{}", likeCount);
     }
 
     private Feed validateFeed(UUID feedId) {
