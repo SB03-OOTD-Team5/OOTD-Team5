@@ -8,9 +8,11 @@ import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothes.extractor.ClothesExtractionService;
 import com.sprint.ootd5team.domain.clothes.service.ClothesService;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,16 +32,17 @@ public class ClothesController implements ClothesApi {
     public ResponseEntity<ClothesDtoCursorResponse> getClothes(
         UUID ownerId,
         ClothesType type,
-        String cursor,
+        Instant cursor,
         UUID idAfter,
-        int limit
+        int limit,
+        Sort.Direction sortDirection
     ) {
         log.info("[ClothesController] 전체 조회 요청 수신: "
-                + "ownerId={}, typeEqual={}, cursor={}, idAfter={}, limit={}",
-            ownerId, type, cursor, idAfter, limit);
+                + "ownerId={}, typeEqual={}, cursor={}, idAfter={}, limit={}, sort={}",
+            ownerId, type, cursor, idAfter, limit, sortDirection.name());
 
         ClothesDtoCursorResponse response =
-            clothesService.getClothes(ownerId, type, cursor, idAfter, limit);
+            clothesService.getClothes(ownerId, type, cursor, idAfter, limit, sortDirection);
 
         log.info("[ClothesController] 전체 조회 응답 반환: "
                 + "data.size={}, hasNext={}, nextCursor={}, nextIdAfter={}",

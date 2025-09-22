@@ -14,7 +14,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.Instant;
 import java.util.UUID;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
@@ -47,9 +49,10 @@ public interface ClothesApi {
     ResponseEntity<ClothesDtoCursorResponse> getClothes(
         @Parameter(description = "의상 소유자 ID") @RequestParam UUID ownerId,
         @Parameter(description = "의상 타입 필터") @RequestParam(name = "typeEqual", required = false) ClothesType type,
-        @Parameter(description = "커서") @RequestParam(required = false) String cursor,
+        @Parameter(description = "커서") @RequestParam(required = false) Instant cursor,
         @Parameter(description = "보조 커서(UUID)") @RequestParam(required = false) UUID idAfter,
-        @Parameter(description = "페이지 크기", example = "20") @RequestParam(name = "limit", defaultValue = "20") int limit
+        @Parameter(description = "페이지 크기", example = "20") @RequestParam(name = "limit", defaultValue = "20") int limit,
+        @Parameter(description = "정렬 방향", example = "DESC") @RequestParam(name = "sortDirection", defaultValue = "DESC") Sort.Direction sortDirection
     );
 
     @Operation(

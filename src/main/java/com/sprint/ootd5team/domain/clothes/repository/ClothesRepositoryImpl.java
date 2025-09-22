@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.domain.clothes.repository;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.entity.QClothes;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -37,8 +39,14 @@ public class ClothesRepositoryImpl implements ClothesRepositoryCustom {
      * @return 조회된 옷 목록
      */
     @Override
-    public List<Clothes> findClothes(UUID ownerId, ClothesType type, Instant cursor, UUID idAfter,
-        int limit) {
+    public List<Clothes> findByUserWithCursor(
+        UUID ownerId,
+        ClothesType type,
+        Instant cursor,
+        UUID idAfter,
+        int limit,
+        Sort.Direction sortDirection
+    ) {
         QClothes clothes = QClothes.clothes;
 
         BooleanBuilder where = new BooleanBuilder();
@@ -63,14 +71,20 @@ public class ClothesRepositoryImpl implements ClothesRepositoryCustom {
             log.debug("[ClothesRepository] cursor 필터 적용: createdAt < {}", cursor);
         }
 
+        OrderSpecifier<?> createdAtOrder =
+            sortDirection == Sort.Direction.ASC ? clothes.createdAt.asc()
+                : clothes.createdAt.desc();
+        OrderSpecifier<?> idOrder =
+            sortDirection == Sort.Direction.ASC ? clothes.id.asc() : clothes.id.desc();
+
         log.info("[ClothesRepository] 옷 목록 조회 실행: "
-                + "ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
-            ownerId, type, cursor, idAfter, limit);
+                + "ownerId={}, type={}, cursor={}, idAfter={}, limit={}, sortDirection={}",
+            ownerId, type, cursor, idAfter, limit, sortDirection.name());
 
         List<Clothes> result = queryFactory
             .selectFrom(clothes)
             .where(where)
-            .orderBy(clothes.createdAt.desc(), clothes.id.desc())
+            .orderBy(createdAtOrder, idOrder)
             .limit(limit)
             .fetch();
 

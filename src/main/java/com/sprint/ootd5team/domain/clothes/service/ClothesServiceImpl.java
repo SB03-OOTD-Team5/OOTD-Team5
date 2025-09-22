@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -72,17 +73,18 @@ public class ClothesServiceImpl implements ClothesService {
     public ClothesDtoCursorResponse getClothes(
         UUID ownerId,
         ClothesType type,
-        String cursor,
+        Instant cursor,
         UUID idAfter,
-        int limit
+        int limit,
+        Sort.Direction direction
     ) {
-        log.info("[ClothesService] 옷 목록 조회 시작: ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
+        log.info(
+            "[ClothesService] 옷 목록 조회 시작: ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
             ownerId, type, cursor, idAfter, limit);
 
-        Instant cursorInstant = cursor != null ? Instant.parse(cursor) : null;
         // 다음 페이지 여부 확인
-        List<Clothes> result = clothesRepository.findClothes(
-            ownerId, type, cursorInstant, idAfter, limit + 1
+        List<Clothes> result = clothesRepository.findByUserWithCursor(
+            ownerId, type, cursor, idAfter, limit + 1, direction
         );
 
         boolean hasNext = result.size() > limit;
@@ -104,14 +106,16 @@ public class ClothesServiceImpl implements ClothesService {
                 nextCursor, nextIdAfter);
         }
 
+        long totalCount = clothesRepository.countByOwner_Id(ownerId);
+
         ClothesDtoCursorResponse response = new ClothesDtoCursorResponse(
             dtoList,
             nextCursor,
             nextIdAfter,
             hasNext,
-            (long) dtoList.size(),
+            totalCount,
             "createdAt",
-            "DESC"
+            direction.name()
         );
 
         log.info("[ClothesService] 옷 목록 조회 완료: 반환 개수={}, hasNext={}",
@@ -205,7 +209,7 @@ public class ClothesServiceImpl implements ClothesService {
 
     /**
      * 의상 정보 수정
-     *
+     * <p>
      * 이미지: 새 파일 업로드 후 기존 파일 삭제
      * 속성: 요청된 속성과 현재 속성을 비교하여 추가/수정/삭제
      */
@@ -327,7 +331,9 @@ public class ClothesServiceImpl implements ClothesService {
      * @param reason 삭제 사유 (로그 용도)
      */
     private void deleteFileSafely(String key, String reason) {
-        if (!hasText(key)) return;
+        if (!hasText(key)) {
+            return;
+        }
         try {
             fileStorage.delete(key);
             log.info("[clothes] 파일 삭제 성공 - key={}, reason={}", key, reason);
@@ -339,7 +345,6 @@ public class ClothesServiceImpl implements ClothesService {
     /**
      * 의상 삭제
      * 이미지 파일 삭제는 {@link #deleteFileSafely(String, String)}에서 처리
-     *
      */
     @Transactional
     @Override

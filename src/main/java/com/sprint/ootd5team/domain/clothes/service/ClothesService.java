@@ -5,7 +5,9 @@ import com.sprint.ootd5team.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
+import java.time.Instant;
 import java.util.UUID;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface ClothesService {
@@ -13,9 +15,10 @@ public interface ClothesService {
     ClothesDtoCursorResponse getClothes(
         UUID ownerId,
         ClothesType type,
-        String cursor,
+        Instant cursor,
         UUID idAfter,
-        int limit
+        int limit,
+        Sort.Direction direction
     );
 
     ClothesDto create(ClothesCreateRequest request, MultipartFile image);

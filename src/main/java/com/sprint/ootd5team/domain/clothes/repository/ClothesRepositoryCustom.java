@@ -5,14 +5,16 @@ import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Sort;
 
 public interface ClothesRepositoryCustom {
 
-    List<Clothes> findClothes(
+    List<Clothes> findByUserWithCursor(
         UUID ownerId,
         ClothesType type,
         Instant cursor,
         UUID idAfter,
-        int limit
+        int limit,
+        Sort.Direction sortDirection
     );
 }
