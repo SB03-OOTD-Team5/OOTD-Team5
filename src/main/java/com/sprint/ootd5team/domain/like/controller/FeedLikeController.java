@@ -1,7 +1,6 @@
 package com.sprint.ootd5team.domain.like.controller;
 
 import com.sprint.ootd5team.base.security.service.AuthService;
-import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
 import com.sprint.ootd5team.domain.like.controller.api.FeedLikeApi;
 import com.sprint.ootd5team.domain.like.service.FeedLikeService;
 import java.util.UUID;
@@ -14,7 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@RequestMapping("/api/feeds/")
+@RequestMapping("/api/feeds")
 @Validated
 @RequiredArgsConstructor
 @RestController
