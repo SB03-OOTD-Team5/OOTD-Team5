@@ -1,8 +1,6 @@
 package com.sprint.ootd5team.base.exception;
 
-import com.sprint.ootd5team.base.errorcode.ErrorCode;
 import com.sprint.ootd5team.base.exception.file.FileTooLargeException;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -10,6 +8,8 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.security.access.AccessDeniedException;
+
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -56,6 +56,16 @@ public class GlobalExceptionHandler {
     ){
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST) // 400
+            .body(new ErrorResponse(ex));
+    }
+
+    // 인가되지 않은 접근일때 실행
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleUnAuthorizeException(
+        AccessDeniedException ex
+    ){
+        return ResponseEntity
+            .status(HttpStatus.UNAUTHORIZED) // 400
             .body(new ErrorResponse(ex));
     }
 }
