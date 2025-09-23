@@ -10,8 +10,8 @@ public enum ErrorCode {
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "권한이 없는 사용자입니다."),
     INVALID_USER_CREDENTIALS(HttpStatus.UNAUTHORIZED, "잘못된 사용자 인증 정보입니다."),
     UNSUPPORTED_PRINCIPAL(HttpStatus.UNAUTHORIZED, "지원하지 않는 사용자 인증 타입입니다."),
-    INVALID_TOKEN(HttpStatus.BAD_REQUEST,"잘못된 토큰입니다."),
-    INVALID_USER_DETAILS(HttpStatus.BAD_REQUEST,"잘못된 유저 Details입니다."),
+    INVALID_TOKEN(HttpStatus.BAD_REQUEST, "잘못된 토큰입니다."),
+    INVALID_USER_DETAILS(HttpStatus.BAD_REQUEST, "잘못된 유저 Details입니다."),
 
     // User 관련 에러코드
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
@@ -23,10 +23,15 @@ public enum ErrorCode {
     // Feed 관련 에러 코드
     FEED_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 피드입니다."),
     INVALID_SORT_OPTION(HttpStatus.BAD_REQUEST, "유효하지 않은 정렬 옵션입니다."),
+    ALREADY_LIKED_EXCEPTION(HttpStatus.BAD_REQUEST, "이미 좋아요 처리된 피드입니다."),
+    LIKE_NOT_FOUND_EXCEPTION(HttpStatus.NOT_FOUND, "존재하지 않는 좋아요입니다."),
+    LIKE_COUNT_UNDER_FLOW_EXCEPTION(HttpStatus.BAD_REQUEST, "좋아요 수가 음수일 수 없습니다."),
+
     // Weather 관련 에러코드
     WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당하는 날씨 데이터가 없습니다."),
     WEATHER_KMA_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "기상청 데이터를 가져오는데 실패했습니다."),
     WEATHER_KMA_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "기상청 데이터를 분석하는데 실패했습니다."),
+
     //위치 관련 에러코드
     LOCATION_NOT_FOUND(HttpStatus.NOT_FOUND, "해당하는 위치 데이터가 없습니다"),
     LOCATION_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "카카오 위치 데이터를 가져오는데 실패했습니다."),
@@ -39,20 +44,22 @@ public enum ErrorCode {
     FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 크기 초과"),
 
     //기타 에러코드
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"알 수 없는 오류가 발생했습니다."),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "알 수 없는 오류가 발생했습니다."),
 
     // Clothes 관련 에러코드
     CLOTHES_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 의상입니다."),
     CLOTHES_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "옷 저장에 실패했습니다."),
-
+    CLOTHES_EXTRACTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "의상 정보 추출에 실패했습니다."),
 
     // ClothesAttribute 관련 에러코드
     ATTRIBUTE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 속성입니다."),
     ATTRIBUTE_ALREADY_EXIST(HttpStatus.CONFLICT, "이미 존재하는 속성입니다."),
     INVALID_ATTRIBUTE_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 속성명입니다."),
     CLOTHES_ATTRIBUTE_VALUE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "허용되지 않은 속성값입니다."),
-    INVALID_ATTRIBUTE(HttpStatus.BAD_REQUEST, "유효하지 않은 속성입니다.")
+    INVALID_ATTRIBUTE(HttpStatus.BAD_REQUEST, "유효하지 않은 속성입니다."),
 
+    // 웹 크롤링 관련 에러코드
+    SCRAPING_FAILED(HttpStatus.BAD_GATEWAY, "웹 스크래핑 실패"),
 
     ;
     private final HttpStatus status;

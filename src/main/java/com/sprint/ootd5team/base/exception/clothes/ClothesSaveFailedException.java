@@ -21,4 +21,10 @@ public class ClothesSaveFailedException extends ClothesException {
         ex.initCause(cause);
         return ex;
     }
+
+    public static ClothesSaveFailedException withoutId(Throwable cause) {
+        ClothesSaveFailedException ex = new ClothesSaveFailedException();
+        ex.initCause(cause);
+        return ex;
+    }
 }
