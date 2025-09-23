@@ -1,7 +1,9 @@
 package com.sprint.ootd5team.domain.notification.controller;
 
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.notification.controller.api.NotificationApi;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDtoCursorResponse;
+import com.sprint.ootd5team.domain.notification.service.NotificationService;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class NotificationController implements NotificationApi {
 
+    private final NotificationService notificationService;
+    private final AuthService authService;
+
     @Override
     public ResponseEntity<NotificationDtoCursorResponse> getNotifications(
         Instant cursor,
@@ -32,6 +37,13 @@ public class NotificationController implements NotificationApi {
 
     @Override
     public ResponseEntity<Void> delete(UUID notificationId) {
+        UUID currentUserId = authService.getCurrentUserId();
+
+        log.info("[NotificationController] 삭제 요청: , currentUserId={}, notificationId={}", currentUserId, notificationId);
+
+        notificationService.delete(currentUserId, notificationId);
+
+        log.info("[NotificationController] 삭제 응답 완료");
         return ResponseEntity
             .status(HttpStatus.NO_CONTENT)
             .build();
