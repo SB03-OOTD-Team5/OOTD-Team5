@@ -8,8 +8,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface DirectMessageMapper {
 
-	@Mapping(target = "senderName", ignore = true)   // 서비스에서 UserRepository 통해 보강
-	@Mapping(target = "receiverId", ignore = true)   // 서비스에서 ChatRoom 기반으로 계산
-	@Mapping(target = "receiverName", ignore = true) // 서비스에서 UserRepository 통해 보강
+	@Mapping(target = "sender", ignore = true)   // 서비스에서 UserRepository 통해 보강
+	@Mapping(target = "receiver", ignore = true)   // 서비스에서 ChatRoom 기반으로 계산
 	DirectMessageDto toDto(DirectMessage directMessage);
 }
