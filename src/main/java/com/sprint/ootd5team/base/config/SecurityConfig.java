@@ -3,13 +3,12 @@ package com.sprint.ootd5team.base.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.security.CustomAuthenticationProvider;
+import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
 import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.RedisJwtRegistry;
 import com.sprint.ootd5team.base.security.RedisLockProvider;
-import com.sprint.ootd5team.base.security.SpaCsrfTokenRequestHandler;
 import com.sprint.ootd5team.base.security.handler.Http403ForbiddenAccessDeniedHandler;
-import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
 import com.sprint.ootd5team.base.security.handler.JwtLoginSuccessHandler;
 import com.sprint.ootd5team.base.security.handler.JwtLogoutHandler;
 import com.sprint.ootd5team.base.security.handler.LoginFailureHandler;
@@ -109,7 +108,7 @@ public class SecurityConfig {
                 if(csrfEnabled){
                     csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler());
-                    } else {
+                } else {
                     csrf.disable();
                 }
             })
@@ -134,6 +133,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-out").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-in").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
+                .requestMatchers("/api/sse").authenticated()
                 // 개발 storage = local일 때(s3시 필요없음)
                 .requestMatchers("/local-files/**").permitAll()
                 .anyRequest().permitAll()//TODO 개발환경은는 모두 허용, 빌드시에는 authenticated()으로 수정필요
