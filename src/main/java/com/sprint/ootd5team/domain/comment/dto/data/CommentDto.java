@@ -6,8 +6,8 @@ import java.util.UUID;
 
 public record CommentDto(
     UUID id,
-    UUID feedId,
     Instant createdAt,
+    UUID feedId,
     AuthorDto author,
     String content
 ) { }
