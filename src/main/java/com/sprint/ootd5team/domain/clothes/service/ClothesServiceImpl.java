@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -56,6 +57,9 @@ public class ClothesServiceImpl implements ClothesService {
     private final UserRepository userRepository;
     private final ClothesAttributeRepository attributeRepository;
     private final AuthService authService;
+
+    @Value("${ootd.storage.s3.prefix.clothes}")
+    private String clothesPrefix;
 
     /**
      * 특정 사용자의 의상 목록을 조회한다.
@@ -195,7 +199,8 @@ public class ClothesServiceImpl implements ClothesService {
             return fileStorage.upload(
                 image.getOriginalFilename(),
                 in,
-                image.getContentType()
+                image.getContentType(),
+                clothesPrefix
             );
         } catch (IOException e) {
             log.warn("[clothes] 이미지 업로드 실패 {}", e.getMessage());
