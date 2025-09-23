@@ -1,6 +1,7 @@
-package com.sprint.ootd5team.domain.notification;
+package com.sprint.ootd5team.domain.notification.controller;
 
 import com.sprint.ootd5team.base.security.service.AuthService;
+import com.sprint.ootd5team.domain.notification.controller.api.NotificationApi;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDtoCursorResponse;
 import com.sprint.ootd5team.domain.notification.service.NotificationService;
 import java.time.Instant;
@@ -12,24 +13,23 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
 @Slf4j
-public class NotificationController {
+public class NotificationController implements NotificationApi {
 
     private final NotificationService notificationService;
     private final AuthService authService;
 
-    @GetMapping
+    @Override
     public ResponseEntity<NotificationDtoCursorResponse> getNotifications(
-        @RequestParam(required = false) Instant cursor,
-        @RequestParam(required = false) UUID idAfter,
-        @RequestParam(defaultValue = "20") int limit,
-        @RequestParam(defaultValue = "DESC") Sort.Direction direction
+        Instant cursor,
+        UUID idAfter,
+        int limit,
+        Sort.Direction direction
     ) {
         UUID receiverId = authService.getCurrentUserId();
 
@@ -50,5 +50,17 @@ public class NotificationController {
             .body(response);
     }
 
+    @Override
+    public ResponseEntity<Void> delete(UUID notificationId) {
+        UUID currentUserId = authService.getCurrentUserId();
 
+        log.info("[NotificationController] 삭제 요청: , currentUserId={}, notificationId={}", currentUserId, notificationId);
+
+        notificationService.delete(currentUserId, notificationId);
+
+        log.info("[NotificationController] 삭제 응답 완료");
+        return ResponseEntity
+            .status(HttpStatus.NO_CONTENT)
+            .build();
+    }
 }

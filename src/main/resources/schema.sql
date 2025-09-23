@@ -217,7 +217,6 @@ CREATE TABLE tbl_notification
     title                     VARCHAR                  NOT NULL,
     content                   TEXT                     NOT NULL,
     level                     VARCHAR(10)              NOT NULL,
-    is_read                   BOOLEAN                  NOT NULL DEFAULT false,
     created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
     -- constraints
     CONSTRAINT check_level CHECK (level IN ('INFO', 'WARNING', 'ERROR')),
@@ -299,8 +298,3 @@ ALTER TABLE tbl_locations
 -- tbl_notification_receiver_created index
 CREATE INDEX idx_notification_receiver_created
     ON tbl_notification (receiver_id, created_at DESC);
-
--- tbl_notification_unread index
-CREATE INDEX idx_notification_unread
-    ON tbl_notification (receiver_id, created_at DESC)
-    WHERE is_read = false;

@@ -61,6 +61,9 @@ public enum ErrorCode {
     // 웹 크롤링 관련 에러코드
     SCRAPING_FAILED(HttpStatus.BAD_GATEWAY, "웹 스크래핑 실패"),
 
+    // Notification 관련 에러코드
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알람입니다."),
+
     ;
     private final HttpStatus status;
     private final String message;
