@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.clothes.controller;
 
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.clothes.controller.api.ClothesApi;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesUpdateRequest;
@@ -27,6 +28,7 @@ public class ClothesController implements ClothesApi {
 
     private final ClothesService clothesService;
     private final ClothesExtractionService clothesExtractionService;
+    private final AuthService authService;
 
     @Override
     public ResponseEntity<ClothesDtoCursorResponse> getClothes(
@@ -70,8 +72,9 @@ public class ClothesController implements ClothesApi {
 
     @Override
     public ResponseEntity<Void> deleteClothes(UUID clothesId) {
+        UUID ownerId = authService.getCurrentUserId();
         log.info("[ClothesController] 삭제 요청 수신: clothesId={}", clothesId);
-        clothesService.delete(clothesId);
+        clothesService.delete(ownerId, clothesId);
 
         log.info("[ClothesController] 삭제 응답 완료");
 

@@ -56,7 +56,6 @@ public class ClothesServiceImpl implements ClothesService {
     private final FileStorage fileStorage;
     private final UserRepository userRepository;
     private final ClothesAttributeRepository attributeRepository;
-    private final AuthService authService;
 
     /**
      * 특정 사용자의 의상 목록을 조회한다.
@@ -348,22 +347,20 @@ public class ClothesServiceImpl implements ClothesService {
      */
     @Transactional
     @Override
-    public void delete(UUID clothesId) {
-        UUID currentUserId = authService.getCurrentUserId();
-
+    public void delete(UUID ownerId, UUID clothesId) {
         Clothes clothes = clothesRepository.findById(clothesId)
             .orElseThrow(() -> {
                 log.warn("[clothes] 삭제 실패 - 존재하지 않는 clothesId: {}", clothesId);
                 throw ClothesNotFoundException.withId(clothesId);
             });
 
-        if (!clothes.getOwner().getId().equals(currentUserId)) {
+        if (!clothes.getOwner().getId().equals(ownerId)) {
             throw new SecurityException();
         }
 
         deleteFileSafely(clothes.getImageUrl(), "의상 삭제");
         clothesRepository.deleteById(clothesId);
-        log.info("[clothes] 삭제 완료 - ownerId={}", currentUserId);
+        log.info("[clothes] 삭제 완료 - ownerId={}", ownerId);
     }
 
 }
