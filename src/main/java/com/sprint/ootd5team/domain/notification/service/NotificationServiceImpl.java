@@ -1,6 +1,6 @@
 package com.sprint.ootd5team.domain.notification.service;
 
-import com.sprint.ootd5team.base.sse.SseService;
+import com.sprint.ootd5team.base.sse.service.SseService;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDto;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDtoCursorResponse;
 import com.sprint.ootd5team.domain.notification.entity.Notification;

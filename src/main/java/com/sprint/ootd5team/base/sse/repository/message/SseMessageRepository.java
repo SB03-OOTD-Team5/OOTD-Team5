@@ -1,5 +1,6 @@
-package com.sprint.ootd5team.base.sse;
+package com.sprint.ootd5team.base.sse.repository.message;
 
+import com.sprint.ootd5team.base.sse.SseMessage;
 import java.util.List;
 import java.util.UUID;
 

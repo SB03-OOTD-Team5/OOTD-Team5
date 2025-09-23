@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.base.sse;
+package com.sprint.ootd5team.base.sse.service;
 
 import java.util.Collection;
 import java.util.UUID;

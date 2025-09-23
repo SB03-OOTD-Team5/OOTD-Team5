@@ -3,13 +3,12 @@ package com.sprint.ootd5team.base.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.security.CustomAuthenticationProvider;
+import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
 import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.RedisJwtRegistry;
 import com.sprint.ootd5team.base.security.RedisLockProvider;
-import com.sprint.ootd5team.base.security.SpaCsrfTokenRequestHandler;
 import com.sprint.ootd5team.base.security.handler.Http403ForbiddenAccessDeniedHandler;
-import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
 import com.sprint.ootd5team.base.security.handler.JwtLoginSuccessHandler;
 import com.sprint.ootd5team.base.security.handler.JwtLogoutHandler;
 import com.sprint.ootd5team.base.security.handler.LoginFailureHandler;
@@ -53,8 +52,24 @@ public class SecurityConfig {
 
     @Value("${app.csrf.enabled:true}")
     private boolean csrfEnabled;
+
+    /**
+     * roleHierarchy 등록
+     *
+     * @param roleHierarchy 등록
+     * @return 결과
+     */
+    @Bean
+    static MethodSecurityExpressionHandler methodSecurityExpressionHandler(
+        RoleHierarchy roleHierarchy) {
+        DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
+        handler.setRoleHierarchy(roleHierarchy);
+        return handler;
+    }
+
     /**
      * 현재 적용된 필터체인 목록 표시
+     *
      * @param filterChain 시큐리티 필터체인
      * @return 필터체인 로그 목록
      */
@@ -75,6 +90,7 @@ public class SecurityConfig {
 
     /**
      * 비밀번호를 BCrypt로 암호화
+     *
      * @return 암호화된 비밀번호
      */
     @Bean
@@ -82,15 +98,15 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-
     /**
      * 시큐리티 필터체인
+     *
      * @param http
-     * @param jwtLoginSuccessHandler 로그인 성공 핸들러
-     * @param loginFailureHandler 로그인 실패 핸들러
-     * @param objectMapper 직렬화
+     * @param jwtLoginSuccessHandler  로그인 성공 핸들러
+     * @param loginFailureHandler     로그인 실패 핸들러
+     * @param objectMapper            직렬화
      * @param jwtAuthenticationFilter 커스텀 인증 필터
-     * @param jwtLogoutHandler 로그아웃 핸들러
+     * @param jwtLogoutHandler        로그아웃 핸들러
      * @return 다음 시큐리티 필터체인
      */
     @Bean
@@ -106,10 +122,10 @@ public class SecurityConfig {
         http
             // csrf 설정
             .csrf(csrf -> {
-                if(csrfEnabled){
+                if (csrfEnabled) {
                     csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler());
-                    } else {
+                } else {
                     csrf.disable();
                 }
             })
@@ -136,6 +152,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
                 // 개발 storage = local일 때(s3시 필요없음)
                 .requestMatchers("/local-files/**").permitAll()
+                .requestMatchers("/api/sse").authenticated()
                 .anyRequest().permitAll()//TODO 개발환경은는 모두 허용, 빌드시에는 authenticated()으로 수정필요
             )
             // 예외처리
@@ -155,10 +172,11 @@ public class SecurityConfig {
 
     /**
      * ADMIN은 USER 역할을 포함한다.
+     *
      * @return 역할 계층구조
      */
     @Bean
-    public RoleHierarchy roleHierarchy(){
+    public RoleHierarchy roleHierarchy() {
         return RoleHierarchyImpl.withDefaultRolePrefix()
             .role(Role.ADMIN.name())
             .implies(Role.USER.name())
@@ -166,20 +184,8 @@ public class SecurityConfig {
     }
 
     /**
-     * roleHierarchy 등록
-     * @param roleHierarchy 등록
-     * @return 결과
-     */
-    @Bean
-    static MethodSecurityExpressionHandler methodSecurityExpressionHandler(
-        RoleHierarchy roleHierarchy) {
-        DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
-        handler.setRoleHierarchy(roleHierarchy);
-        return handler;
-    }
-
-    /**
      * 커스텀 인증필터를 Bean으로 등록
+     *
      * @param tokenProvider
      * @param userDetailsService
      * @param registry
@@ -190,18 +196,21 @@ public class SecurityConfig {
     JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider tokenProvider,
         UserDetailsService userDetailsService, JwtRegistry registry,
         ObjectMapper objectMapper) {
-        return new JwtAuthenticationFilter(tokenProvider,userDetailsService,registry,objectMapper);
+        return new JwtAuthenticationFilter(tokenProvider, userDetailsService, registry,
+            objectMapper);
     }
 
     /**
      * 커스텀 로그인 인증 방식을 Bean으로 등록(임시 비밀번호도 확인하기 위해서)
+     *
      * @param http
      * @param provider
      * @return
      * @throws Exception
      */
     @Bean
-    public AuthenticationManager authManager(HttpSecurity http, CustomAuthenticationProvider provider) throws Exception {
+    public AuthenticationManager authManager(HttpSecurity http,
+        CustomAuthenticationProvider provider) throws Exception {
         return http.getSharedObject(AuthenticationManagerBuilder.class)
             .authenticationProvider(provider)
             .build();
@@ -209,6 +218,7 @@ public class SecurityConfig {
 
     /**
      * Redis를 통해 멀티 서버 인스턴스 환경에서 jwt 토큰을 클러스터링
+     *
      * @param jwtTokenProvider
      * @param publisher
      * @param redisTemplate
@@ -222,7 +232,8 @@ public class SecurityConfig {
         RedisTemplate<String, Object> redisTemplate,
         RedisLockProvider redisLockProvider
     ) {
-        return new RedisJwtRegistry(1, jwtTokenProvider, publisher, redisTemplate, redisLockProvider);
+        return new RedisJwtRegistry(1, jwtTokenProvider, publisher, redisTemplate,
+            redisLockProvider);
     }
 
 }
