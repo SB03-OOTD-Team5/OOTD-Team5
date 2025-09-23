@@ -166,13 +166,13 @@ CREATE TABLE IF NOT EXISTS tbl_weathers
     profile_id                UUID                     NOT NULL,
     forecasted_at             TIMESTAMP WITH TIME ZONE NOT NULL, -- 예보 산출 시각
     forecast_at               TIMESTAMP WITH TIME ZONE NOT NULL, -- 예보 대상 시각
-    sky_status                VARCHAR(10)              NOT NULL,
+    sky_status                VARCHAR(20)              NOT NULL,
     latitude                  NUMERIC(8, 4)            NOT NULL,
     longitude                 NUMERIC(8, 4)            NOT NULL,
     x_coord                   INTEGER,
     y_coord                   INTEGER,
     location_names            VARCHAR(100),
-    precipitation_type        VARCHAR(10),
+    precipitation_type        VARCHAR(20),
     precipitation_amount      DOUBLE PRECISION,
     precipitation_probability DOUBLE PRECISION,
     humidity                  DOUBLE PRECISION,
@@ -182,7 +182,7 @@ CREATE TABLE IF NOT EXISTS tbl_weathers
     temperature_min           DOUBLE PRECISION,
     temperature_max           DOUBLE PRECISION,
     windspeed                 DOUBLE PRECISION,
-    windspeed_level           VARCHAR(10),
+    windspeed_level           VARCHAR(20),
     created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
     -- constraints
     CONSTRAINT check_sky_status CHECK (sky_status IN ('CLEAR','MOSTLY_CLOUDY','CLOUDY')),
