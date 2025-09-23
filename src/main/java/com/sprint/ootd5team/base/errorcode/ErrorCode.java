@@ -15,7 +15,7 @@ public enum ErrorCode {
 
     // User 관련 에러코드
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
-    USER_ALREADY_EXIST(HttpStatus.CONFLICT, "이미 존재하는 사용자입니다."),
+    USER_ALREADY_EXIST(HttpStatus.BAD_REQUEST, "이미 존재하는 사용자입니다."),
 
     // Profile 관련 에러코드
     PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 프로필 입니다."),
