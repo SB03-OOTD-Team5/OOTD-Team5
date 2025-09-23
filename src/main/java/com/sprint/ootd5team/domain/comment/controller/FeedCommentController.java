@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.comment.controller;
 
+import com.sprint.ootd5team.domain.comment.controller.api.FeedCommentApi;
 import com.sprint.ootd5team.domain.comment.dto.data.CommentDto;
 import com.sprint.ootd5team.domain.comment.dto.request.CommentCreateRequest;
 import com.sprint.ootd5team.domain.comment.dto.request.CommentListRequest;
@@ -23,10 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/api/feeds")
 @RestController
-public class FeedCommentController {
+public class FeedCommentController implements FeedCommentApi {
 
     private final FeedCommentService feedCommentService;
 
+    @Override
     @GetMapping("/{feedId}/comments")
     public ResponseEntity<CommentDtoCursorResponse> getComments(
         @PathVariable UUID feedId,
