@@ -29,10 +29,23 @@ public interface FeedCommentApi {
         )
     })
     ResponseEntity<CommentDtoCursorResponse> getComments(
-        @Parameter(description = "feedId", required = true)
-        UUID feedId,
-        @ParameterObject
-        CommentListRequest commentListRequest
+        @Parameter(description = "feedId", required = true) UUID feedId,
+        @ParameterObject CommentListRequest commentListRequest
     );
-    ResponseEntity<CommentDto> create(CommentCreateRequest commentCreateRequest);
+
+    @Operation(summary = "피드 댓글 등록")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201", description = "피드 댓글 등록 성공",
+            content = @Content(schema = @Schema(implementation = CommentDto.class))
+        ),
+        @ApiResponse(
+            responseCode = "400", description = "피드 댓글 등록 실패",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    ResponseEntity<CommentDto> create(
+        @Parameter(description = "feedId", required = true) UUID feedId,
+        CommentCreateRequest commentCreateRequest
+    );
 }

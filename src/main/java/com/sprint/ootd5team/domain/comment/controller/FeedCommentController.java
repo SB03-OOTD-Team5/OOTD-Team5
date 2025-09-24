@@ -41,9 +41,14 @@ public class FeedCommentController implements FeedCommentApi {
             .body(response);
     }
 
+    //ToDo: 추후에 AuthorId를 Dto가 아닌 AuthService에서 받아오도록 수정할 수 있음.
+    @Override
     @PostMapping("/{feedId}/comments")
-    public ResponseEntity<CommentDto> create(@Valid @RequestBody CommentCreateRequest commentCreateRequest) {
-        CommentDto commentDto = feedCommentService.create(commentCreateRequest);
+    public ResponseEntity<CommentDto> create(
+        @PathVariable UUID feedId,
+        @Valid @RequestBody CommentCreateRequest commentCreateRequest
+    ) {
+        CommentDto commentDto = feedCommentService.create(feedId, commentCreateRequest);
 
         return ResponseEntity
             .status(HttpStatus.CREATED)
