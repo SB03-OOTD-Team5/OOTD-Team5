@@ -1,6 +1,9 @@
 package com.sprint.ootd5team.domain.profile.entity;
 
 import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
+import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
+import com.sprint.ootd5team.domain.location.entity.Location;
+import com.sprint.ootd5team.domain.profile.dto.data.LocationDto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.PrePersist;
@@ -60,6 +63,24 @@ public class Profile extends BaseUpdatableEntity {
         }
     }
 
+    public void updateProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
+
+    public void update(String name, String gender, LocalDate birthDate, WeatherAPILocationDto location, Integer temperatureSensitivity){
+        this.name = name;
+        this.gender = gender;
+        this.birthDate = birthDate;
+        this.temperatureSensitivity = temperatureSensitivity;
+
+        if(location != null) {
+            this.latitude = location.latitude();
+            this.longitude = location.longitude();
+            this.xCoord = location.x();
+            this.yCoord = location.y();
+            this.locationNames = String.join(" ", location.locationNames());
+        }
+    }
     public void relocate(BigDecimal latitude, BigDecimal longitude, String locationNames) {
         if (!Objects.equals(this.latitude, latitude) && latitude != null) {
             this.latitude = latitude;

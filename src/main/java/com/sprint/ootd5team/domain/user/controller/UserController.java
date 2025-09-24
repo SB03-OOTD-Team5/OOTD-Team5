@@ -12,8 +12,10 @@ import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
 import com.sprint.ootd5team.domain.user.service.UserService;
 import jakarta.validation.Valid;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -22,7 +24,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.http.HttpStatusCode;
 
 @RestController
@@ -96,5 +100,21 @@ public class UserController implements UserApi {
             .body(userDto);
     }
 
+    @Override
+    @PatchMapping(value = "/{userId}/profiles",
+    consumes = { MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<ProfileDto> updateUserProfile(
+        @PathVariable UUID userId,
+        @RequestPart @Valid ProfileUpdateRequest request,
+        @RequestPart(value = "image",required = false) MultipartFile image) {
+
+        Optional<MultipartFile> profileImageRequest = Optional.ofNullable(image);
+
+        ProfileDto profileDto = profileService.updateProfile(userId, request, profileImageRequest);
+
+        return ResponseEntity
+            .status(HttpStatusCode.OK)
+            .body(profileDto);
+    }
 
 }

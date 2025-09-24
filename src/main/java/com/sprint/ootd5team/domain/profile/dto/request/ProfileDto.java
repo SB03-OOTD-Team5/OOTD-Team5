@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.domain.profile.dto.request;
 
 import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
+import com.sprint.ootd5team.domain.profile.dto.data.LocationDto;
 import java.time.LocalDate;
 import java.util.UUID;
 
