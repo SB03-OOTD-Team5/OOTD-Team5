@@ -9,7 +9,7 @@ import org.springframework.data.domain.Sort;
 
 public interface ClothesRepositoryCustom {
 
-    List<Clothes> findByUserWithCursor(
+    List<Clothes> findByOwnerWithCursor(
         UUID ownerId,
         ClothesType type,
         Instant cursor,

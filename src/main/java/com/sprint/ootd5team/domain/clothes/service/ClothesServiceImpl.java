@@ -8,7 +8,6 @@ import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundExc
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeValueNotAllowedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
-import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
@@ -82,7 +81,7 @@ public class ClothesServiceImpl implements ClothesService {
             ownerId, type, cursor, idAfter, limit);
 
         // 다음 페이지 여부 확인
-        List<Clothes> result = clothesRepository.findByUserWithCursor(
+        List<Clothes> result = clothesRepository.findByOwnerWithCursor(
             ownerId, type, cursor, idAfter, limit + 1, direction
         );
 

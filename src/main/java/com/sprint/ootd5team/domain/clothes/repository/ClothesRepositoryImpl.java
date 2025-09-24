@@ -39,7 +39,7 @@ public class ClothesRepositoryImpl implements ClothesRepositoryCustom {
      * @return 조회된 옷 목록
      */
     @Override
-    public List<Clothes> findByUserWithCursor(
+    public List<Clothes> findByOwnerWithCursor(
         UUID ownerId,
         ClothesType type,
         Instant cursor,
@@ -58,19 +58,24 @@ public class ClothesRepositoryImpl implements ClothesRepositoryCustom {
         }
 
         if (cursor != null) {
-            BooleanBuilder cursorCondition = new BooleanBuilder()
-                .and(clothes.createdAt.lt(cursor));
-
-            if (idAfter != null) {
-                cursorCondition.or(
-                    clothes.createdAt.eq(cursor).and(clothes.id.lt(idAfter)));
-                log.debug("[ClothesRepository] idAfter 필터 적용: id < {}", idAfter);
+            BooleanBuilder cursorCondition = new BooleanBuilder();
+            if (sortDirection == Sort.Direction.ASC) {
+                cursorCondition.and(clothes.createdAt.gt(cursor));
+                if (idAfter != null) {
+                    cursorCondition.or(clothes.createdAt.eq(cursor).and(clothes.id.gt(idAfter)));
+                    log.debug("[ClothesRepository] idAfter 필터 적용(ASC): id > {}", idAfter);
+                }
+                log.debug("[ClothesRepository] cursor 필터 적용(ASC): createdAt > {}", cursor);
+            } else {
+                cursorCondition.and(clothes.createdAt.lt(cursor));
+                if (idAfter != null) {
+                    cursorCondition.or(clothes.createdAt.eq(cursor).and(clothes.id.lt(idAfter)));
+                    log.debug("[ClothesRepository] idAfter 필터 적용(DESC): id < {}", idAfter);
+                }
+                log.debug("[ClothesRepository] cursor 필터 적용(DESC): createdAt < {}", cursor);
             }
             where.and(cursorCondition);
-
-            log.debug("[ClothesRepository] cursor 필터 적용: createdAt < {}", cursor);
         }
-
         OrderSpecifier<?> createdAtOrder =
             sortDirection == Sort.Direction.ASC ? clothes.createdAt.asc()
                 : clothes.createdAt.desc();
