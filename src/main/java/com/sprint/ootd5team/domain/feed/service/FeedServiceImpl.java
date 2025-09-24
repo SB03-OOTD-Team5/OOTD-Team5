@@ -1,6 +1,8 @@
 package com.sprint.ootd5team.domain.feed.service;
 
 import com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException;
+import com.sprint.ootd5team.base.exception.feed.FeedNotFoundException;
+import com.sprint.ootd5team.base.exception.feed.InvalidSortOptionException;
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
@@ -11,8 +13,6 @@ import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedUpdateRequest;
 import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
 import com.sprint.ootd5team.domain.feed.entity.Feed;
-import com.sprint.ootd5team.base.exception.feed.FeedNotFoundException;
-import com.sprint.ootd5team.base.exception.feed.InvalidSortOptionException;
 import com.sprint.ootd5team.domain.feed.entity.FeedClothes;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.feed.repository.feedClothes.FeedClothesRepository;
@@ -44,6 +44,8 @@ public class FeedServiceImpl implements FeedService {
     private final ProfileRepository profileRepository;
     private final WeatherRepository weatherRepository;
     private final ClothesRepository clothesRepository;
+//    private final ApplicationEventPublisher eventPublisher;
+//    private final FollowRepository followRepository;
 
     /**
      * 피드를 생성하고 {@link FeedDto}로 반환한다.
@@ -69,6 +71,14 @@ public class FeedServiceImpl implements FeedService {
         Feed feed = saveFeed(authorId, weatherId, request.content());
         saveFeedClothes(feed, clothesList);
 
+        //TODO
+//        // 팔로워 조회
+//        List<UUID> followerIds = followRepository.findFollowerIds(authorId);
+//
+//         FeedDto dto = feedMapper.toDto(feed, author, clothesList);
+//        // 알림 전송 (팔로워들 모두 수신자)
+//        eventPublisher.publishEvent(new FeedCreateEvent(dto, followerIds));
+
         return enrichSingleFeed(
             feedRepository.findFeedDtoById(feed.getId(), currentUserId)
         );
@@ -91,7 +101,7 @@ public class FeedServiceImpl implements FeedService {
      * @return 커서 기반 페이지네이션 응답 객체 {@link FeedDtoCursorResponse}
      */
     @Override
-    public FeedDtoCursorResponse getFeeds(FeedListRequest request,  UUID currentUserId) {
+    public FeedDtoCursorResponse getFeeds(FeedListRequest request, UUID currentUserId) {
         log.info("[FeedService] 피드 목록 조회 시작 - userId:{}", currentUserId);
 
         List<FeedDto> feedDtos = feedRepository.findFeedDtos(request, currentUserId);
@@ -264,7 +274,8 @@ public class FeedServiceImpl implements FeedService {
     public void saveFeedClothes(Feed feed, List<Clothes> clothesList) {
         List<FeedClothes> mappings = clothesList.stream()
             .map(clothes -> {
-                log.debug("[FeedService] FeedClothes 엔티티 생성 - feedId:{}, clothesId:{}", feed.getId(), clothes.getId());
+                log.debug("[FeedService] FeedClothes 엔티티 생성 - feedId:{}, clothesId:{}",
+                    feed.getId(), clothes.getId());
                 return new FeedClothes(feed.getId(), clothes.getId());
             })
             .toList();
