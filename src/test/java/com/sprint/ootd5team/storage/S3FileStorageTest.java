@@ -40,6 +40,8 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 @ExtendWith(MockitoExtension.class)
 class S3FileStorageTest {
 
+    private static final String TEST_PREFIX = "prefix/";
+
     @Mock
     private S3Client s3Client;
 
@@ -61,13 +63,14 @@ class S3FileStorageTest {
         InputStream inputStream = new ByteArrayInputStream("test".getBytes());
 
         // when
-        String key = s3FileStorage.upload("test.jpg", inputStream, "image/jpeg");
+        String key = s3FileStorage.upload("test.jpg", inputStream, "image/jpeg", TEST_PREFIX);
 
         // then
         ArgumentCaptor<PutObjectRequest> captor = ArgumentCaptor.forClass(PutObjectRequest.class);
         verify(s3Client).putObject(captor.capture(), any(RequestBody.class));
 
         assertThat(captor.getValue().bucket()).isEqualTo("test-bucket");
+        assertThat(captor.getValue().key()).startsWith(TEST_PREFIX);
         assertThat(captor.getValue().key()).contains(".jpg");
         assertThat(key).contains(".jpg");
     }
@@ -81,7 +84,7 @@ class S3FileStorageTest {
 
         // when
         Throwable thrown = catchThrowable(
-            () -> s3FileStorage.upload("bad.jpg", inputStream, "image/jpeg")
+            () -> s3FileStorage.upload("bad.jpg", inputStream, "image/jpeg", "clothes")
         );
 
         // then
@@ -91,7 +94,7 @@ class S3FileStorageTest {
     @Test
     void presigned_url_생성() {
         // given
-        String key = "clothes/test.jpg";
+        String key = "prefix/test.jpg";
         URL fakeUrl = mock(URL.class);
         PresignedGetObjectRequest presigned = mock(PresignedGetObjectRequest.class);
 
@@ -111,7 +114,7 @@ class S3FileStorageTest {
     @Test
     void 삭제_성공() {
         // given
-        String key = "clothes/test.jpg";
+        String key = "prefix/test.jpg";
 
         // when
         s3FileStorage.delete(key);
@@ -132,7 +135,7 @@ class S3FileStorageTest {
 
         // when
         Throwable thrown = catchThrowable(
-            () -> s3FileStorage.upload("broken.png", brokenStream, "image/png")
+            () -> s3FileStorage.upload("broken.png", brokenStream, "image/png", "clothes")
         );
 
         // then
@@ -143,7 +146,7 @@ class S3FileStorageTest {
     @Test
     void 삭제_실패시_FileDeleteFailedException() {
         // given
-        String key = "clothes/error.jpg";
+        String key = "prefix/error.jpg";
         doThrow(new RuntimeException("delete fail"))
             .when(s3Client).deleteObject(any(Consumer.class));
 
@@ -183,21 +186,22 @@ class S3FileStorageTest {
     @Test
     void 업로드_실패_용량초과() {
         // given
-        S3FileStorage smallLimitStorage = new S3FileStorage(s3Client, s3Presigner, DataSize.ofBytes(1));
+        S3FileStorage smallLimitStorage = new S3FileStorage(s3Client, s3Presigner,
+            DataSize.ofBytes(1));
         ReflectionTestUtils.setField(smallLimitStorage, "bucket", "test-bucket");
 
         InputStream inputStream = new ByteArrayInputStream("hello".getBytes());
 
         // when & then
         assertThatThrownBy(() ->
-            smallLimitStorage.upload("big.txt", inputStream, "text/plain")
+            smallLimitStorage.upload("big.txt", inputStream, "text/plain", "clothes")
         ).isInstanceOf(FileTooLargeException.class);
     }
 
     @Test
     void presignedUrl_redirect_성공() {
         // given
-        String key = "clothes/test.jpg";
+        String key = "prefix/test.jpg";
         String fakeUrl = "https://fake-url.com/file.png";
         S3FileStorage spyStorage = spy(s3FileStorage);
         doReturn(fakeUrl).when(spyStorage).download(key);
@@ -211,10 +215,18 @@ class S3FileStorageTest {
     }
 
     @Test
-    void recover_항상_FilePermanentSaveFailedException발생() {
-        // when & then
-        assertThatThrownBy(() ->
-            s3FileStorage.recover(new RuntimeException("fail"), "bad.png", null, "image/png")
-        ).isInstanceOf(FilePermanentSaveFailedException.class);
+    void 업로드시_png확장자이면_imagePng으로설정된다() {
+        // given
+        InputStream inputStream = new ByteArrayInputStream("data".getBytes());
+
+        // when
+        s3FileStorage.upload("test.png", inputStream, "application/octet-stream", "clothes");
+
+        // then
+        ArgumentCaptor<PutObjectRequest> captor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        verify(s3Client).putObject(captor.capture(), any(RequestBody.class));
+
+        assertThat(captor.getValue().contentType()).isEqualTo("image/png");
     }
+
 }

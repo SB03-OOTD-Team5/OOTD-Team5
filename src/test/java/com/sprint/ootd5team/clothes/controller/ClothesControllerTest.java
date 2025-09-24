@@ -4,21 +4,24 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.clothes.controller.ClothesController;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
+import com.sprint.ootd5team.domain.clothes.extractor.ClothesExtractionService;
 import com.sprint.ootd5team.domain.clothes.service.ClothesService;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +50,12 @@ class ClothesControllerTest {
 
     @MockitoBean
     private ClothesService clothesService;
+
+    @MockitoBean
+    private AuthService authService;
+
+    @MockitoBean
+    private ClothesExtractionService clothesExtractionService;
 
     private UUID ownerId;
     private List<ClothesDto> mockClothes;
@@ -90,7 +99,7 @@ class ClothesControllerTest {
     @Test
     void 옷_목록을_기본값으로_조회한다() throws Exception {
         // given
-        given(clothesService.getClothes(eq(ownerId), any(), any(), any(), anyInt()))
+        given(clothesService.getClothes(eq(ownerId), any(), any(), any(), anyInt(), any()))
             .willReturn(mockResponse);
 
         // when
@@ -166,26 +175,25 @@ class ClothesControllerTest {
     }
 
     @Test
-    @DisplayName("의상 수정 성공 - 이미지와 속성값 변경")
     void 의상_수정_성공() throws Exception {
         // given
         UUID clothesId = UUID.randomUUID();
         UUID attributeId = UUID.randomUUID();
 
         String requestJson = """
-        {
-          "name": "수정된 패딩",
-          "type": "OUTER",
-          "attributes": [
             {
-              "definitionId": "%s",
-              "definitionName": "계절",
-              "selectableValues": ["봄","여름","가을","겨울"],
-              "value": "봄"
+              "name": "수정된 패딩",
+              "type": "OUTER",
+              "attributes": [
+                {
+                  "definitionId": "%s",
+                  "definitionName": "계절",
+                  "selectableValues": ["봄","여름","가을","겨울"],
+                  "value": "봄"
+                }
+              ]
             }
-          ]
-        }
-        """.formatted(attributeId);
+            """.formatted(attributeId);
 
         MockMultipartFile requestPart = new MockMultipartFile(
             "request", "", "application/json", requestJson.getBytes(StandardCharsets.UTF_8)
@@ -201,7 +209,7 @@ class ClothesControllerTest {
             "clothes/uuid_new_coat.png",
             ClothesType.OUTER,
             List.of(new ClothesAttributeWithDefDto(
-                attributeId, "계절", List.of("봄","여름","가을","겨울"), "봄"
+                attributeId, "계절", List.of("봄", "여름", "가을", "겨울"), "봄"
             ))
         );
 
@@ -224,5 +232,57 @@ class ClothesControllerTest {
             .andExpect(jsonPath("$.attributes[0].value").value("봄"));
 
         verify(clothesService).update(eq(clothesId), any(), any(MultipartFile.class));
+    }
+
+    @Test
+    void 의상_url로_추출하면_이름과_이미지를_포함한_ClothesDto를_반환한다() throws Exception {
+        // given
+        String url = "https://dummy.com/product/1";
+        ClothesDto dto = ClothesDto.builder()
+            .name("테스트 상품")
+            .imageUrl("https://dummy.com/image.png")
+            .type(null)
+            .build();
+
+        given(clothesExtractionService.extractByUrl(url)).willReturn(dto);
+
+        // when & then
+        mockMvc.perform(get("/api/clothes/extractions")
+                .param("url", url))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("테스트 상품"))
+            .andExpect(jsonPath("$.imageUrl").value("https://dummy.com/image.png"))
+            .andExpect(jsonPath("$.type").doesNotExist());
+    }
+
+    @Test
+    void 잘못된_URL이면_400을_반환한다() throws Exception {
+        mockMvc.perform(get("/api/clothes/extractions")
+                .param("url", "ftp://malicious.com"))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/clothes/extractions")
+                .param("url", ""))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/clothes/extractions")
+                .param("url", "ht!tp://bad-url"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void 의상_삭제_요청_성공시_204를_반환한다() throws Exception {
+        // given
+        UUID ownerId = UUID.randomUUID();
+        UUID clothesId = UUID.randomUUID();
+
+        given(authService.getCurrentUserId()).willReturn(ownerId);
+        doNothing().when(clothesService).delete(ownerId, clothesId);
+
+        // when & then
+        mockMvc.perform(delete("/api/clothes/{clothesId}", clothesId)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNoContent());
+        verify(clothesService).delete(ownerId, clothesId);
     }
 }

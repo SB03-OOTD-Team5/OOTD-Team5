@@ -1,15 +1,19 @@
 package com.sprint.ootd5team.domain.clothes.controller;
 
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.clothes.controller.api.ClothesApi;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
+import com.sprint.ootd5team.domain.clothes.extractor.ClothesExtractionService;
 import com.sprint.ootd5team.domain.clothes.service.ClothesService;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,21 +27,24 @@ import org.springframework.web.multipart.MultipartFile;
 public class ClothesController implements ClothesApi {
 
     private final ClothesService clothesService;
+    private final ClothesExtractionService clothesExtractionService;
+    private final AuthService authService;
 
     @Override
     public ResponseEntity<ClothesDtoCursorResponse> getClothes(
         UUID ownerId,
         ClothesType type,
-        String cursor,
+        Instant cursor,
         UUID idAfter,
-        int limit
+        int limit,
+        Sort.Direction sortDirection
     ) {
         log.info("[ClothesController] 전체 조회 요청 수신: "
-                + "ownerId={}, typeEqual={}, cursor={}, idAfter={}, limit={}",
-            ownerId, type, cursor, idAfter, limit);
+                + "ownerId={}, typeEqual={}, cursor={}, idAfter={}, limit={}, sort={}",
+            ownerId, type, cursor, idAfter, limit, sortDirection.name());
 
         ClothesDtoCursorResponse response =
-            clothesService.getClothes(ownerId, type, cursor, idAfter, limit);
+            clothesService.getClothes(ownerId, type, cursor, idAfter, limit, sortDirection);
 
         log.info("[ClothesController] 전체 조회 응답 반환: "
                 + "data.size={}, hasNext={}, nextCursor={}, nextIdAfter={}",
@@ -65,8 +72,9 @@ public class ClothesController implements ClothesApi {
 
     @Override
     public ResponseEntity<Void> deleteClothes(UUID clothesId) {
+        UUID ownerId = authService.getCurrentUserId();
         log.info("[ClothesController] 삭제 요청 수신: clothesId={}", clothesId);
-        clothesService.delete(clothesId);
+        clothesService.delete(ownerId, clothesId);
 
         log.info("[ClothesController] 삭제 응답 완료");
 
@@ -87,8 +95,43 @@ public class ClothesController implements ClothesApi {
             .body(clothesDto);
     }
 
+    /**
+     * 의상 정보 추출 API.
+     *
+     * <p>외부 URL을 입력받아 해당 페이지에서 의상 정보를 크롤링한다.
+     * <br>요청 시 기본 검증:
+     * <ul>
+     *   <li>null/빈 문자열 차단</li>
+     *   <li>스킴은 http/https만 허용</li>
+     *   <li>잘못된 URI 형식은 400 Bad Request 응답</li>
+     * </ul>
+     *
+     * @param url 의상 페이지 URL
+     * @return 추출된 의상 정보 DTO (성공 시 200 OK, 잘못된 입력 시 400 Bad Request)
+     */
     @Override
     public ResponseEntity<ClothesDto> extractByUrl(String url) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        log.info("[ClothesController] extractByUrl 요청 url={}", url);
+        if (url == null || url.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+            var u = java.net.URI.create(url);
+            String scheme = u.getScheme();
+            if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase(
+                "https"))) {
+                return ResponseEntity.badRequest().build();
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        ClothesDto clothesDto = clothesExtractionService.extractByUrl(url);
+
+        log.info("[ClothesController] 추출 결과 name={}, imageUrl={}",
+            clothesDto.name(), clothesDto.imageUrl());
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(clothesDto);
     }
 }

@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -15,7 +16,6 @@ import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundExc
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeValueNotAllowedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
-import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.clothes.fixture.ClothesFixture;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
@@ -49,6 +49,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -57,28 +58,20 @@ import org.springframework.web.multipart.MultipartFile;
 @DisplayName("ClothesService 단위 테스트")
 class ClothesServiceTest {
 
+    private final UUID ownerId = UUID.fromString("11111111-1111-1111-1111-111111111111");
     @Mock
     private ClothesRepository clothesRepository;
-
     @Mock
     private ClothesMapper clothesMapper;
-
     @Mock
     private ClothesAttributeRepository clothesAttributeRepository;
-
     @Mock
     private UserRepository userRepository;
-
     @Mock
     private FileStorage fileStorage;
 
-    @Mock
-    private AuthService authService;
-
     @InjectMocks
     private ClothesServiceImpl clothesService;
-
-    private final UUID ownerId = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private User owner;
 
     @BeforeEach
@@ -91,17 +84,19 @@ class ClothesServiceTest {
     void 옷_전체목록조회() {
         // given
         List<Clothes> fakeClothes = ClothesFixture.createTestClothes(owner);
-        given(clothesRepository.findClothes(eq(ownerId), eq(null), eq(null), eq(null), anyInt()))
+        given(clothesRepository.findByOwnerWithCursor(eq(ownerId), eq(null), eq(null), eq(null),
+            anyInt(), eq(Direction.DESC)))
             .willReturn(fakeClothes);
         given(clothesMapper.toDto(any(Clothes.class)))
             .willAnswer(invocation -> {
                 Clothes c = invocation.getArgument(0);
                 return ClothesFixture.toDto(c);
             });
+        given(clothesRepository.countByOwner_Id(ownerId)).willReturn(3L);
 
         // when
         ClothesDtoCursorResponse response = clothesService.getClothes(ownerId, null, null, null,
-            10);
+            10, Direction.DESC);
 
         // then
         assertThat(response).isNotNull();
@@ -120,7 +115,8 @@ class ClothesServiceTest {
         int limit = 2;
 
         List<Clothes> fakeClothes = ClothesFixture.createTestClothes(owner);
-        given(clothesRepository.findClothes(eq(ownerId), eq(null), eq(cursor), eq(null), anyInt()))
+        given(clothesRepository.findByOwnerWithCursor(eq(ownerId), eq(null), eq(cursor), eq(null),
+            anyInt(), eq(Direction.DESC)))
             .willReturn(fakeClothes);
 
         given(clothesMapper.toDto(any(Clothes.class)))
@@ -131,7 +127,7 @@ class ClothesServiceTest {
 
         // when
         ClothesDtoCursorResponse response =
-            clothesService.getClothes(ownerId, null, cursor.toString(), null, limit);
+            clothesService.getClothes(ownerId, null, cursor, null, limit, Direction.DESC);
 
         // then
         assertThat(response).isNotNull();
@@ -145,8 +141,9 @@ class ClothesServiceTest {
     void 옷_타입별조회_TOP() {
         // given
         List<Clothes> fakeClothes = ClothesFixture.createTestClothes(owner);
-        given(clothesRepository.findClothes(eq(ownerId), eq(ClothesType.TOP), eq(null), eq(null),
-            anyInt()))
+        given(clothesRepository.findByOwnerWithCursor(eq(ownerId), eq(ClothesType.TOP), eq(null),
+            eq(null),
+            anyInt(), eq(Direction.DESC)))
             .willReturn(
                 fakeClothes.stream()
                     .filter(c -> c.getType() == ClothesType.TOP)
@@ -157,7 +154,7 @@ class ClothesServiceTest {
 
         // when
         ClothesDtoCursorResponse response =
-            clothesService.getClothes(ownerId, ClothesType.TOP, null, null, 10);
+            clothesService.getClothes(ownerId, ClothesType.TOP, null, null, 10, Direction.DESC);
 
         // then
         assertThat(response.data()).hasSize(1);
@@ -183,12 +180,13 @@ class ClothesServiceTest {
             })
             .toList();
 
-        given(clothesRepository.findClothes(eq(ownerId), any(), any(), any(), anyInt()))
+        given(clothesRepository.findByOwnerWithCursor(eq(ownerId), any(), any(), any(), anyInt(),
+            eq(Direction.DESC)))
             .willReturn(clothesList);
 
         // when
         ClothesDtoCursorResponse response = clothesService.getClothes(ownerId, null, null, null,
-            10);
+            10, Direction.DESC);
 
         // then
         assertThat(response.hasNext()).isTrue();
@@ -224,7 +222,7 @@ class ClothesServiceTest {
         ClothesDto expectedDto = ClothesFixture.toDto(clothes);
         given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
         given(clothesAttributeRepository.findById(attributeId)).willReturn(Optional.of(attribute));
-        given(fileStorage.upload(any(), any(InputStream.class), eq("image/png"))).willReturn(
+        given(fileStorage.upload(any(), any(InputStream.class), eq("image/png"), any())).willReturn(
             imageUrl);
         given(clothesMapper.toDto(any(Clothes.class))).willReturn(expectedDto);
 
@@ -236,7 +234,7 @@ class ClothesServiceTest {
         assertThat(result.name()).isEqualTo("멋쟁이패딩");
         assertThat(result.type()).isEqualTo(ClothesType.OUTER);
         assertThat(result.imageUrl()).isEqualTo(imageUrl);
-        verify(fileStorage).upload(any(), any(InputStream.class), eq("image/png"));
+        verify(fileStorage).upload(any(), any(InputStream.class), eq("image/png"), any());
     }
 
     @Test
@@ -256,7 +254,7 @@ class ClothesServiceTest {
         // then
         assertThat(result.imageUrl()).isNull();
         verify(clothesRepository).save(any(Clothes.class));
-        verify(fileStorage, never()).upload(any(), any(), any());
+        verify(fileStorage, never()).upload(any(), any(), any(), any());
     }
 
     @Test
@@ -320,7 +318,7 @@ class ClothesServiceTest {
             "image", "fail.png", "image/png", "fake".getBytes()
         );
         given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
-        given(fileStorage.upload(eq("fail.png"), any(InputStream.class), eq("image/png")))
+        given(fileStorage.upload(eq("fail.png"), any(InputStream.class), eq("image/png"), any()))
             .willReturn("clothes/fail.png");
         given(clothesRepository.save(any(Clothes.class)))
             .willThrow(new RuntimeException("DB error"));
@@ -350,7 +348,7 @@ class ClothesServiceTest {
         // when & then
         assertThatThrownBy(() -> clothesService.create(request, mockImage))
             .isInstanceOf(FileSaveFailedException.class);
-        verify(fileStorage, never()).upload(any(), any(), any());
+        verify(fileStorage, never()).upload(any(), any(), any(), any());
         verify(fileStorage, never()).delete(any());
     }
 
@@ -410,7 +408,7 @@ class ClothesServiceTest {
             .build();
 
         given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
-        given(fileStorage.upload(eq("new.png"), any(InputStream.class), eq("image/png")))
+        given(fileStorage.upload(eq("new.png"), any(InputStream.class), eq("image/png"), any()))
             .willReturn("new/image.png");
         given(clothesMapper.toDto(any(Clothes.class))).willReturn(expected);
 
@@ -521,21 +519,69 @@ class ClothesServiceTest {
         assertThat(result.attributes()).extracting("value").containsExactly("겨울");
     }
 
-
     @Test
     void 의상_삭제_성공() {
         // given
         UUID clothesId = UUID.randomUUID();
-        UUID currentUserId = ownerId; // 동일 사용자
         Clothes clothes = ClothesFixture.createClothesEntity(owner, "셔츠", ClothesType.TOP, null);
 
-        given(authService.getCurrentUserId()).willReturn(currentUserId);
         given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
 
         // when
-        clothesService.delete(clothesId);
+        clothesService.delete(ownerId, clothesId);
 
         // then
+        verify(clothesRepository).deleteById(clothesId);
+    }
+
+    @Test
+    void 의상_삭제시_이미지가_있으면_스토리지에서도_삭제된다() {
+        // given
+        UUID clothesId = UUID.randomUUID();
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "셔츠", ClothesType.TOP,
+            "image.png");
+
+        given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
+
+        // when
+        clothesService.delete(ownerId, clothesId);
+
+        // then
+        verify(fileStorage).delete("image.png");
+        verify(clothesRepository).deleteById(clothesId);
+    }
+
+    @Test
+    void 의상_삭제시_이미지삭제에_실패해도_DB삭제는_진행된다() {
+        // given
+        UUID clothesId = UUID.randomUUID();
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "셔츠", ClothesType.TOP,
+            "image.png");
+
+        given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
+        willThrow(new RuntimeException("스토리지 오류")).given(fileStorage).delete("image.png");
+
+        // when
+        clothesService.delete(ownerId, clothesId);
+
+        // then
+        verify(fileStorage).delete("image.png");
+        verify(clothesRepository).deleteById(clothesId);
+    }
+
+    @Test
+    void 의상_삭제시_이미지가없으면_스토리지호출없음() {
+        // given
+        UUID clothesId = UUID.randomUUID();
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "셔츠", ClothesType.TOP, null);
+
+        given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
+
+        // when
+        clothesService.delete(ownerId, clothesId);
+
+        // then
+        verify(fileStorage, never()).delete(any());
         verify(clothesRepository).deleteById(clothesId);
     }
 
@@ -543,11 +589,10 @@ class ClothesServiceTest {
     void 의상_삭제시_존재하지않으면_예외() {
         // given
         UUID clothesId = UUID.randomUUID();
-        given(authService.getCurrentUserId()).willReturn(ownerId);
         given(clothesRepository.findById(clothesId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> clothesService.delete(clothesId))
+        assertThatThrownBy(() -> clothesService.delete(ownerId, clothesId))
             .isInstanceOf(ClothesNotFoundException.class);
         verify(clothesRepository, never()).deleteById(any());
     }
@@ -557,13 +602,13 @@ class ClothesServiceTest {
         // given
         UUID clothesId = UUID.randomUUID();
         UUID anotherUserId = UUID.randomUUID(); // 다른 사용자
-        Clothes clothes = ClothesFixture.createClothesEntity(owner, "청바지", ClothesType.BOTTOM, null);
+        Clothes clothes = ClothesFixture.createClothesEntity(owner, "청바지", ClothesType.BOTTOM,
+            null);
 
-        given(authService.getCurrentUserId()).willReturn(anotherUserId);
         given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
 
         // when & then
-        assertThatThrownBy(() -> clothesService.delete(clothesId))
+        assertThatThrownBy(() -> clothesService.delete(anotherUserId, clothesId))
             .isInstanceOf(SecurityException.class);
         verify(clothesRepository, never()).deleteById(any());
     }

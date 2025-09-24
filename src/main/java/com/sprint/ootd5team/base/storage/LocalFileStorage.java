@@ -34,13 +34,14 @@ public class LocalFileStorage implements FileStorage {
     }
 
     @Override
-    public String upload(String filename, InputStream input, String contentType) {
-        String ext = "";
+    public String upload(String filename, InputStream input, String contentType, String prefix) {
+        String extension = "";
         int dotIndex = filename.lastIndexOf(".");
         if (dotIndex != -1) {
-            ext = filename.substring(dotIndex);
+            extension = filename.substring(dotIndex);
         }
-        String uniqueName = "clothes/" + UUID.randomUUID() + ext;
+
+        String uniqueName = prefix + UUID.randomUUID() + extension;
 
         try {
             Path target = root.resolve(uniqueName).normalize();

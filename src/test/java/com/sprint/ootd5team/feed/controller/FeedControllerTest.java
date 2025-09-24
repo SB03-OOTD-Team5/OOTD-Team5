@@ -240,4 +240,39 @@ public class FeedControllerTest {
         then(feedService).should().create(any(FeedCreateRequest.class), eq(userId));
         then(authService).should().getCurrentUserId();
     }
+
+    @Test
+    @DisplayName("Feed 단건 조회 성공")
+    void getFeed_success() throws Exception {
+        // given
+        UUID feedId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+
+        FeedDto mockDto = new FeedDto(
+            feedId,
+            Instant.now(),
+            Instant.now(),
+            new AuthorDto(currentUserId, "작성자", "profile.jpg"),
+            new WeatherSummaryDto(
+                UUID.randomUUID(),
+                SkyStatus.CLEAR,
+                new PrecipitationDto(PrecipitationType.NONE, 0.0, 0.0),
+                new TemperatureDto(20.0, 0.0, 18.0, 25.0)
+            ),
+            List.of(), // ootds
+            "테스트 피드",
+            3, 1, false
+        );
+
+        given(feedService.getFeed(feedId, currentUserId)).willReturn(mockDto);
+
+        // when & then
+        mockMvc.perform(get("/api/feeds/{feedId}", feedId)
+                .param("currentUserId", currentUserId.toString())
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(feedId.toString()))
+            .andExpect(jsonPath("$.author.userId").value(currentUserId.toString()))
+            .andExpect(jsonPath("$.content").value("테스트 피드"));
+    }
 }

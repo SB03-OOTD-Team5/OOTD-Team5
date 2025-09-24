@@ -25,16 +25,16 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Service
 public class LocationServiceImpl implements LocationService, LocationQueryService {
 
-    private final WebClient kakaoApiClient;
+    private final WebClient kakaoWebClient;
     private final LocationRepository locationRepository;
     private final ObjectMapper mapper;
     private final LocationMapper locationMapper;
     private final ProfileRepository profileRepository;
 
-    public LocationServiceImpl(@Qualifier("kakaoApiClient") WebClient kakaoApiClient,
+    public LocationServiceImpl(@Qualifier("kakaoWebClient") WebClient kakaoWebClient,
         LocationRepository locationRepository, LocationMapper locationMapper,
         ProfileRepository profileRepository) {
-        this.kakaoApiClient = kakaoApiClient;
+        this.kakaoWebClient = kakaoWebClient;
         this.locationRepository = locationRepository;
         this.mapper = new ObjectMapper();
         this.locationMapper = locationMapper;
@@ -135,7 +135,7 @@ public class LocationServiceImpl implements LocationService, LocationQueryServic
         try {
             log.debug("[Location] 위치 정보 조회 요청 longitude:{},latitude:{}", longitude, latitude);
 
-            String response = kakaoApiClient.get()
+            String response = kakaoWebClient.get()
                 .uri(uriBuilder -> uriBuilder
                     .queryParam("x", longitude)
                     .queryParam("y", latitude)
