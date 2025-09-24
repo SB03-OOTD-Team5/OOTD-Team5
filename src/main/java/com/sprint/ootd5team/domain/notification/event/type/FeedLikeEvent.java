@@ -4,6 +4,12 @@ import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * FEED_LIKED("%s님이 내 피드를 좋아합니다.", "%s"),
+ * 작성자 이름, 피드 내용
+ *
+ * receiverId = 피드에 좋아요를 누른 유저 id
+ */
 public class FeedLikeEvent extends DomainEvent<Void> {
     private final UUID feedId;
     private final UUID ownerId;

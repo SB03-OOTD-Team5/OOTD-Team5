@@ -4,6 +4,12 @@ import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * ROLE_CHANGED("내 권한이 변경되었어요.", "내 권한이 [%s]에서 [%s]로 변경 되었어요."),
+ * 기존 권한, 새 권한
+ *
+ * receiverId = 권한이 변경된 유저 id
+ */
 public class RoleUpdateEvent extends DomainEvent<Void> {
     private final UUID userId;
     private final String oldRole;
@@ -18,7 +24,7 @@ public class RoleUpdateEvent extends DomainEvent<Void> {
 
     @Override
     public NotificationTemplateType getTemplateType() {
-        return NotificationTemplateType.ROLE_CHANGED;
+        return NotificationTemplateType.ROLE_UPDATED;
     }
 
     @Override
