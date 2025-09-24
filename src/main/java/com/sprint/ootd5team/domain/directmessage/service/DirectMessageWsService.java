@@ -1,27 +1,26 @@
 package com.sprint.ootd5team.domain.directmessage.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Cache;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageCreateRequest;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageDto;
 import com.sprint.ootd5team.domain.directmessage.dto.ParticipantDto;
 import com.sprint.ootd5team.domain.directmessage.entity.DirectMessage;
 import com.sprint.ootd5team.domain.directmessage.entity.DirectMessageRoom;
-import com.sprint.ootd5team.domain.directmessage.mapper.DirectMessageMapper;
 import com.sprint.ootd5team.domain.directmessage.repository.DirectMessageRepository;
 import com.sprint.ootd5team.domain.directmessage.repository.DirectMessageRoomRepository;
+import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,8 +34,12 @@ public class DirectMessageWsService {
 	private final DirectMessageRepository messageRepository;         // 영속화
 	private final DirectMessageRoomRepository roomRepository;        // 방 조회/생성
 	private final UserRepository userRepository;                     // 이름 맵핑 보강
-	private final DirectMessageMapper mapper;
 	private final ProfileRepository profileRepository;
+
+	//방 조회시 Username,profileUrl 캐시
+	private final Cache<UUID, String> userNameCache;
+	private final Cache<UUID, Optional<String>> profileUrlCache;
+	private final Cache<String, DirectMessageRoom> roomCache;
 
 	@Transactional
 	public void handleSend(String payload) throws Exception {
@@ -44,15 +47,14 @@ public class DirectMessageWsService {
 		DirectMessageCreateRequest req = objectMapper.readValue(payload, DirectMessageCreateRequest.class);
 		log.debug("[WebSocket DM Service] payload JSON으로 파싱됨: {}", req);
 
-		// 2) dmKey 계산 → 방 조회 또는 생성
-		String dmKey = dmKeyOf(req.senderId(), req.receiverId());
-		DirectMessageRoom room = roomRepository.findByDmKey(dmKey)
-			.orElseGet(() -> roomRepository.save(DirectMessageRoom.builder()
-				.dmKey(dmKey)
-				.user1Id(min(req.senderId(), req.receiverId()))
-				.user2Id(max(req.senderId(), req.receiverId()))
-				.build()));
-		log.debug("[WebSocket DM Service] DM 키 생성, 채팅방 개설됨 : dmKey={}", dmKey);
+		// 2) dmKey계산, 방조회 또는 생성
+		DirectMessageRoom room = getOrCreateRoomCached(req.senderId(), req.receiverId());
+		log.debug("[WebSocket DM Service] 채팅방 연결됨 : roomId={}", room.getId());
+
+		// ** 올바른 이용자 검증
+		boolean member = Objects.equals(req.senderId(), room.getUser1Id()) || Objects.equals(req.senderId(), room.getUser2Id());
+		if (!member) throw new AccessDeniedException("채팅방 멤버가 아닙니다.");
+
 
 		// 3) 메시지 저장
 		DirectMessage saved = messageRepository.save(DirectMessage.builder()
@@ -60,25 +62,19 @@ public class DirectMessageWsService {
 			.senderId(req.senderId())
 			.content(req.content())
 			.build());
-		log.debug("[WebSocket DM Service] 서버에 메세지 저장됨 : content={}", saved.getContent());
-
-		// 4) 참여자 정보/프로필 한 번에 준비(방의 두 명만)
-		Map<UUID, User> users = loadUsers(room);
-		Map<UUID, String> profileUrlByUserId = loadProfileUrls(room);
+		log.debug("[WebSocket DM Service] 서버에 메세지 저장 : content={}", saved.getContent());
 
 		// 5) 송/수신자 ParticipantDto 구성
-		UUID receiverId = resolveReceiverId(room, saved.getSenderId());
-		ParticipantDto sender   = toParticipant(saved.getSenderId(), users, profileUrlByUserId);
-		ParticipantDto receiver = toParticipant(receiverId,         users, profileUrlByUserId);
+		ParticipantDto sender = toParticipant(req.senderId());
+		ParticipantDto receiver = toParticipant(resolveReceiverId(room, req.senderId()));
 
 		// 6) 엔티티 -> 기본 DTO(id, createdAt, content) 매핑 후 sender/receiver 보강
-		DirectMessageDto base = mapper.toDto(saved);
 		DirectMessageDto dto = DirectMessageDto.builder()
-			.id(base.id())
-			.createdAt(base.createdAt())
-			.content(base.content())
+			.id(saved.getId())
+			.createdAt(saved.getCreatedAt())
 			.sender(sender)
 			.receiver(receiver)
+			.content(saved.getContent())
 			.build();
 
 		// 5) 구독 채널로 브로드캐스트
@@ -89,47 +85,20 @@ public class DirectMessageWsService {
 
 	// ===== 내부 헬퍼 =====
 
-	private Map<UUID, User> loadUsers(DirectMessageRoom room) {
-		Set<UUID> ids = new HashSet<>();
-		if (room.getUser1Id() != null) ids.add(room.getUser1Id());
-		if (room.getUser2Id() != null) ids.add(room.getUser2Id());
-		return userRepository.findAllById(ids).stream()
-			.collect(Collectors.toMap(User::getId, u -> u));
-	}
-
-	private Map<UUID, String> loadProfileUrls(DirectMessageRoom room) {
-		Map<UUID, String> map = new HashMap<>();
-		UUID u1 = room.getUser1Id();
-		UUID u2 = room.getUser2Id();
-		if (u1 != null) profileRepository.findByUserId(u1).ifPresent(p -> map.put(u1, p.getProfileImageUrl()));
-		if (u2 != null) profileRepository.findByUserId(u2).ifPresent(p -> map.put(u2, p.getProfileImageUrl()));
-		return map;
-	}
-
-	private ParticipantDto toParticipant(UUID userId, Map<UUID, User> users, Map<UUID, String> profileUrlByUserId) {
-		// 탈퇴/NULL 사용자는 공통 포맷으로 반환
+	private ParticipantDto toParticipant(UUID userId) {
 		if (userId == null) {
-			return ParticipantDto.builder()
-				.userId(null)
-				.name("탈퇴한 사용자")
-				.profileImageUrl(null)
-				.build();
+			return ParticipantDto.builder().userId(null).name("탈퇴한 사용자").profileImageUrl(null).build();
 		}
-		User u = users.get(userId);                 // 이름
-		String url = profileUrlByUserId.get(userId); // 프로필 URL
-		return ParticipantDto.builder()
-			.userId(userId)
-			.name(u != null ? u.getName() : "탈퇴한 사용자")
-			.profileImageUrl(u != null ? url : null)
-			.build();
+		String name = userNameCache.get(userId, id ->
+			userRepository.findById(id).map(User::getName).orElse("탈퇴한 사용자")
+		);
+		Optional<String> profileUrl = profileUrlCache.get(userId, id ->
+			profileRepository.findByUserId(id)
+				.map(Profile::getProfileImageUrl)
+		);
+		return ParticipantDto.builder().userId(userId).name(name).profileImageUrl(profileUrl.orElse(null)).build();
 	}
 
-	private String dmKeyOf(UUID a, UUID b) {
-		String s1 = a.toString(), s2 = b.toString();
-		return (s1.compareTo(s2) <= 0) ? (s1 + "_" + s2) : (s2 + "_" + s1);
-	}
-	private UUID min(UUID a, UUID b) { return (a.toString().compareTo(b.toString()) <= 0) ? a : b; }
-	private UUID max(UUID a, UUID b) { return (a.toString().compareTo(b.toString()) <= 0) ? b : a; }
 
 	private UUID resolveReceiverId(DirectMessageRoom room, UUID senderId) {
 		UUID u1 = room.getUser1Id(), u2 = room.getUser2Id();
@@ -139,4 +108,36 @@ public class DirectMessageWsService {
 		if (Objects.equals(senderId, u2)) return u1;
 		return (u1 != null ? u1 : u2);                   // senderId가 둘 중 하나가 아니면 fallback
 	}
+
+	private DirectMessageRoom getOrCreateRoomCached(UUID senderId, UUID receiverId) {
+		String dmKey = dmKeyOf(senderId, receiverId);
+		log.debug("[WebSocket DM Service] DM 키 조합성공: dmKey={}",dmKey);
+		return roomCache.get(dmKey, key -> loadOrCreateRoom(key, senderId, receiverId));
+	}
+
+	private DirectMessageRoom loadOrCreateRoom(String dmKey, UUID senderId, UUID receiverId) {
+		return roomRepository.findByDmKey(dmKey)
+			.orElseGet(() -> createRoomSafely(dmKey, senderId, receiverId));
+	}
+	private String dmKeyOf(UUID a, UUID b) {
+		String s1 = a.toString(), s2 = b.toString();
+		return (s1.compareTo(s2) <= 0) ? (s1 + "_" + s2) : (s2 + "_" + s1);
+	}
+
+	// UNIQUE(dm_key) 가정: 경합 시 재조회
+	private DirectMessageRoom createRoomSafely(String dmKey, UUID a, UUID b) {
+		try {
+			return roomRepository.save(DirectMessageRoom.builder()
+				.dmKey(dmKey)
+				.user1Id(min(a, b))
+				.user2Id(max(a, b))
+				.build());
+		} catch (DataIntegrityViolationException e) {
+			// 동시 생성 충돌 → 기존 것을 재조회
+			return roomRepository.findByDmKey(dmKey)
+				.orElseThrow(() -> new IllegalStateException("dmKey 충돌 후 재조회 실패: " + dmKey, e));
+		}
+	}
+	private UUID min(UUID a, UUID b) { return (a.toString().compareTo(b.toString()) <= 0) ? a : b; }
+	private UUID max(UUID a, UUID b) { return (a.toString().compareTo(b.toString()) <= 0) ? b : a; }
 }
