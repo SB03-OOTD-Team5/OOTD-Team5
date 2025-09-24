@@ -5,7 +5,14 @@ import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
 import java.util.List;
 import java.util.UUID;
 
-//    eventPublisher.publishEvent(new CommentCreateEvent(dto, receiverId));
+/**
+ * FEED_COMMENTED("%s님이 댓글을 달았어요.", "%s"),
+ *  댓글 작성자 이름, 댓글 내용
+ *
+ * receiverId = 댓글이 달린 피드의 생성자 id
+ * eventPublisher.publishEvent(new CommentCreateEvent(dto, receiverId));
+ */
+
 public class CommentCreateEvent extends DomainEvent<CommentDto> {
     private final UUID receiverId;
 
