@@ -59,13 +59,13 @@ public class GlobalExceptionHandler {
             .body(new ErrorResponse(ex));
     }
 
-    // 인가되지 않은 접근일때 실행
+    // 인가 실패(권한 부족)일 때 실행
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleUnAuthorizeException(
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(
         AccessDeniedException ex
     ){
         return ResponseEntity
-            .status(HttpStatus.UNAUTHORIZED) // 400
+            .status(HttpStatus.FORBIDDEN) // 403
             .body(new ErrorResponse(ex));
     }
 }

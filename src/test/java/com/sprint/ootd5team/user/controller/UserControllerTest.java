@@ -430,7 +430,7 @@ null,
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new UserRoleUpdateRequest("ADMIN"))))
             .andDo(print())
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isForbidden());
     }
 
     @Test
