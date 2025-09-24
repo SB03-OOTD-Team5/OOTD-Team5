@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +57,9 @@ public class ClothesServiceImpl implements ClothesService {
     private final UserRepository userRepository;
     private final ClothesAttributeRepository attributeRepository;
 
+    @Value("${ootd.storage.s3.prefix.clothes}")
+    private String clothesPrefix;
+
     /**
      * 특정 사용자의 의상 목록을 조회한다.
      *
@@ -76,8 +80,7 @@ public class ClothesServiceImpl implements ClothesService {
         int limit,
         Sort.Direction direction
     ) {
-        log.info(
-            "[ClothesService] 옷 목록 조회 시작: ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
+        log.info("[ClothesService] 옷 목록 조회 시작: ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
             ownerId, type, cursor, idAfter, limit);
 
         // 다음 페이지 여부 확인
@@ -197,7 +200,8 @@ public class ClothesServiceImpl implements ClothesService {
             return fileStorage.upload(
                 image.getOriginalFilename(),
                 in,
-                image.getContentType()
+                image.getContentType(),
+                clothesPrefix
             );
         } catch (IOException e) {
             log.warn("[clothes] 이미지 업로드 실패 {}", e.getMessage());
@@ -207,7 +211,7 @@ public class ClothesServiceImpl implements ClothesService {
 
     /**
      * 의상 정보 수정
-     * <p>
+     *
      * 이미지: 새 파일 업로드 후 기존 파일 삭제
      * 속성: 요청된 속성과 현재 속성을 비교하여 추가/수정/삭제
      */
@@ -329,9 +333,7 @@ public class ClothesServiceImpl implements ClothesService {
      * @param reason 삭제 사유 (로그 용도)
      */
     private void deleteFileSafely(String key, String reason) {
-        if (!hasText(key)) {
-            return;
-        }
+        if (!hasText(key)) return;
         try {
             fileStorage.delete(key);
             log.info("[clothes] 파일 삭제 성공 - key={}, reason={}", key, reason);

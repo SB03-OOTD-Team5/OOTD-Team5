@@ -222,7 +222,7 @@ class ClothesServiceTest {
         ClothesDto expectedDto = ClothesFixture.toDto(clothes);
         given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
         given(clothesAttributeRepository.findById(attributeId)).willReturn(Optional.of(attribute));
-        given(fileStorage.upload(any(), any(InputStream.class), eq("image/png"))).willReturn(
+        given(fileStorage.upload(any(), any(InputStream.class), eq("image/png"), any())).willReturn(
             imageUrl);
         given(clothesMapper.toDto(any(Clothes.class))).willReturn(expectedDto);
 
@@ -234,7 +234,7 @@ class ClothesServiceTest {
         assertThat(result.name()).isEqualTo("멋쟁이패딩");
         assertThat(result.type()).isEqualTo(ClothesType.OUTER);
         assertThat(result.imageUrl()).isEqualTo(imageUrl);
-        verify(fileStorage).upload(any(), any(InputStream.class), eq("image/png"));
+        verify(fileStorage).upload(any(), any(InputStream.class), eq("image/png"), any());
     }
 
     @Test
@@ -254,7 +254,7 @@ class ClothesServiceTest {
         // then
         assertThat(result.imageUrl()).isNull();
         verify(clothesRepository).save(any(Clothes.class));
-        verify(fileStorage, never()).upload(any(), any(), any());
+        verify(fileStorage, never()).upload(any(), any(), any(), any());
     }
 
     @Test
@@ -318,7 +318,7 @@ class ClothesServiceTest {
             "image", "fail.png", "image/png", "fake".getBytes()
         );
         given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
-        given(fileStorage.upload(eq("fail.png"), any(InputStream.class), eq("image/png")))
+        given(fileStorage.upload(eq("fail.png"), any(InputStream.class), eq("image/png"), any()))
             .willReturn("clothes/fail.png");
         given(clothesRepository.save(any(Clothes.class)))
             .willThrow(new RuntimeException("DB error"));
@@ -348,7 +348,7 @@ class ClothesServiceTest {
         // when & then
         assertThatThrownBy(() -> clothesService.create(request, mockImage))
             .isInstanceOf(FileSaveFailedException.class);
-        verify(fileStorage, never()).upload(any(), any(), any());
+        verify(fileStorage, never()).upload(any(), any(), any(), any());
         verify(fileStorage, never()).delete(any());
     }
 
@@ -408,7 +408,7 @@ class ClothesServiceTest {
             .build();
 
         given(clothesRepository.findById(clothesId)).willReturn(Optional.of(clothes));
-        given(fileStorage.upload(eq("new.png"), any(InputStream.class), eq("image/png")))
+        given(fileStorage.upload(eq("new.png"), any(InputStream.class), eq("image/png"), any()))
             .willReturn("new/image.png");
         given(clothesMapper.toDto(any(Clothes.class))).willReturn(expected);
 
