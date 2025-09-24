@@ -10,5 +10,5 @@ public interface FeedCommentService {
 
     CommentDtoCursorResponse getComments(UUID feedId, CommentListRequest request);
 
-    CommentDto create(CommentCreateRequest commentCreateRequest);
+    CommentDto create(UUID feedId, CommentCreateRequest commentCreateRequest);
 }
