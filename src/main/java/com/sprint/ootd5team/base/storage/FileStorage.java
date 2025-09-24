@@ -8,7 +8,7 @@ import java.io.InputStream;
  */
 public interface FileStorage {
 
-    String upload(String filename, InputStream input, String contentType);
+    String upload(String filename, InputStream input, String contentType, String prefix);
 
     String download(String path);
 

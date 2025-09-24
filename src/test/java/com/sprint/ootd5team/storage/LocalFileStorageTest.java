@@ -20,7 +20,7 @@ public class LocalFileStorageTest {
 
     private LocalFileStorage localFileStorage;
     private static final String TEST_IMAGE = "/test-image.png";
-
+    private static final String TEST_PREFIX = "prefix/";
     /**
      * 각 테스트 종료 후 업로드된 파일 삭제.
      * 파일을 직접 확인하려면 이 메서드를 주석 처리한다.
@@ -47,7 +47,7 @@ public class LocalFileStorageTest {
             assertThat(input).isNotNull();
 
             // when
-            String uniqueName = localFileStorage.upload(filename, input, "image/png");
+            String uniqueName = localFileStorage.upload(filename, input, "image/png", TEST_PREFIX);
 
             // then
             Path savedFile = Paths.get("uploads").resolve(uniqueName);
@@ -63,7 +63,7 @@ public class LocalFileStorageTest {
         String savedPath;
         try (InputStream input = getClass().getResourceAsStream(TEST_IMAGE)) {
             assertThat(input).isNotNull();
-            savedPath = localFileStorage.upload(filename, input, "image/png");
+            savedPath = localFileStorage.upload(filename, input, "image/png", TEST_PREFIX);
         }
 
         // when
@@ -82,7 +82,7 @@ public class LocalFileStorageTest {
         String savedPath;
         try (InputStream input = getClass().getResourceAsStream(TEST_IMAGE)) {
             assertThat(input).isNotNull();
-            savedPath = localFileStorage.upload(filename, input, "image/png");
+            savedPath = localFileStorage.upload(filename, input, "image/png", TEST_PREFIX);
         }
 
         // when
@@ -103,7 +103,7 @@ public class LocalFileStorageTest {
         };
 
         // when & then
-        assertThatThrownBy(() -> localFileStorage.upload("broken.png", brokenStream, "image/png"))
+        assertThatThrownBy(() -> localFileStorage.upload("broken.png", brokenStream, "image/png", TEST_PREFIX))
             .isInstanceOf(FileSaveFailedException.class);
     }
 
@@ -139,7 +139,7 @@ public class LocalFileStorageTest {
 
         // when & then
         assertThatThrownBy(() ->
-            localFileStorage.upload("broken.png", brokenStream, "image/png")
+            localFileStorage.upload("broken.png", brokenStream, "image/png", TEST_PREFIX)
         )
             .isInstanceOf(FileSaveFailedException.class);
     }

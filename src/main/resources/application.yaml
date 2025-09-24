@@ -79,6 +79,9 @@ ootd:
       bucket: ${AWS_S3_BUCKET:zzootd-s3}
       presigned-url-expiration: ${AWS_S3_PRESIGNED_URL_EXPIRATION:600}
       max-upload-size: 20MB   # 실제 정책상 허용할 크기
+      prefix:
+        clothes: "clothes/"
+        profiles: "profiles/"
 
   jsoup:
     timeout: 5000
