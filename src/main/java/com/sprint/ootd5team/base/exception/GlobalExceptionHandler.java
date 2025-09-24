@@ -1,10 +1,11 @@
 package com.sprint.ootd5team.base.exception;
 
-import com.sprint.ootd5team.base.errorcode.ErrorCode;
 import com.sprint.ootd5team.base.exception.file.FileTooLargeException;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingPathVariableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -35,6 +36,33 @@ public class GlobalExceptionHandler {
             -1, // 알 수 없음 placeholder,
             ex.getMaxUploadSize()
         );
+    }
+
+    /* 공통 - 요청 파라미터 누락 */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParam(
+        MissingServletRequestParameterException ex) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(ex));
+    }
+
+    /* 공통 - PathVariable 파라미터 누락/오류 */
+    @ExceptionHandler(MissingPathVariableException.class)
+    public ResponseEntity<ErrorResponse> handleMissingPathVar(
+        MissingPathVariableException ex) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(ex));
+    }
+
+    /* 공통 - @Valid 바인딩,검증 실패 */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(
+        MethodArgumentNotValidException ex) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(ex));
     }
 
 }
