@@ -73,7 +73,7 @@ public class S3FileStorage implements FileStorage {
      * 파일 업로드 (랜덤 UUID prefix 붙여서 key 충돌 방지)
      */
     @Override
-    public String upload(String filename, InputStream inputStream, String contentType) {
+    public String upload(String filename, InputStream inputStream, String contentType, String prefix) {
         String extension = "";
         if (filename != null && filename.contains(".")) {
             extension = filename.substring(filename.lastIndexOf('.'));
@@ -81,7 +81,8 @@ public class S3FileStorage implements FileStorage {
 
         contentType = resolveContentType(filename, extension, contentType);
 
-        String key = "clothes/" + UUID.randomUUID() + extension;
+        String key = prefix + UUID.randomUUID() + extension;
+
         Path tempFile = null;
 
         try {
