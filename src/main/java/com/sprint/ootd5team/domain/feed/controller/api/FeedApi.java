@@ -13,8 +13,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 
 public interface FeedApi {
 
@@ -29,7 +27,7 @@ public interface FeedApi {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))
         )
     })
-    ResponseEntity<FeedDto> create(@RequestBody FeedCreateRequest feedCreateRequest);
+    ResponseEntity<FeedDto> create(FeedCreateRequest feedCreateRequest);
 
     @Operation(summary = "피드 목록 조회")
     @ApiResponses(value = {
@@ -67,5 +65,5 @@ public interface FeedApi {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))
         )
     })
-    ResponseEntity<Void> delete(@PathVariable UUID feedId);
+    ResponseEntity<Void> delete(UUID feedId);
 }

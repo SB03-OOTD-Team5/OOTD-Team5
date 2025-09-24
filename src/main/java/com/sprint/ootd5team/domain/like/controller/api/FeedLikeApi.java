@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
 
 public interface FeedLikeApi {
 
@@ -22,7 +21,7 @@ public interface FeedLikeApi {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))
         )
     })
-    ResponseEntity<Void> like(@PathVariable("feedId") UUID feedId);
+    ResponseEntity<Void> like(UUID feedId);
 
     @Operation(summary = "피드 좋아요 취소")
     @ApiResponses(value = {
@@ -34,5 +33,5 @@ public interface FeedLikeApi {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))
         )
     })
-    ResponseEntity<Void> unLike(@PathVariable("feedId") UUID feedId);
+    ResponseEntity<Void> unLike(UUID feedId);
 }
