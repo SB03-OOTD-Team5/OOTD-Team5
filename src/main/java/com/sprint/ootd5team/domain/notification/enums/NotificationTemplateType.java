@@ -3,7 +3,7 @@ package com.sprint.ootd5team.domain.notification.enums;
 import lombok.Getter;
 
 @Getter
-public enum NotificationType {
+public enum NotificationTemplateType {
     // 권한
     ROLE_CHANGED("내 권한이 변경되었어요.", "내 권한이 [%s]에서 [%s]로 변경 되었어요."),
 
@@ -25,7 +25,7 @@ public enum NotificationType {
     private final String titleTemplate;
     private final String contentTemplate;
 
-    NotificationType(String titleTemplate, String contentTemplate) {
+    NotificationTemplateType(String titleTemplate, String contentTemplate) {
         this.titleTemplate = titleTemplate;
         this.contentTemplate = contentTemplate;
     }

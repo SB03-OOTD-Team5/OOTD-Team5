@@ -4,7 +4,7 @@ import com.sprint.ootd5team.base.sse.service.SseService;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDto;
 import com.sprint.ootd5team.domain.notification.entity.Notification;
 import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
-import com.sprint.ootd5team.domain.notification.enums.NotificationType;
+import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
 import com.sprint.ootd5team.domain.notification.mapper.NotificationMapper;
 import com.sprint.ootd5team.domain.notification.repository.NotificationRepository;
 import com.sprint.ootd5team.domain.user.entity.User;
@@ -28,7 +28,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public NotificationDto createByReceiverId(
         UUID receiverId,
-        NotificationType type,
+        NotificationTemplateType type,
         NotificationLevel level,
         Object... args
     ) {
