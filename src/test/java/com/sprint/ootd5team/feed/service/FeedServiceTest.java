@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -191,6 +192,41 @@ public class FeedServiceTest {
         assertThat(response.hasNext()).isTrue();
         assertThat(response.nextCursor()).isEqualTo(feed1.createdAt().toString());
         assertThat(response.nextIdAfter()).isEqualTo(feed1.id());
+    }
+
+    @Test
+    @DisplayName("피드 단건 조회 성공")
+    void getFeed_success() {
+        // given
+        UUID feedId = UUID.randomUUID();
+        FeedDto mockDto = new FeedDto(
+            feedId, Instant.now(), Instant.now(), testAuthor, testWeather,
+            List.of(), "테스트 피드", 10, 2, false
+        );
+
+        given(feedRepository.findFeedDtoById(feedId, userId)).willReturn(mockDto);
+
+        // when
+        FeedDto result = feedService.getFeed(feedId, userId);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(feedId);
+        assertThat(result.content()).isEqualTo("테스트 피드");
+        verify(feedRepository).findFeedDtoById(feedId, userId);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 피드 조회 시 예외 발생")
+    void getFeed_notFound() {
+        // given
+        UUID feedId = UUID.randomUUID();
+        given(feedRepository.findFeedDtoById(feedId, userId)).willReturn(null);
+
+        // when & then
+        assertThatThrownBy(() -> feedService.getFeed(feedId, userId))
+            .isInstanceOf(FeedNotFoundException.class);
+        verify(feedRepository).findFeedDtoById(feedId, userId);
     }
 
     @Test

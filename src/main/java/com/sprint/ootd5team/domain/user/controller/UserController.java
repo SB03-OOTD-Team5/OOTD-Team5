@@ -9,6 +9,7 @@ import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
 import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
 import com.sprint.ootd5team.domain.user.service.UserService;
 import jakarta.validation.Valid;
+import java.awt.print.Pageable;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import software.amazon.awssdk.http.HttpStatusCode;
 
@@ -36,13 +38,6 @@ public class UserController implements UserApi {
         return ResponseEntity
             .status(HttpStatusCode.CREATED)
             .body(userDto);
-    }
-
-    @Override
-    public ResponseEntity<UserDtoCursorResponse> getUsers(String cursor, UUID idAfter,
-        Integer limit, String sortBy, String sortDirection, String emailLike, String roleEqual,
-        Boolean locked) {
-        return null;
     }
 
     @Override
@@ -67,6 +62,24 @@ public class UserController implements UserApi {
         return ResponseEntity
             .status(HttpStatusCode.OK)
             .body(profile);
+    }
+
+    @GetMapping
+    public ResponseEntity<UserDtoCursorResponse> getUsers(
+        @RequestParam(required = false) String cursor,
+        @RequestParam(required = false) UUID idAfter,
+        @RequestParam Integer limit,
+        @RequestParam String sortBy,
+        @RequestParam String sortDirection,
+        @RequestParam(required = false) String emailLike,
+        @RequestParam(required = false) String roleEqual,
+        @RequestParam(required = false) Boolean locked
+    ) {
+        UserDtoCursorResponse response = userService.getUsers(cursor,idAfter,limit,sortBy,sortDirection,emailLike,roleEqual,locked);
+
+        return ResponseEntity
+            .status(HttpStatusCode.OK)
+            .body(response);
     }
 
 

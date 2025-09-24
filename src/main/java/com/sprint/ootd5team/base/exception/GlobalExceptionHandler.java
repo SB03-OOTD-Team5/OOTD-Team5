@@ -38,15 +38,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /* 공통 - 요청 파라미터 누락 */
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ErrorResponse> handleMissingParam(
-        MissingServletRequestParameterException ex) {
-        return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(new ErrorResponse(ex));
-    }
-
     /* 공통 - PathVariable 파라미터 누락/오류 */
     @ExceptionHandler(MissingPathVariableException.class)
     public ResponseEntity<ErrorResponse> handleMissingPathVar(
@@ -56,13 +47,22 @@ public class GlobalExceptionHandler {
             .body(new ErrorResponse(ex));
     }
 
-    /* 공통 - @Valid 바인딩,검증 실패 */
+    /* 공통 - @Valid 위반 */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(
+    public ResponseEntity<ErrorResponse> handleValidationException(
         MethodArgumentNotValidException ex) {
         return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
+            .status(HttpStatus.BAD_REQUEST) // 400
             .body(new ErrorResponse(ex));
     }
 
+    /* 공통 - 요청 필수 파라미터 누락 */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(
+        MissingServletRequestParameterException ex
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST) // 400
+            .body(new ErrorResponse(ex));
+    }
 }

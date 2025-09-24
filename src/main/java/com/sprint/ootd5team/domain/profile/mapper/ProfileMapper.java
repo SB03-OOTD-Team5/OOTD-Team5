@@ -3,6 +3,7 @@ package com.sprint.ootd5team.domain.profile.mapper;
 import com.sprint.ootd5team.domain.location.mapper.LocationMapper;
 import com.sprint.ootd5team.domain.profile.dto.request.ProfileDto;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
+import com.sprint.ootd5team.domain.user.dto.AuthorDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -13,4 +14,6 @@ public abstract class ProfileMapper {
 
     @Mapping(target = "location", source = ".", qualifiedByName = "profileToLocationDto")
     public abstract ProfileDto toDto(Profile profile);
+
+    public abstract AuthorDto toAuthorDto(Profile profile);
 }

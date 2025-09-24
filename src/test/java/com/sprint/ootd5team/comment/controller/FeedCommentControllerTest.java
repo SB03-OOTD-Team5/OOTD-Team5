@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -11,9 +12,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.config.SecurityConfig;
 import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
 import com.sprint.ootd5team.domain.comment.controller.FeedCommentController;
+import com.sprint.ootd5team.domain.comment.dto.data.CommentDto;
+import com.sprint.ootd5team.domain.comment.dto.request.CommentCreateRequest;
 import com.sprint.ootd5team.domain.comment.dto.request.CommentListRequest;
 import com.sprint.ootd5team.domain.comment.dto.response.CommentDtoCursorResponse;
 import com.sprint.ootd5team.domain.comment.service.FeedCommentService;
+import com.sprint.ootd5team.domain.user.dto.AuthorDto;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -82,4 +87,44 @@ public class FeedCommentControllerTest {
             .andExpect(status().isOk())
             .andExpect(content().json(objectMapper.writeValueAsString(response)));
     }
+
+    @Test
+    @DisplayName("피드 댓글 등록 성공")
+    void createComment_success() throws Exception {
+        // given
+        UUID feedId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
+
+        CommentCreateRequest request = new CommentCreateRequest(
+            authorId,
+            "테스트 댓글입니다."
+        );
+
+        AuthorDto author = new AuthorDto(
+            authorId,
+            "테스트 사용자 이름",
+            "https://example.com/profile.png"
+        );
+
+        CommentDto response = new CommentDto(
+            UUID.randomUUID(),
+            Instant.parse("2025-09-20T10:10:00Z"),
+            feedId,
+            author,
+            "테스트 댓글입니다."
+        );
+
+        given(feedCommentService.create(eq(feedId), any(CommentCreateRequest.class)))
+            .willReturn(response);
+
+        // when & then
+        mockMvc.perform(post("/api/feeds/{feedId}/comments", feedId.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+                .accept(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(status().isCreated())
+            .andExpect(content().json(objectMapper.writeValueAsString(response)));
+    }
+
 }

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
@@ -39,7 +40,8 @@ class ClothesRepositoryImplTest {
         ClothesType type = ClothesType.TOP;
 
         // when
-        List<Clothes> result = clothesRepository.findClothes(ownerId, type, null, null, 10);
+        List<Clothes> result = clothesRepository.findByOwnerWithCursor(ownerId, type, null, null, 10,
+            Direction.DESC);
 
         // then
         assertThat(result).hasSize(1);
@@ -52,12 +54,13 @@ class ClothesRepositoryImplTest {
         Instant after = Instant.parse("2024-01-01T09:00:00Z");
 
         // when
-        List<Clothes> result = clothesRepository.findClothes(
+        List<Clothes> result = clothesRepository.findByOwnerWithCursor(
             ownerId,
             null,
             after,
             null,
-            10
+            10,
+            Direction.DESC
         );
 
         // then
@@ -68,22 +71,49 @@ class ClothesRepositoryImplTest {
     }
 
     @Test
-    void createdAtCursor가_같으면_id값을_기준으로_다음페이지를_조회한다() {
+    void createdAtCursor가_같으면_id값을_기준으로_다음페이지를_조회한다_DESC() {
         // given
         Instant cursor = Instant.parse("2024-01-01T08:00:00Z");
         UUID idAfter = UUID.fromString("22222222-2222-2222-2222-222222222222"); // 운동화2
 
         // when
-        List<Clothes> result = clothesRepository.findClothes(
+        List<Clothes> result = clothesRepository.findByOwnerWithCursor(
             UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
             null,
             cursor,
             idAfter,
-            10
+            10,
+            Direction.DESC
         );
 
         // then
         assertThat(result).extracting(Clothes::getId)
             .containsExactly(UUID.fromString("11111111-1111-1111-1111-111111111111")); // 운동화1
+    }
+
+    @Test
+    void createdAtCursor가_같으면_id값을_기준으로_다음페이지를_조회한다_ASC() {
+        // given
+        Instant cursor = Instant.parse("2024-01-01T08:00:00Z");
+        UUID idAfter = UUID.fromString("11111111-1111-1111-1111-111111111111"); // 운동화1
+
+        // when
+        List<Clothes> result = clothesRepository.findByOwnerWithCursor(
+            UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+            null,
+            cursor,
+            idAfter,
+            10,
+            Direction.ASC
+        );
+
+        // then
+        assertThat(result).extracting(Clothes::getId)
+            .containsExactlyInAnyOrder(
+                UUID.fromString("22222222-2222-2222-2222-222222222222"), // 운동화2
+                UUID.fromString("33333333-3333-3333-3333-333333333333"),  // 운동화3
+                UUID.fromString("bbbbbbbb-0000-0000-0000-aaaaaaaaaaaa"), // 청바지
+                UUID.fromString("aaaaaaaa-0000-0000-0000-aaaaaaaaaaaa")  // 흰 티셔츠
+            );
     }
 }

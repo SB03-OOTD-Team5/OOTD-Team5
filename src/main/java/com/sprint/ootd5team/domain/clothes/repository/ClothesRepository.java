@@ -23,4 +23,5 @@ public interface ClothesRepository extends JpaRepository<Clothes, UUID>, Clothes
 
     List<Clothes> findByIdNotIn(Collection<UUID> ids, Limit limit);
 
+    long countByOwner_Id(UUID ownerId);
 }
