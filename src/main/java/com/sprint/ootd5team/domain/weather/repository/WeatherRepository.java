@@ -21,8 +21,6 @@ public interface WeatherRepository extends JpaRepository<Weather, UUID> {
         BigDecimal latitude, BigDecimal longitude, Instant startOfDay, Instant
             endOfDay);
 
-    Optional<Weather> findById(UUID id);
-
     List<Weather> findAllByPrecipitationTypeEqualsOrSkyStatusEquals(
         PrecipitationType precipitationType, SkyStatus skyStatus);
 

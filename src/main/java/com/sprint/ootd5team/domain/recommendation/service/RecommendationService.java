@@ -49,24 +49,37 @@ public class RecommendationService {
         List<Clothes> clothesList = clothesRepository.findClothesInWeatherIds(
             candiateIds);
 
-        // 추첨된 옷 중 limit에 맞게 랜덤으로 옷을 가져옴
+        // 추첨된 옷이 많으면 limit에 맞게 랜덤으로 옷을 가져옴
         List<Clothes> selectedClothesList;
         if (clothesList.size() > MAX_RECOMMEND_CNT) {
             selectedClothesList = getRandomClothes(clothesList, MAX_RECOMMEND_CNT);
+            // 추첨된 옷이 없으면 전체 랜덤으로 가져옴
+        } else if (clothesList.isEmpty()) {
+            selectedClothesList = getRandomClothes(
+                clothesRepository.findRandomClothes(Limit.of(MAX_RECOMMEND_CNT * 4)),
+                MAX_RECOMMEND_CNT
+            );
+                /* 추첨된 옷이 limit 보다 작으면 DB(4배수)에서 가져옴
+                 - 추첨된 옷이 limit과 같으면 반만 랜덤으로 가져옴 (`다른옷 추천 기능` 때 새로운 옷 보여주기위해)
+                * */
         } else {
-
-            /* 추첨된 옷이 limit 보다 작으면 DB(4배수)에서 가져옴
-             - 추첨된 옷이 limit과 같으면 반만 랜덤으로 가져옴 (`다른옷 추천 기능` 때 새로운 옷 보여주기위해)
-            * */
-            int remain = clothesList.size() == MAX_RECOMMEND_CNT ? MAX_RECOMMEND_CNT / 2
+            int remain = clothesList.size() == MAX_RECOMMEND_CNT
+                ? MAX_RECOMMEND_CNT / 2
                 : MAX_RECOMMEND_CNT - clothesList.size();
 
-            selectedClothesList = clothesList.subList(0, clothesList.size() - remain);
-            List<UUID> includedIds = selectedClothesList.stream().map(BaseEntity::getId).toList();
+            int keepCount = Math.max(0, clothesList.size() - remain);
+            selectedClothesList = new ArrayList<>(clothesList.subList(0, keepCount));
 
-            List<Clothes> fallbackClothes = clothesRepository.findByIdNotIn(includedIds,
-                Limit.of(remain * 4));
-            selectedClothesList = getRandomClothes(fallbackClothes, remain);
+            List<UUID> includedIds = selectedClothesList.stream()
+                .map(BaseEntity::getId)
+                .toList();
+
+            List<Clothes> fallbackClothes = includedIds.isEmpty()
+                ? clothesRepository.findRandomClothes(Limit.of(remain * 4))
+                : clothesRepository.findByIdNotIn(includedIds, Limit.of(remain * 4));
+
+            List<Clothes> additionalClothes = getRandomClothes(fallbackClothes, remain);
+            selectedClothesList.addAll(additionalClothes);
         }
 
         List<RecommendationClothesDto> list = selectedClothesList.stream()

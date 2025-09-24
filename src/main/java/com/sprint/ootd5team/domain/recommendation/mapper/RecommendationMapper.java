@@ -9,9 +9,6 @@ import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.springframework.beans.factory.annotation.Autowired;
 
-/**
- * Clothes 엔티티를 ClothesDto로 변환하는 매퍼 FileStorage를 이용하여 이미지 Url을 접근 가능 url로 변환
- */
 @Mapper(componentModel = "spring", uses = ClothesAttributeMapper.class)
 public abstract class RecommendationMapper {
 

@@ -23,5 +23,12 @@ public interface ClothesRepository extends JpaRepository<Clothes, UUID>, Clothes
 
     List<Clothes> findByIdNotIn(Collection<UUID> ids, Limit limit);
 
+    @Query(value = """
+        SELECT *
+        FROM tbl_clothes
+        ORDER BY random()
+        """, nativeQuery = true)
+    List<Clothes> findRandomClothes(Limit limit);
+
     long countByOwner_Id(UUID ownerId);
 }
