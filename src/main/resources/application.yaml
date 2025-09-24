@@ -24,6 +24,23 @@ spring:
       max-file-size: 50MB        # 스프링 전역 업로드 허용 파일 크기
       max-request-size: 50MB     # 요청 전체 크기
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+#    로컬 실행 시: KAFKA_BOOTSTRAP_SERVERS=localhost:29092
+#    Docker 실행 시: KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+# Confluent Cloud
+#    bootstrap-servers: pkc-xxxxxx.ap-northeast-2.aws.confluent.cloud:9092
+#    properties:
+#      security.protocol: SASL_SSL
+#      sasl.mechanism: PLAIN
+#      sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="API_KEY" password="API_SECRET";
+    consumer:
+      group-id: ootd.notification
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
 # SecurityConfig 비활성화/활성화 on off
 app:
   security:
@@ -50,6 +67,15 @@ springdoc:
 swagger:
   server-url: http://localhost:${server.port}
 
+services:
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 8090:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+
 # Admin 설정
 ootd:
   admin:
@@ -64,14 +90,14 @@ ootd:
   jwt:
     access-token:
       expiration-ms: 1800000 # 30분
-      secret: ${JWT_ACCESS_TOKEN_SECRET}
+      secret: ${JWT_ACCESS_TOKEN_SECRET:change-me-access-secret-for-dev-only}
 
     refresh-token:
       expiration-ms: 604800000 # 7일
-      secret: ${JWT_REFRESH_TOKEN_SECRET}
+      secret: ${JWT_REFRESH_TOKEN_SECRET:change-me-refresh-secret-for-dev-only}
 
   storage:
-    type: ${STORAGE_TYPE:local}
+    type: ${STORAGE_TYPE:s3}
     s3:
       access-key: ${AWS_ACCESS_KEY_ID:dummy-access-key}
       secret-key: ${AWS_SECRET_ACCESS_KEY:dummy-secret-key}
