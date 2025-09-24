@@ -7,11 +7,10 @@ import java.util.UUID;
 
 public interface NotificationService {
 
-    NotificationDto createByReceiverId(
+    NotificationDto createNotification(
         UUID receiverId,
         NotificationTemplateType type,
         NotificationLevel level,
         Object... args
     );
-
 }

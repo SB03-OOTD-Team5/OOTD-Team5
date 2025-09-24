@@ -1,6 +1,5 @@
 package com.sprint.ootd5team.domain.notification.service;
 
-import com.sprint.ootd5team.base.sse.service.SseService;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDto;
 import com.sprint.ootd5team.domain.notification.entity.Notification;
 import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
@@ -9,30 +8,35 @@ import com.sprint.ootd5team.domain.notification.mapper.NotificationMapper;
 import com.sprint.ootd5team.domain.notification.repository.NotificationRepository;
 import com.sprint.ootd5team.domain.user.entity.User;
 import jakarta.persistence.EntityManager;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
     private final EntityManager entityManager;
-    private final SseService sseService;
 
+    /**
+     * 특정 사용자에게 알림을 생성하고 SSE로 전송
+     *
+     * @param receiverId 알림 수신자 UUID
+     * @param type       알림 타입
+     * @param level      알림 중요도 레벨
+     * @param args       알림 메시지 포맷에 사용될 인자
+     * @return 생성된 알림 DTO
+     */
     @Transactional
     @Override
-    public NotificationDto createByReceiverId(
-        UUID receiverId,
-        NotificationTemplateType type,
-        NotificationLevel level,
-        Object... args
+    public NotificationDto createNotification(UUID receiverId, NotificationTemplateType type,
+        NotificationLevel level, Object... args
     ) {
-
         String title = type.formatTitle(args);
         String content = type.formatContent(args);
 
@@ -45,12 +49,10 @@ public class NotificationServiceImpl implements NotificationService {
             .build();
 
         Notification saved = notificationRepository.save(notification);
-        NotificationDto dto = notificationMapper.toDto(saved);
+        log.info(
+            "[NotificationService] 알림 생성 완료: receiverId={}, type={}, level={}, notificationId={}",
+            receiverId, type, level, saved.getId());
 
-        // SSE 전송
-        sseService.send(List.of(receiverId), "notifications", dto);
-
-        return dto;
+        return notificationMapper.toDto(saved);
     }
-
 }
