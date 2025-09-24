@@ -32,7 +32,7 @@ public class RecommendationService {
 
     public RecommendationDto getRecommendation(UUID weatherId, UUID userId) {
 
-        log.info("[RecommendationController] 추천 조회 시작: weatherId={}, userId={} ", weatherId,
+        log.info("[RecommendationService] 추천 조회 시작: weatherId={}, userId={} ", weatherId,
             userId);
 
         // 해당 weather 정보 가져옴
