@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.clothes.controller;
 
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.clothes.controller.api.ClothesApi;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesUpdateRequest;
@@ -8,9 +9,11 @@ import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothes.extractor.ClothesExtractionService;
 import com.sprint.ootd5team.domain.clothes.service.ClothesService;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,21 +28,23 @@ public class ClothesController implements ClothesApi {
 
     private final ClothesService clothesService;
     private final ClothesExtractionService clothesExtractionService;
+    private final AuthService authService;
 
     @Override
     public ResponseEntity<ClothesDtoCursorResponse> getClothes(
         UUID ownerId,
         ClothesType type,
-        String cursor,
+        Instant cursor,
         UUID idAfter,
-        int limit
+        int limit,
+        Sort.Direction sortDirection
     ) {
         log.info("[ClothesController] 전체 조회 요청 수신: "
-                + "ownerId={}, typeEqual={}, cursor={}, idAfter={}, limit={}",
-            ownerId, type, cursor, idAfter, limit);
+                + "ownerId={}, typeEqual={}, cursor={}, idAfter={}, limit={}, sort={}",
+            ownerId, type, cursor, idAfter, limit, sortDirection.name());
 
         ClothesDtoCursorResponse response =
-            clothesService.getClothes(ownerId, type, cursor, idAfter, limit);
+            clothesService.getClothes(ownerId, type, cursor, idAfter, limit, sortDirection);
 
         log.info("[ClothesController] 전체 조회 응답 반환: "
                 + "data.size={}, hasNext={}, nextCursor={}, nextIdAfter={}",
@@ -67,8 +72,9 @@ public class ClothesController implements ClothesApi {
 
     @Override
     public ResponseEntity<Void> deleteClothes(UUID clothesId) {
+        UUID ownerId = authService.getCurrentUserId();
         log.info("[ClothesController] 삭제 요청 수신: clothesId={}", clothesId);
-        clothesService.delete(clothesId);
+        clothesService.delete(ownerId, clothesId);
 
         log.info("[ClothesController] 삭제 응답 완료");
 
