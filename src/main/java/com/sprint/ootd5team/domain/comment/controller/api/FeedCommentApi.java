@@ -36,7 +36,7 @@ public interface FeedCommentApi {
     @Operation(summary = "피드 댓글 등록")
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200", description = "피드 댓글 등록 성공",
+            responseCode = "201", description = "피드 댓글 등록 성공",
             content = @Content(schema = @Schema(implementation = CommentDto.class))
         ),
         @ApiResponse(

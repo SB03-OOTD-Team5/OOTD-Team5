@@ -88,7 +88,7 @@ public class FeedCommentServiceImpl implements FeedCommentService {
         UUID authorId = commentCreateRequest.authorId();
 
         log.info("[FeedCommentService] 댓글 등록 요청 시작 - "
-            + "feedId={}, authorId={}, content={}", feedId, authorId, commentCreateRequest.content());
+            + "feedId={}, content={}", feedId, commentCreateRequest.content());
 
         validateFeed(feedId);
 
@@ -97,7 +97,7 @@ public class FeedCommentServiceImpl implements FeedCommentService {
 
         FeedComment feedComment = new FeedComment(feedId, authorId, commentCreateRequest.content());
         FeedComment saved = feedCommentRepository.save(feedComment);
-        log.debug("[FeedCommentServie] 저장된 FeedComment: {}", saved);
+        log.debug("[FeedCommentService] 저장된 FeedComment: {}", saved);
 
         feedRepository.incrementCommentCount(feedId);
 
