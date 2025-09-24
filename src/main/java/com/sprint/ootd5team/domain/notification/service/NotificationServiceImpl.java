@@ -1,16 +1,14 @@
 package com.sprint.ootd5team.domain.notification.service;
 
 import com.sprint.ootd5team.base.exception.notification.NotificationNotFoundException;
-import com.sprint.ootd5team.base.sse.service.SseService;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDto;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDtoCursorResponse;
 import com.sprint.ootd5team.domain.notification.entity.Notification;
 import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
-import com.sprint.ootd5team.domain.notification.enums.NotificationType;
+import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
 import com.sprint.ootd5team.domain.notification.mapper.NotificationMapper;
 import com.sprint.ootd5team.domain.notification.respository.NotificationRepository;
 import com.sprint.ootd5team.domain.user.entity.User;
-import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.List;
@@ -38,8 +36,6 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
     private final EntityManager entityManager;
-    private final SseService sseService;
-    private final UserRepository userRepository;
 
     /**
      * 특정 사용자에게 알림을 생성하고 SSE로 전송
@@ -52,13 +48,9 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Transactional
     @Override
-    public NotificationDto createByReceiverId(
-        UUID receiverId,
-        NotificationType type,
-        NotificationLevel level,
-        Object... args
+    public NotificationDto createNotification(UUID receiverId, NotificationTemplateType type,
+        NotificationLevel level, Object... args
     ) {
-
         String title = type.formatTitle(args);
         String content = type.formatContent(args);
 
@@ -71,51 +63,15 @@ public class NotificationServiceImpl implements NotificationService {
             .build();
 
         Notification saved = notificationRepository.save(notification);
-        NotificationDto dto = notificationMapper.toDto(saved);
-
-        log.info("[NotificationService] 알림 생성: receiverId={}, type={}, level={}, notificationId={}",
+        log.info(
+            "[NotificationService] 알림 생성 완료: receiverId={}, type={}, level={}, notificationId={}",
             receiverId, type, level, saved.getId());
 
-        // SSE 전송
-        sseService.send(List.of(receiverId), "notifications", dto);
-
-        return dto;
+        return notificationMapper.toDto(saved);
     }
 
     /**
-     * 모든 사용자에게 동일한 알림을 생성하고 전송
-     *
-     * @param type  알림 타입
-     * @param level 알림 중요도 레벨
-     * @param args  알림 메시지 포맷에 사용될 인자
-     */
-    @Override
-    public void notifyAllUsers(NotificationType type, NotificationLevel level, Object... args) {
-        String title = type.formatTitle(args);
-        String content = type.formatContent(args);
-
-        List<UUID> userIds = userRepository.findAllUserIds();
-        log.info("[NotificationService] 전체 사용자 알림 전송 시작: userCount={}, type={}, level={}",
-            userIds.size(), type, level);
-
-        for (UUID userId : userIds) {
-            Notification notification = Notification.builder()
-                .receiver(entityManager.getReference(User.class, userId))
-                .title(title)
-                .content(content)
-                .level(level)
-                .build();
-
-            Notification saved = notificationRepository.save(notification);
-            NotificationDto dto = notificationMapper.toDto(saved);
-
-            sseService.send(List.of(userId), "notifications", dto);
-        }
-        log.info("[NotificationService] 전체 사용자 알림 전송 완료: totalSent={}", userIds.size());
-    }
-
-    /**
-     * 현재 로그인한 사용자의 알림을 커서 기반 페이지네이션 방식으로 조회합니다.
+     * 현재 로그인한 사용자의 알림을 커서 기반 페이지네이션 방식으로 조회
      *
      * @param currentUserId 현재 사용자 UUID
      * @param cursor        조회 기준 시각 (null 가능)
@@ -126,7 +82,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Transactional(readOnly = true)
     @Override
-    public NotificationDtoCursorResponse getNotifications(UUID currentUserId, Instant cursor,
+    public NotificationDtoCursorResponse findAll(UUID currentUserId, Instant cursor,
         UUID idAfter, int limit, Direction direction) {
         List<Notification> notifications = notificationRepository.findByUserWithCursor(
             currentUserId, cursor, idAfter, limit, direction);
@@ -141,7 +97,8 @@ public class NotificationServiceImpl implements NotificationService {
         String nextIdAfter =
             hasNext ? notifications.get(notifications.size() - 1).getId().toString() : null;
 
-        log.debug("[NotificationService] 알림 조회: userId={}, fetched={}, hasNext={}, cursor={}, idAfter={}",
+        log.debug(
+            "[NotificationService] 알림 조회: userId={}, fetched={}, hasNext={}, cursor={}, idAfter={}",
             currentUserId, notifications.size(), hasNext, cursor, idAfter);
 
         return new NotificationDtoCursorResponse(
@@ -170,7 +127,8 @@ public class NotificationServiceImpl implements NotificationService {
             .orElseThrow(() -> NotificationNotFoundException.withId(notificationId));
 
         if (!notification.getReceiver().getId().equals(receiverId)) {
-            log.warn("[NotificationService] 알림 삭제 거부: receiverId={}, notificationId={}", receiverId, notificationId);
+            log.warn("[NotificationService] 알림 삭제 거부: receiverId={}, notificationId={}", receiverId,
+                notificationId);
             throw new AccessDeniedException("본인 알림만 읽음 처리할 수 있습니다.");
         }
 

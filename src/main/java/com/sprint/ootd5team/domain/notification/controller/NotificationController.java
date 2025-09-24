@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -38,7 +37,7 @@ public class NotificationController implements NotificationApi {
             receiverId, cursor, idAfter, limit, direction);
 
         NotificationDtoCursorResponse response =
-            notificationService.getNotifications(receiverId, cursor, idAfter, limit, direction);
+            notificationService.findAll(receiverId, cursor, idAfter, limit, direction);
 
         log.info(
             "[NotificationController] 전체 조회 응답: size={}, hasNext={}, nextCursor={}, nextIdAfter={}",

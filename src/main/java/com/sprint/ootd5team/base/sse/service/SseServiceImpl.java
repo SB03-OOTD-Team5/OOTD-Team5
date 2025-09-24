@@ -110,7 +110,7 @@ public class SseServiceImpl implements SseService {
     }
 
     /**
-     * 모든 사용자에게 이벤트를 브로드캐스트합니다.
+     * 서버에 SSE 연결을 맺은 모든 userId -> 모든 emitter에 같은 이벤트를 전송
      *
      * @param eventName 이벤트 이름
      * @param data      전송할 데이터(직렬화 가능 객체)
