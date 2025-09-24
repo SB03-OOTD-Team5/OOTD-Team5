@@ -7,11 +7,15 @@ import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
+import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.mapper.UserMapper;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
+import com.sprint.ootd5team.domain.user.repository.UserRepositoryCustom;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,6 +31,7 @@ public class UserService {
     private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final UserRepositoryCustom userRepositoryCustom;
 
 
     /**
@@ -37,6 +42,7 @@ public class UserService {
     @Transactional
     public UserDto create(UserCreateRequest request){
 
+        log.debug("유저 생성 시작");
         if (userRepository.existsByEmail(request.email())) {
             throw new UserAlreadyExistException();
         }
@@ -47,6 +53,7 @@ public class UserService {
         // 프로필 생성해서 저장
         Profile profile = new Profile(user.getId(),user.getName(),null,null,null,null,null,null,null,null,null);
         profileRepository.save(profile);
+        log.info("유저 생성 완료");
 
         return userMapper.toDto(user);
     }
@@ -58,8 +65,61 @@ public class UserService {
      */
     @Transactional
     public void changePassword(UUID userId, ChangePasswordRequest request) {
+        log.debug("비밀번호 변경 시작");
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
         user.updatePassword(passwordEncoder.encode(request.password()));
         userRepository.save(user);
+        log.info("비밀번호 변경 완료 유저ID:{}",userId);
+    }
+
+    @Transactional
+    public UserDtoCursorResponse getUsers(
+        String cursor,
+        UUID idAfter,
+        Integer limit,
+        String sortBy,
+        String sortDirection,
+        String emailLike,
+        String roleEqual,
+        Boolean locked) {
+
+        log.debug("유저 검색 커서 기반 페이지네이션 시작");
+        List<UserDto> allByCursor = userRepositoryCustom.findUsersWithCursor(cursor, idAfter, limit+1,
+                sortBy, sortDirection, emailLike, roleEqual, locked)
+            .stream()
+            .map(userMapper::toDto)
+            .collect(Collectors.toList());
+
+        // 검색된 리스트 사이즈(limit+1 검색)가 limit 보다 클경우 hasNext true
+        boolean hasNext = allByCursor.size() > limit;
+
+        String nextCursor = null;
+        UUID nextIdAfter = null;
+        if(hasNext) {
+            // 마지막 인덱스 추출(다음)
+            UserDto userDto = allByCursor.get(allByCursor.size() - 1);
+
+            // 다음 인덱스 UUID
+            nextIdAfter = userDto.id();
+
+            // 다음 커서
+            if(sortBy.equals("createdAt")){
+                nextCursor = userDto.createdAt().toString();
+            }
+            else{
+                nextCursor = userDto.email();
+            }
+
+        }
+
+        // 전체 갯수
+        Long totalCount = userRepositoryCustom.countUsers(roleEqual, emailLike, locked);
+
+        // 다음 페이지가 존재할 때만 limit+1을 검색했기때문에 마지막 인덱스 제거
+        if(hasNext) allByCursor.remove(allByCursor.size() - 1);
+
+        log.info("유저 검색 커서 기반 페이지네이션 완료");
+        return new UserDtoCursorResponse(allByCursor, nextCursor, nextIdAfter, hasNext, totalCount, sortBy,
+            sortDirection);
     }
 }

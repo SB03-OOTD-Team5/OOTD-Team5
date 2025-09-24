@@ -39,31 +39,23 @@ public interface UserApi {
         )
     })
     ResponseEntity<UserDtoCursorResponse> getUsers(
-        @Parameter(description = "커서 기반 페이지네이션을 위한 cursor")
-        @RequestParam(required = false) String cursor,
+        @Parameter(description = "커서 기반 페이지네이션을 위한 cursor") String cursor,
 
-        @Parameter(description = "idAfter 값 (UUID)")
-        @RequestParam(required = false) UUID idAfter,
+        @Parameter(description = "idAfter 값 (UUID)") UUID idAfter,
 
-        @Parameter(description = "조회 개수 (기본값: 20)")
-        @RequestParam(required = true) Integer limit,
+        @Parameter(description = "조회 개수 (기본값: 20)") Integer limit,
 
         @Parameter(description = "정렬 기준", example = "email",
-            schema = @Schema(allowableValues = {"email", "createdAt"}))
-        @RequestParam(required = true) String sortBy,
+            schema = @Schema(allowableValues = {"email", "createdAt"})) String sortBy,
 
         @Parameter(description = "정렬 방향", example = "ASCENDING",
-            schema = @Schema(allowableValues = {"ASCENDING", "DESCENDING"}))
-        @RequestParam(required = true) String sortDirection,
+            schema = @Schema(allowableValues = {"ASCENDING", "DESCENDING"})) String sortDirection,
 
-        @Parameter(description = "이메일 LIKE 검색")
-        @RequestParam(required = false) String emailLike,
+        @Parameter(description = "이메일 LIKE 검색") String emailLike,
 
-        @Parameter(description = "역할 필터링", schema = @Schema(allowableValues = {"USER", "ADMIN"}))
-        @RequestParam(required = false) String roleEqual,
+        @Parameter(description = "역할 필터링", schema = @Schema(allowableValues = {"USER", "ADMIN"})) String roleEqual,
 
-        @Parameter(description = "계정 잠금 여부")
-        @RequestParam(required = false) Boolean locked
+        @Parameter(description = "계정 잠금 여부") Boolean locked
     );
 
 
