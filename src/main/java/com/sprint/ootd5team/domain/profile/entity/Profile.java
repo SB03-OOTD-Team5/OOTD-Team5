@@ -2,8 +2,6 @@ package com.sprint.ootd5team.domain.profile.entity;
 
 import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
 import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
-import com.sprint.ootd5team.domain.location.entity.Location;
-import com.sprint.ootd5team.domain.profile.dto.data.LocationDto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.PrePersist;
