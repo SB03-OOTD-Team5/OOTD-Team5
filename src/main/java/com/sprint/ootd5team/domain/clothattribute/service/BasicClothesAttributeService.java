@@ -12,9 +12,8 @@ import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
 import com.sprint.ootd5team.domain.clothattribute.mapper.ClothesAttributeMapper;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeValueRepository;
-import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
-import com.sprint.ootd5team.domain.notification.enums.NotificationType;
-import com.sprint.ootd5team.domain.notification.service.NotificationService;
+import com.sprint.ootd5team.domain.notification.event.type.ClothesAttributeCreateEvent;
+import com.sprint.ootd5team.domain.notification.event.type.ClothesAttributeUpdateEvent;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.Comparator;
@@ -24,6 +23,7 @@ import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +36,7 @@ public class BasicClothesAttributeService implements ClothesAttributeService {
     private final ClothesAttributeRepository clothesAttributeRepository;
     private final ClothesAttributeValueRepository clothesAttributeValueRepository;
     private final ClothesAttributeMapper mapper;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @PersistenceContext
     private EntityManager em;
@@ -61,14 +61,12 @@ public class BasicClothesAttributeService implements ClothesAttributeService {
         log.info("[ClothesAttributeService] 의상 속성 생성됨 : 속성명={}, 하위속성 수={}", saved.getName(),
             saved.getDefs().size());
 
-        // 알림 전송
-        notificationService.notifyAllUsers(
-            NotificationType.CLOTHES_ATTRIBUTE_ADDED,
-            NotificationLevel.INFO,
-            saved.getName()
-        );
+        ClothesAttributeDefDto dto = mapper.toDto(saved);
 
-        return mapper.toDto(saved);
+        // 알림 전송
+        eventPublisher.publishEvent(new ClothesAttributeCreateEvent(dto));
+
+        return dto;
     }
 
     @Override
@@ -136,14 +134,12 @@ public class BasicClothesAttributeService implements ClothesAttributeService {
         log.info("[ClothesAttributeService] 의상 속성 수정됨 : 속성명={}, 하위속성 수={}", saved.getName(),
             saved.getDefs().size());
 
-        // 알림 전송
-        notificationService.notifyAllUsers(
-            NotificationType.CLOTHES_ATTRIBUTE_UPDATE,
-            NotificationLevel.INFO,
-            saved.getName()
-        );
+        ClothesAttributeDefDto dto = mapper.toDto(saved);
 
-        return mapper.toDto(saved);
+        // 알림 전송
+        eventPublisher.publishEvent(new ClothesAttributeUpdateEvent(dto));
+
+        return dto;
     }
 
     @Override

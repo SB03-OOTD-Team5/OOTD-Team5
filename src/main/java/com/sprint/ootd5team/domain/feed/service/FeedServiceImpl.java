@@ -44,8 +44,7 @@ public class FeedServiceImpl implements FeedService {
     private final ProfileRepository profileRepository;
     private final WeatherRepository weatherRepository;
     private final ClothesRepository clothesRepository;
-//    private final NotificationService notificationService;
-//    private final UserRepository userRepository;
+//    private final ApplicationEventPublisher eventPublisher;
 //    private final FollowRepository followRepository;
 
     /**
@@ -76,20 +75,9 @@ public class FeedServiceImpl implements FeedService {
 //        // 팔로워 조회
 //        List<UUID> followerIds = followRepository.findFollowerIds(authorId);
 //
-//        // 작성자 조회
-//        User author = userRepository.findById(request.authorId())
-//            .orElseThrow(() -> UserNotFoundException.withId(authorId));
-//
+//         FeedDto dto = feedMapper.toDto(feed, author, clothesList);
 //        // 알림 전송 (팔로워들 모두 수신자)
-//        followerIds.forEach(followerId ->
-//            notificationService.createByReceiverId(
-//                followerId,
-//                NotificationType.FEED_FOLLOW_CREATED,
-//                NotificationLevel.INFO,
-//                author.getName(),
-//                feed.getContent()
-//            )
-//        );
+//        eventPublisher.publishEvent(new FeedCreateEvent(dto, followerIds));
 
         return enrichSingleFeed(
             feedRepository.findFeedDtoById(feed.getId(), currentUserId)

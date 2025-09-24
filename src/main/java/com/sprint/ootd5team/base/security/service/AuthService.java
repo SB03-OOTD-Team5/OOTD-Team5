@@ -8,9 +8,7 @@ import com.sprint.ootd5team.base.security.JwtInformation;
 import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.OotdUserDetails;
-import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
-import com.sprint.ootd5team.domain.notification.enums.NotificationType;
-import com.sprint.ootd5team.domain.notification.service.NotificationService;
+import com.sprint.ootd5team.domain.notification.event.type.RoleUpdateEvent;
 import com.sprint.ootd5team.domain.user.dto.TemporaryPasswordCreatedEvent;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ResetPasswordRequest;
@@ -36,15 +34,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthService {
 
-
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final JwtTokenProvider tokenProvider;
     private final JwtRegistry jwtRegistry;
     private final UserDetailsService userDetailsService;
     private final ApplicationEventPublisher eventPublisher;
-    private final NotificationService notificationService;
-
 
     /**
      * 역할 업데이트 메서드(어드민)
@@ -58,14 +53,10 @@ public class AuthService {
     public UserDto updateRoleInternal(UUID userId, UserRoleUpdateRequest request) {
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
         Role oldRole = user.getRole();
-        user.updateRole(Role.valueOf(request.role()));
+        Role newRole = Role.valueOf(request.role());
+        user.updateRole(newRole);
 
-        notificationService.createByReceiverId(
-            user.getId(),
-            NotificationType.ROLE_CHANGED,
-            NotificationLevel.INFO,
-            oldRole, request.role()
-        );
+         eventPublisher.publishEvent(new RoleUpdateEvent(user.getId(), oldRole.name(), newRole.name()));
 
         return userMapper.toDto(userRepository.save(user));
     }

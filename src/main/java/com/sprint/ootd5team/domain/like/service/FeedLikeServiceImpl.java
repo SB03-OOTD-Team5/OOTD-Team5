@@ -9,14 +9,13 @@ import com.sprint.ootd5team.domain.feed.entity.Feed;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.like.entity.FeedLike;
 import com.sprint.ootd5team.domain.like.repository.FeedLikeRepository;
-import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
-import com.sprint.ootd5team.domain.notification.enums.NotificationType;
-import com.sprint.ootd5team.domain.notification.service.NotificationService;
+import com.sprint.ootd5team.domain.notification.event.type.FeedLikeEvent;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +27,7 @@ public class FeedLikeServiceImpl implements FeedLikeService {
     private final FeedLikeRepository feedLikeRepository;
     private final FeedRepository feedRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void like(UUID feedId, UUID currentUserId) {
@@ -45,15 +44,12 @@ public class FeedLikeServiceImpl implements FeedLikeService {
         feedRepository.incrementLikeCount(feedId);
 
         // 알림 전송
+        // 좋아요 누른 사람 이름 가져오기
         User actor = userRepository.findById(currentUserId)
             .orElseThrow(() -> UserNotFoundException.withId(currentUserId));
 
-        notificationService.createByReceiverId(
-            feed.getAuthorId(),
-            NotificationType.FEED_LIKED,
-            NotificationLevel.INFO,
-            actor.getName(),
-            feed.getContent()
+        eventPublisher.publishEvent(
+            new FeedLikeEvent(feed.getId(), feed.getAuthorId(), feed.getContent(), actor.getName())
         );
     }
 
