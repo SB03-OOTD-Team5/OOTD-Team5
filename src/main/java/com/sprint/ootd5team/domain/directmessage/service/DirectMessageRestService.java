@@ -28,7 +28,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -184,7 +183,12 @@ public class DirectMessageRestService {
 			.build();
 	}
 
-	// 이메일 로그인 전제: UUID → 이메일 → 실패 시 명확한 예외
+	/**
+	 * JWT 기반: DB 없이 Authentication에서 곧장 UUID 추출
+	 * - principal 이 문자열 UUID 이면 그대로 사용
+	 * - OotdUserDetails면 getUserId()
+	 * - JwtAuthenticationToken이면 claim("userId") 또는 subject(UUID) 사용
+	 */
 	private UUID currentUserId() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		if (auth == null || !auth.isAuthenticated()) {
@@ -193,55 +197,35 @@ public class DirectMessageRestService {
 
 		Object principal = auth.getPrincipal();
 
-		// 1) 커스텀 UserDetails
+		// 1) principal 문자열 UUID
+		if (principal instanceof String s) {
+			UUID u = tryParseUuid(s);
+			if (u != null) return u;
+		}
+
+		// 2) 커스텀 UserDetails
 		if (principal instanceof OotdUserDetails ud) {
 			return ud.getUserId();
 		}
 
-		// 2) 일반 UserDetails (username이 UUID 또는 이메일이라고 가정)
-		if (principal instanceof UserDetails ud) {
-			String username = ud.getUsername();
-			UUID parsed = tryParseUuid(username);
-			if (parsed != null) return parsed;
-
-			// 이메일만 허용
-			if (looksLikeEmail(username)) {
-				return userRepository.findByEmail(username)
-					.map(User::getId)
-					.orElseThrow(() -> new IllegalStateException("이메일로 사용자를 찾을 수 없습니다: " + username));
-			}
-			throw new IllegalStateException("username이 UUID/이메일 형식이 아닙니다: " + username);
-		}
-
-		// 3) JWT (sub이 UUID 또는 이메일이라고 가정)
+		// 4) JWT 토큰에서 userId 또는 sub(UUID) 사용
 		if (auth instanceof JwtAuthenticationToken jwt) {
-			String sub = jwt.getToken().getClaimAsString("sub");
-			UUID parsed = tryParseUuid(sub);
-			if (parsed != null) return parsed;
-
-			if (looksLikeEmail(sub)) {
-				return userRepository.findByEmail(sub)
-					.map(User::getId)
-					.orElseThrow(() -> new IllegalStateException("JWT sub(이메일)로 사용자를 찾을 수 없습니다: " + sub));
+			String claimUserId = jwt.getToken().getClaimAsString("userId");
+			if (claimUserId != null) {
+				UUID u = tryParseUuid(claimUserId);
+				if (u != null) return u;
 			}
-			throw new IllegalStateException("JWT sub이 UUID/이메일 형식이 아닙니다: " + sub);
+			String sub = jwt.getToken().getSubject();
+			UUID u = tryParseUuid(sub);
+			if (u != null) return u;
+			throw new IllegalStateException("JWT에 userId/sub(UUID)가 없습니다.");
 		}
 
-		// 4) 최종 폴백: auth.getName() (UUID 또는 이메일만 허용)
-		String name = auth.getName();
-		UUID parsed = tryParseUuid(name);
-		if (parsed != null) return parsed;
+		// 5) 마지막 폴백: auth.getName()이 UUID일 때만
+		UUID u = tryParseUuid(auth.getName());
+		if (u != null) return u;
 
-		if (looksLikeEmail(name)) {
-			return userRepository.findByEmail(name)
-				.map(User::getId)
-				.orElseThrow(() -> new IllegalStateException("인증 주체 이메일로 사용자를 찾을 수 없습니다: " + name));
-		}
-		throw new IllegalStateException("인증 주체가 UUID/이메일 형식이 아닙니다: " + name);
-	}
-
-	private boolean looksLikeEmail(String s) {
-		return s != null && s.contains("@"); // 간단 체크(필요시 정규식 강화 가능)
+		throw new IllegalStateException("인증 주체에서 UUID를 찾을 수 없습니다.");
 	}
 
 	private UUID tryParseUuid(String s) {
