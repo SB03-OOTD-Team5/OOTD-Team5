@@ -16,7 +16,6 @@ import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundExc
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeValueNotAllowedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
-import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.clothes.fixture.ClothesFixture;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
@@ -85,7 +84,7 @@ class ClothesServiceTest {
     void 옷_전체목록조회() {
         // given
         List<Clothes> fakeClothes = ClothesFixture.createTestClothes(owner);
-        given(clothesRepository.findByUserWithCursor(eq(ownerId), eq(null), eq(null), eq(null),
+        given(clothesRepository.findByOwnerWithCursor(eq(ownerId), eq(null), eq(null), eq(null),
             anyInt(), eq(Direction.DESC)))
             .willReturn(fakeClothes);
         given(clothesMapper.toDto(any(Clothes.class)))
@@ -116,7 +115,7 @@ class ClothesServiceTest {
         int limit = 2;
 
         List<Clothes> fakeClothes = ClothesFixture.createTestClothes(owner);
-        given(clothesRepository.findByUserWithCursor(eq(ownerId), eq(null), eq(cursor), eq(null),
+        given(clothesRepository.findByOwnerWithCursor(eq(ownerId), eq(null), eq(cursor), eq(null),
             anyInt(), eq(Direction.DESC)))
             .willReturn(fakeClothes);
 
@@ -142,7 +141,7 @@ class ClothesServiceTest {
     void 옷_타입별조회_TOP() {
         // given
         List<Clothes> fakeClothes = ClothesFixture.createTestClothes(owner);
-        given(clothesRepository.findByUserWithCursor(eq(ownerId), eq(ClothesType.TOP), eq(null),
+        given(clothesRepository.findByOwnerWithCursor(eq(ownerId), eq(ClothesType.TOP), eq(null),
             eq(null),
             anyInt(), eq(Direction.DESC)))
             .willReturn(
@@ -181,7 +180,7 @@ class ClothesServiceTest {
             })
             .toList();
 
-        given(clothesRepository.findByUserWithCursor(eq(ownerId), any(), any(), any(), anyInt(),
+        given(clothesRepository.findByOwnerWithCursor(eq(ownerId), any(), any(), any(), anyInt(),
             eq(Direction.DESC)))
             .willReturn(clothesList);
 
