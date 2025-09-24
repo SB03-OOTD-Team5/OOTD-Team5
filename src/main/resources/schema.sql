@@ -207,6 +207,20 @@ CREATE TABLE IF NOT EXISTS tbl_locations
 
 );
 
+/****** 팔로우 ******/
+CREATE TABLE IF NOT EXISTS tbl_follows
+(
+    id              UUID                        PRIMARY KEY,
+    followee_id     UUID                        NOT NULL,
+    follower_id     UUID                        NOT NULL,
+    created_at      TIMESTAMP WITH TIME ZONE    NOT NULL,
+    -- constraints
+    CONSTRAINT fk_follows_followee FOREIGN KEY (followee_id) REFERENCES tbl_users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_follows_follower FOREIGN KEY (follower_id) REFERENCES tbl_users (id) ON DELETE CASCADE,
+    CONSTRAINT uq_follows UNIQUE (followee_id, follower_id)
+);
+
+
 /* 인덱스 설정 */
 -- tbl_weathers index
 CREATE INDEX idx_tbl_weathers_profile_forecasted_at
@@ -228,25 +242,6 @@ CREATE INDEX IF NOT EXISTS ix_cav_clothes_attr
 
 CREATE INDEX IF NOT EXISTS ix_cav_attr_defvalue
     ON tbl_clothes_attributes_values (attribute_id, def_value);
-
-/* tbl_profiles - name 컬럼 추가 & 수정 */
-
--- 컬럼 없으면 추가
-ALTER TABLE tbl_profiles ADD COLUMN IF NOT EXISTS name VARCHAR(50);
-
---  NULL인 행만 데이터 채우기
-UPDATE tbl_profiles p
-SET name = (
-    SELECT u.name
-    FROM tbl_users u
-    WHERE u.id = p.user_id
-)
-WHERE p.name IS NULL;
-
-ALTER TABLE tbl_profiles ALTER COLUMN name SET NOT NULL;
-
-
-/* feed 변경 사항 - unique 제약 조건, 인덱스 추가 */
 
 -- tbl_feed index
 CREATE INDEX IF NOT EXISTS idx_feeds_createdat_id
@@ -270,8 +265,29 @@ CREATE INDEX IF NOT EXISTS idx_feed_comments_feed_id
 CREATE INDEX IF NOT EXISTS idx_feed_likes_feed_id
     ON tbl_feed_likes(feed_id);
 
-ALTER TABLE tbl_feed_clothes
-    ADD CONSTRAINT uq_feed_clothes UNIQUE (feed_id, clothes_id);
+-- tbl_follows index
+CREATE INDEX IF NOT EXISTS idx_follows_followee_id
+    ON tbl_follows(followee_id);
+
+CREATE INDEX IF NOT EXISTS idx_follows_follower_id
+    ON tbl_follows(follower_id);
+
+
+/* tbl_profiles - name 컬럼 추가 & 수정 */
+
+-- 컬럼 없으면 추가
+ALTER TABLE tbl_profiles ADD COLUMN IF NOT EXISTS name VARCHAR(50);
+
+--  NULL인 행만 데이터 채우기
+UPDATE tbl_profiles p
+SET name = (
+    SELECT u.name
+    FROM tbl_users u
+    WHERE u.id = p.user_id
+)
+WHERE p.name IS NULL;
+
+ALTER TABLE tbl_profiles ALTER COLUMN name SET NOT NULL;
 
 ALTER TABLE tbl_locations
     ADD CONSTRAINT uq_locations UNIQUE (latitude, longitude);
