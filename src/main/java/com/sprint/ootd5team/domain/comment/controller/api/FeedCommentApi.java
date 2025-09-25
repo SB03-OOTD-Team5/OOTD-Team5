@@ -14,6 +14,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.util.UUID;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 
 public interface FeedCommentApi {
 
@@ -29,8 +32,8 @@ public interface FeedCommentApi {
         )
     })
     ResponseEntity<CommentDtoCursorResponse> getComments(
-        @Parameter(description = "feedId", required = true) UUID feedId,
-        @ParameterObject CommentListRequest commentListRequest
+        @Parameter(description = "feedId", required = true) @PathVariable UUID feedId,
+        @ParameterObject @ModelAttribute CommentListRequest commentListRequest
     );
 
     @Operation(summary = "피드 댓글 등록")
@@ -45,7 +48,7 @@ public interface FeedCommentApi {
         )
     })
     ResponseEntity<CommentDto> create(
-        @Parameter(description = "feedId", required = true) UUID feedId,
-        CommentCreateRequest commentCreateRequest
+        @Parameter(description = "feedId", required = true) @PathVariable UUID feedId,
+        @RequestBody CommentCreateRequest commentCreateRequest
     );
 }

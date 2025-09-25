@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -27,7 +26,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
-@Validated
 @RequiredArgsConstructor
 @RequestMapping("/api/feeds")
 @RestController
@@ -38,7 +36,7 @@ public class FeedController implements FeedApi {
 
     @Override
     @PostMapping
-    public ResponseEntity<FeedDto> create(@Valid @RequestBody FeedCreateRequest feedCreateRequest) {
+    public ResponseEntity<FeedDto> create(@Valid FeedCreateRequest feedCreateRequest) {
         UUID userId = authService.getCurrentUserId();
         FeedDto feedDto = feedService.create(feedCreateRequest, userId);
 
@@ -49,7 +47,7 @@ public class FeedController implements FeedApi {
 
     @Override
     @GetMapping
-    public ResponseEntity<FeedDtoCursorResponse> getFeeds(@Valid @ModelAttribute FeedListRequest feedListRequest) {
+    public ResponseEntity<FeedDtoCursorResponse> getFeeds(@Valid FeedListRequest feedListRequest) {
         UUID userId = authService.getCurrentUserId();
         FeedDtoCursorResponse feeds = feedService.getFeeds(feedListRequest, userId);
 
@@ -72,8 +70,8 @@ public class FeedController implements FeedApi {
     @Override
     @PatchMapping(path = "/{feedId}")
     public ResponseEntity<FeedDto> update(
-        @PathVariable UUID feedId,
-        @Valid @RequestBody FeedUpdateRequest feedUpdateRequest
+        UUID feedId,
+        @Valid FeedUpdateRequest feedUpdateRequest
     ) {
         UUID userId = authService.getCurrentUserId();
         FeedDto updatedFeedDto = feedService.update(feedId, feedUpdateRequest, userId);
@@ -86,7 +84,7 @@ public class FeedController implements FeedApi {
     //TODO: 사용자 접근 권한 추가
     @Override
     @DeleteMapping(path = "/{feedId}")
-    public ResponseEntity<Void> delete(@PathVariable UUID feedId) {
+    public ResponseEntity<Void> delete(UUID feedId) {
         feedService.delete(feedId);
 
         return ResponseEntity.noContent().build();
