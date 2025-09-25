@@ -1,8 +1,8 @@
 package com.sprint.ootd5team.domain.weather.service;
 
+import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.location.dto.data.ClientCoords;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
-import com.sprint.ootd5team.domain.profile.exception.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.weather.dto.data.WeatherDto;
 import com.sprint.ootd5team.domain.weather.entity.Weather;

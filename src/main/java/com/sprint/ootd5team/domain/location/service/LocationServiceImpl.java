@@ -2,6 +2,7 @@ package com.sprint.ootd5team.domain.location.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.base.util.CoordinateUtils;
 import com.sprint.ootd5team.domain.location.dto.data.ClientCoords;
 import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
@@ -10,7 +11,6 @@ import com.sprint.ootd5team.domain.location.exception.LocationKakaoFetchExceptio
 import com.sprint.ootd5team.domain.location.mapper.LocationMapper;
 import com.sprint.ootd5team.domain.location.repository.LocationRepository;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
-import com.sprint.ootd5team.domain.profile.exception.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.weather.external.kakao.KakaoResponseDto;
 import java.math.BigDecimal;
