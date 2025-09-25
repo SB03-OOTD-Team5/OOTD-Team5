@@ -1,7 +1,7 @@
 package com.sprint.ootd5team.domain.weather.service;
 
-import com.sprint.ootd5team.base.util.CoordinateUtils;
-import com.sprint.ootd5team.domain.location.service.LocationQueryService;
+import com.sprint.ootd5team.domain.location.entity.Location;
+import com.sprint.ootd5team.domain.location.service.LocationService;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
 import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
@@ -40,43 +40,40 @@ public class WeatherFactory {
     private static final ZoneId SEOUL_ZONE_ID = ZoneId.of("Asia/Seoul");
     private final WeatherRepository weatherRepository;
     private final KmaApiAdapter kmaApiAdapter;
-    private final LocationQueryService locationQueryService;
+    //FIXME : service 의존하면 X
+    private final LocationService locationService;
 
     public List<Weather> findOrCreateWeathers(BigDecimal latitude, BigDecimal longitude,
         Profile profile) {
         String baseDate = LocalDate.now(SEOUL_ZONE_ID).format(DATE_FORMATTER);
         String baseTime = kmaApiAdapter.getBaseTime(baseDate); // 기상청 API BaseTime
 
-        List<Weather> cachedWeathers = findWeathersInCache(baseDate, baseTime, latitude, longitude);
+        //FIXME: find랑 create 분리하면 좋을듯
+        Location location = locationService.findOrCreateLocation(latitude, longitude);
+
+        List<Weather> cachedWeathers = findWeathersInCache(baseDate, baseTime, location);
         if (!cachedWeathers.isEmpty()) {
             log.debug("[Weather] 날씨 데이터 이미 존재: {}건", cachedWeathers.size());
             return cachedWeathers;
         }
-        log.debug("[Weather] 날씨 데이터 이미 존재 X");
-        KmaResponseDto kmaResponse = kmaApiAdapter.fetchWeatherFromKma(baseDate, baseTime, latitude,
+        log.debug("[Weather] 날씨 데이터 존재 X, 생성 시작");
+        KmaResponseDto kmaResponse = kmaApiAdapter.getKmaWeather(baseDate, baseTime, latitude,
             longitude);
-        String locationNames = locationQueryService.getLocationNames(latitude, longitude);
-
-        List<Weather> newWeathers = buildWeathersFromKmaResponse(kmaResponse, profile, latitude,
-            longitude, locationNames, baseDate);
+        List<Weather> newWeathers = buildWeathersFromKmaResponse(kmaResponse, baseDate, location);
 
         return weatherRepository.saveAll(newWeathers);
     }
 
-    private List<Weather> findWeathersInCache(String baseDate, String baseTime, BigDecimal latitude,
-        BigDecimal longitude) {
-        Instant forcastedAt = toInstant(baseDate, baseTime);
-        log.debug("[Weather repository] 날씨 존재하는지 확인중 forcastedAt:{}, lat: {}, lon: {}",
-            forcastedAt, latitude, longitude);
-        return weatherRepository.findAllByForecastedAtAndLatitudeAndLongitude(
-            forcastedAt,
-            CoordinateUtils.toNumeric(latitude),
-            CoordinateUtils.toNumeric(longitude)
-        );
+    private List<Weather> findWeathersInCache(String baseDate, String baseTime, Location location) {
+        Instant forecastedAt = toInstant(baseDate, baseTime);
+        log.debug("[Weather repository] 날씨 존재하는지 확인중 forecastedAt:{}, lat: {}, lon: {}",
+            forecastedAt, location.getLatitude(), location.getLongitude());
+
+        return weatherRepository.findAllByLocationIdAndForecastedAt(location.getId(), forecastedAt);
     }
 
-    private List<Weather> buildWeathersFromKmaResponse(KmaResponseDto kmaResponse, Profile profile,
-        BigDecimal latitude, BigDecimal longitude, String locationNames, String baseDate) {
+    private List<Weather> buildWeathersFromKmaResponse(KmaResponseDto kmaResponse, String baseDate,
+        Location location) {
 
         List<WeatherItem> allItems = kmaResponse.response().body().items().weatherItems();
         if (allItems == null || allItems.isEmpty()) {
@@ -94,8 +91,7 @@ public class WeatherFactory {
         List<String> sortedDates = itemsByDate.keySet().stream().sorted().toList();
 
         // 첫 예보일(오늘)의 비교 대상인 '어제' 날씨를 DB에서 조회
-        Weather yesterdayWeather = findYesterdayWeather(latitude, longitude, sortedDates.get(0));
-
+        Weather yesterdayWeather = findYesterdayWeather(location, sortedDates.get(0));
         for (Map.Entry<String, List<WeatherItem>> entry : itemsByDate.entrySet()) {
             List<WeatherItem> itemsOfDate = entry.getValue();
             if (itemsOfDate.isEmpty()) {
@@ -136,9 +132,8 @@ public class WeatherFactory {
                 continue;
             }
 
-            Weather currentWeather = buildSingleWeather(itemsOfDate, itemsForTargetSlot, profile,
-                latitude,
-                longitude, locationNames, yesterdayWeather);
+            Weather currentWeather = buildSingleWeather(itemsOfDate, itemsForTargetSlot, location,
+                yesterdayWeather);
             result.add(currentWeather);
 
             // 다음날 날씨에 현재 날씨 전달
@@ -184,8 +179,7 @@ public class WeatherFactory {
     }
 
     // 어제 날씨를 DB에서 조회하는 로직
-    private Weather findYesterdayWeather(BigDecimal latitude, BigDecimal
-        longitude, String todayDateStr) {
+    private Weather findYesterdayWeather(Location location, String todayDateStr) {
         LocalDate yesterday = LocalDate.parse(todayDateStr,
             DATE_FORMATTER).minusDays(1);
         Instant startOfYesterday =
@@ -193,17 +187,15 @@ public class WeatherFactory {
         Instant endOfYesterday =
             yesterday.atTime(LocalTime.MAX).atZone(SEOUL_ZONE_ID).toInstant();
 
-        return weatherRepository.findFirstByLatitudeAndLongitudeAndForecastAtBetweenOrderByForecastAtDesc(
-            CoordinateUtils.toNumeric(latitude),
-            CoordinateUtils.toNumeric(longitude),
+        return weatherRepository.findFirstByLocationIdAndForecastAtBetweenOrderByForecastAtDesc(
+            location.getId(),
             startOfYesterday,
             endOfYesterday
         ).orElse(null);
     }
 
     private Weather buildSingleWeather(List<WeatherItem> dailyItems,
-        List<WeatherItem> targetDateItems, Profile profile,
-        BigDecimal latitude, BigDecimal longitude, String locationNames, Weather yesterdayWeather) {
+        List<WeatherItem> targetDateItems, Location location, Weather yesterdayWeather) {
         WeatherItem anyItem = targetDateItems.get(0);
         Instant forecastedAt = toInstant(anyItem.baseDate(), anyItem.baseTime());
         Instant forecastAt = toInstant(anyItem.fcstDate(), anyItem.fcstTime());
@@ -246,15 +238,9 @@ public class WeatherFactory {
             humidityCompared = humidity - yesterdayWeather.getHumidity();
         }
         return Weather.builder()
-            .profile(profile)
             .forecastedAt(forecastedAt)
             .forecastAt(forecastAt)
             .skyStatus(skyStatus)
-            .latitude(latitude)
-            .longitude(longitude)
-            .xCoord(anyItem.nx())
-            .yCoord(anyItem.ny())
-            .locationNames(locationNames)
             .precipitationType(precipitationType)
             .precipitationAmount(precipitationAmount)
             .precipitationProbability(precipitationProbability)
@@ -266,6 +252,7 @@ public class WeatherFactory {
             .temperatureMax(temperatureMax)
             .windspeed(windspeed)
             .windspeedLevel(toWindSpeedLevel(windspeed))
+            .location(location)
             .build();
     }
 
