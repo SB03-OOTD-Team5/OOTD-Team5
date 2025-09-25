@@ -96,7 +96,7 @@ class SseServiceImplTest {
     }
 
     @Test
-    void Connect_ping전송_실패해도_Emitter반환() throws Exception {
+    void Connect_ping전송_Emitter반환() {
         // given
         given(userRepository.findById(userId)).willReturn(Optional.of(new User()));
 
@@ -141,6 +141,8 @@ class SseServiceImplTest {
 
         // then
         then(messageRepository).should().save(any(SseMessage.class));
+        then(messageRepository).should().save(any(SseMessage.class));
+        verify(brokenEmitter).completeWithError(any(Exception.class));
     }
 
     @Test
