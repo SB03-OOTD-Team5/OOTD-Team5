@@ -1,8 +1,8 @@
 package com.sprint.ootd5team.base.sse.controller;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sprint.ootd5team.base.security.service.AuthService;
@@ -20,7 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @WebMvcTest(controllers = SseController.class)
-@DisplayName("ClothesController 슬라이스 테스트")
+@DisplayName("SseController 슬라이스 테스트")
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 class SseControllerTest {
@@ -45,8 +45,11 @@ class SseControllerTest {
         given(sseService.connect(userId, lastEventId)).willReturn(new SseEmitter());
 
         // when & then
-        mockMvc.perform(get("/api/sse").accept(MediaType.TEXT_EVENT_STREAM))
+        mockMvc.perform(get("/api/sse")
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .header("Last-Event-ID", lastEventId.toString()))
             .andExpect(status().isOk());
+        then(sseService).should().connect(userId, lastEventId);
     }
 
     @Test
@@ -60,5 +63,6 @@ class SseControllerTest {
         // when & then
         mockMvc.perform(get("/api/sse").accept(MediaType.TEXT_EVENT_STREAM))
             .andExpect(status().isOk());
+        then(sseService).should().connect(userId, null);
     }
 }

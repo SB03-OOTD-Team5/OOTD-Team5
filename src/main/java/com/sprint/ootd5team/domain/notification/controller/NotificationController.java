@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class NotificationController implements NotificationApi {
 
     private final NotificationService notificationService;
@@ -30,9 +32,23 @@ public class NotificationController implements NotificationApi {
         int limit,
         Sort.Direction direction
     ) {
+        UUID receiverId = authService.getCurrentUserId();
+
+        log.info("[NotificationController] 전체 조회 요청 수신: "
+                + "ownerId={}, cursor={}, idAfter={}, limit={}, sort={}",
+            receiverId, cursor, idAfter, limit, direction);
+
+        NotificationDtoCursorResponse response =
+            notificationService.findAll(receiverId, cursor, idAfter, limit, direction);
+
+        log.info(
+            "[NotificationController] 전체 조회 응답: size={}, hasNext={}, nextCursor={}, nextIdAfter={}",
+            response.data().size(), response.hasNext(),
+            response.nextCursor(), response.nextIdAfter());
+
         return ResponseEntity
-            .status(HttpStatus.NO_CONTENT)
-            .build();
+            .status(HttpStatus.OK)
+            .body(response);
     }
 
     @Override

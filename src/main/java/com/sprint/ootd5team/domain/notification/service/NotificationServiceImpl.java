@@ -1,15 +1,10 @@
 package com.sprint.ootd5team.domain.notification.service;
 
 import com.sprint.ootd5team.base.exception.notification.NotificationNotFoundException;
-import com.sprint.ootd5team.domain.notification.dto.response.NotificationDto;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDtoCursorResponse;
 import com.sprint.ootd5team.domain.notification.entity.Notification;
-import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
-import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
 import com.sprint.ootd5team.domain.notification.mapper.NotificationMapper;
-import com.sprint.ootd5team.domain.notification.respository.NotificationRepository;
-import com.sprint.ootd5team.domain.user.entity.User;
-import jakarta.persistence.EntityManager;
+import com.sprint.ootd5team.domain.notification.repository.NotificationRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -23,8 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 알림(Notification) 관련 비즈니스 로직을 처리하는 서비스 구현체
  * <p>
- * - 단일 사용자 알림 생성 및 전송
- * - 전체 사용자 알림 브로드캐스트
+ * - 알림 생성
  * - 사용자별 알림 조회 (커서 기반 페이지네이션)
  * - 알림 삭제
  */
@@ -35,40 +29,6 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
-    private final EntityManager entityManager;
-
-    /**
-     * 특정 사용자에게 알림을 생성
-     *
-     * @param receiverId 알림 수신자 UUID
-     * @param type       알림 타입
-     * @param level      알림 중요도 레벨
-     * @param args       알림 메시지 포맷에 사용될 인자
-     * @return 생성된 알림 DTO
-     */
-    @Transactional
-    @Override
-    public NotificationDto createNotification(UUID receiverId, NotificationTemplateType type,
-        NotificationLevel level, Object... args
-    ) {
-        String title = type.formatTitle(args);
-        String content = type.formatContent(args);
-
-        User receiver = entityManager.getReference(User.class, receiverId);
-        Notification notification = Notification.builder()
-            .receiver(receiver)
-            .title(title)
-            .content(content)
-            .level(level)
-            .build();
-
-        Notification saved = notificationRepository.save(notification);
-        log.info(
-            "[NotificationService] 알림 생성 완료: receiverId={}, type={}, level={}, notificationId={}",
-            receiverId, type, level, saved.getId());
-
-        return notificationMapper.toDto(saved);
-    }
 
     /**
      * 현재 로그인한 사용자의 알림을 커서 기반 페이지네이션 방식으로 조회

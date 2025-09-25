@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.base.security;
 
+import ch.qos.logback.classic.spi.IThrowableProxy;
 import com.sprint.ootd5team.base.exception.user.UserAlreadyExistException;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
@@ -34,7 +35,7 @@ public class AdminInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         // 관리자 계정 초기화 로직
         try {
-            userRepository.findByEmail(username).orElseThrow(UserAlreadyExistException::new);
+            userRepository.findByEmail(email).ifPresent(user -> {throw new UserAlreadyExistException();});
             User user = userRepository.save(new User(username, email, passwordEncoder.encode(password), Role.ADMIN));
             profileRepository.save(new Profile(user.getId(),user.getName(),null,null,null,null,null,null,null,null,null));
             log.info("관리자 계정이 성공적으로 생성되었습니다.");

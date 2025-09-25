@@ -47,10 +47,10 @@ public class SseEmitterRepository {
      * @return 사용자에 등록된 Emitter 목록(수정 불가 뷰가 아님에 유의)
      */
     public List<SseEmitter> get(UUID userId) {
-        List<SseEmitter> list = data.getOrDefault(userId, List.of());
-        log.debug("[SseEmitterRepository] SSE Emitter 조회: userId={}, count={}", userId,
-            list.size());
-        return list;
+        List<SseEmitter> list = data.get(userId);
+        int count = list == null ? 0 : list.size();
+        log.debug("[SseEmitterRepository] SSE Emitter 조회: userId={}, count={}", userId, count);
+        return list == null ? List.of() : List.copyOf(list);
 
     }
 
@@ -85,7 +85,11 @@ public class SseEmitterRepository {
      */
     public Map<UUID, List<SseEmitter>> findAll() {
         log.debug("[SseEmitterRepository] SSE 저장소 전체 조회: userCount={}", data.size());
-        return data;
+        return data.entrySet().stream()
+            .collect(java.util.stream.Collectors.toUnmodifiableMap(
+                Map.Entry::getKey,
+                e -> List.copyOf(e.getValue())
+            ));
     }
 
 }

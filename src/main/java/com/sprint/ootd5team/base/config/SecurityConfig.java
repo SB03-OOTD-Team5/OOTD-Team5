@@ -108,7 +108,7 @@ public class SecurityConfig {
                 if(csrfEnabled){
                     csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler());
-                } else {
+                    } else {
                     csrf.disable();
                 }
             })
@@ -133,6 +133,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-out").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-in").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
+                .requestMatchers("/ws/**").permitAll()   // ★ 웹소켓 허용
+                .requestMatchers("/sub/**", "/pub/**").permitAll() // 구독/발행 경로도 필요시
                 .requestMatchers("/api/sse").authenticated()
                 // 개발 storage = local일 때(s3시 필요없음)
                 .requestMatchers("/local-files/**").permitAll()
