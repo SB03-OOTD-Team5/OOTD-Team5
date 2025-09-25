@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.clothes.service;
+package com.sprint.ootd5team.domain.clothes.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;

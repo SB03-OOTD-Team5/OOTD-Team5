@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.clothes.repository;
+package com.sprint.ootd5team.domain.clothes.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

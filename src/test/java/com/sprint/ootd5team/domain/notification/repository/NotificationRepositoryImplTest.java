@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.notification.repository;
+package com.sprint.ootd5team.domain.notification.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

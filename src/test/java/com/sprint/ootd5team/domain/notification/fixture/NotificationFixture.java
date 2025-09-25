@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.notification.fixture;
+package com.sprint.ootd5team.domain.notification.fixture;
 
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDto;
 import com.sprint.ootd5team.domain.notification.entity.Notification;

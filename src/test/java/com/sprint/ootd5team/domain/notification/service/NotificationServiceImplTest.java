@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.notification.service;
+package com.sprint.ootd5team.domain.notification.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -9,9 +9,8 @@ import com.sprint.ootd5team.domain.notification.entity.Notification;
 import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
 import com.sprint.ootd5team.domain.notification.mapper.NotificationMapper;
 import com.sprint.ootd5team.domain.notification.repository.NotificationRepository;
-import com.sprint.ootd5team.domain.notification.service.NotificationServiceImpl;
 import com.sprint.ootd5team.domain.user.entity.User;
-import com.sprint.ootd5team.notification.fixture.NotificationFixture;
+import com.sprint.ootd5team.domain.notification.fixture.NotificationFixture;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

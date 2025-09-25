@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.notification.controller;
+package com.sprint.ootd5team.domain.notification.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
