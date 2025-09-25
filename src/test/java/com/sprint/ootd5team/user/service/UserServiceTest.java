@@ -10,11 +10,15 @@ import static org.mockito.BDDMockito.verify;
 
 import com.sprint.ootd5team.base.exception.user.UserAlreadyExistException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
+import com.sprint.ootd5team.base.security.JwtRegistry;
+import com.sprint.ootd5team.base.security.JwtTokenProvider;
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
+import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import com.sprint.ootd5team.domain.user.entity.User;
@@ -30,33 +34,53 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest(classes = {AuthService.class, UserService.class})
+@EnableMethodSecurity
 class UserServiceTest {
 
-    @Mock
+    @Autowired
+    private AuthService authService;
+
+    @Autowired
+    private UserService userService;
+
+    @MockitoBean
     private UserRepository userRepository;
 
-    @Mock
-    private ProfileRepository profileRepository;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
-
-    @Mock
+    @MockitoBean
     private UserMapper userMapper;
 
-    @Mock
+    @MockitoBean
+    private UserDetailsService userDetailsService;
+
+    @MockitoBean
+    private JwtTokenProvider tokenProvider;
+
+    @MockitoBean
+    private JwtRegistry jwtRegistry;
+
+    @MockitoBean
+    private ApplicationEventPublisher eventPublisher;
+
+    @MockitoBean
+    private PasswordEncoder passwordEncoder;
+
+    @MockitoBean
     private UserRepositoryCustom userRepositoryCustom;
 
-    @InjectMocks
-    private UserService userService;
+    @MockitoBean
+    private ProfileRepository profileRepository;
 
     private User testUser;
     private UserDto testUserDto;
@@ -293,6 +317,75 @@ class UserServiceTest {
         assertThat(result.nextCursor()).isEqualTo(userDto2.email()); // email 정렬시 email이 커서
         assertThat(result.nextIdAfter()).isEqualTo(userDto2.id());
     }
+
+    @Test
+    @DisplayName("사용자 Role 수정 성공")
+    @WithMockUser(username = "tester", roles = {"ADMIN"})
+    void update_UserRole_Success() {
+
+        UserDto testUserDto = new UserDto(
+            testUser.getId(),
+            testUser.getCreatedAt(),
+            testUser.getEmail(),
+            testUser.getName(),
+            Role.ADMIN,
+            null,
+            false
+        );
+
+        given(userRepository.findById(testUser.getId())).willReturn(Optional.of(testUser));
+        given(userRepository.save(testUser)).willReturn(testUser);
+        given(userMapper.toDto(testUser)).willReturn(testUserDto);
+
+        // when
+        UserDto result = authService.updateRoleInternal(testUser.getId(),new UserRoleUpdateRequest("ADMIN"));
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.role()).isEqualTo(Role.ADMIN);
+    }
+
+    @Test
+    @DisplayName("사용자 Role 수정 실패 - 존재하지 않는 사용자")
+    @WithMockUser(username = "tester", roles = {"ADMIN"})
+    void update_UserRole_Fail_UserNotFound() {
+
+        UserDto testUserDto = new UserDto(
+            testUser.getId(),
+            testUser.getCreatedAt(),
+            testUser.getEmail(),
+            testUser.getName(),
+            Role.ADMIN,
+            null,
+            false
+        );
+
+        given(userRepository.findById(testUser.getId())).willThrow(UserNotFoundException.class);
+
+        // when
+        assertThatThrownBy(() -> authService.updateRoleInternal(testUser.getId(), new UserRoleUpdateRequest("ADMIN")))
+            .isInstanceOf(UserNotFoundException.class);
+
+        // then
+        verify(userRepository).findById(testUser.getId());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+
+    @Test
+    @DisplayName("사용자 Role 수정 실패 - 권한이 없는 사용자")
+    @WithMockUser( roles = {"USER"})
+    void update_UserRole_Fail_UnAuthorized() {
+
+        assertThatThrownBy(
+            () -> authService.updateRoleInternal(testUser.getId(), new UserRoleUpdateRequest("ADMIN")))
+            .isInstanceOf(AccessDeniedException.class);
+
+        verify(userRepository, never()).findById(any(UUID.class));
+        verify(userRepository, never()).save(any(User.class));
+        verify(userMapper, never()).toDto(any(User.class));
+    }
+
 
     private User createTestUser(String email, String name) {
         User user = new User(name, email, "encodedPassword", Role.USER);

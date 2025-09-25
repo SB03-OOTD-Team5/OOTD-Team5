@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.data.domain.Sort;
@@ -39,7 +41,7 @@ public interface NotificationApi {
     ResponseEntity<NotificationDtoCursorResponse> getNotifications(
         @Parameter(description = "커서(createdAt)", example = "2025-09-23T00:00:00Z") @RequestParam(required = false) Instant cursor,
         @Parameter(description = "보조 커서(UUID)") @RequestParam(required = false) UUID idAfter,
-        @Parameter(description = "페이지 크기", example = "20") @RequestParam(name = "limit", defaultValue = "20") int limit,
+        @Parameter(description = "페이지 크기", example = "20") @RequestParam(name = "limit", defaultValue = "20") @Min(1) @Max(100) int limit,
         @Parameter(description = "정렬 방향", example = "DESC") @RequestParam(name = "sortDirection", defaultValue = "DESC") Sort.Direction sortDirection
     );
 

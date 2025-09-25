@@ -1,16 +1,15 @@
 package com.sprint.ootd5team.base.sse.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.sprint.ootd5team.base.sse.repository.emitter.SseEmitterRepository;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("SseEmitterRepository 슬라이스 테스트")
 class SseEmitterRepositoryTest {
@@ -83,7 +82,7 @@ class SseEmitterRepositoryTest {
         // when
         repository.remove(UUID.randomUUID(), new SseEmitter());
 
-        // then (no exception, repository still empty)
+        // then
         assertThat(repository.findAll()).isEmpty();
     }
 

@@ -5,7 +5,9 @@ import com.sprint.ootd5team.base.sse.SseMessage;
 import com.sprint.ootd5team.base.sse.repository.emitter.SseEmitterRepository;
 import com.sprint.ootd5team.base.sse.repository.message.SseMessageRepository;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
+import java.time.Duration;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
- * SEE(Server-Sent Events) 전송을 처리하는 서비스 구현체
+ * SSE(Server-Sent Events) 전송을 처리하는 서비스 구현체
  * <p>
  * 클라이언트 연결 생성 및 수명관리
  * 브로드캐스트/개별 대상 이벤트 전송
@@ -32,7 +34,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class SseServiceImpl implements SseService {
 
     // 기본 Emitter 타임아웃
-    private static final long TIMEOUT = 1000L * 60 * 60;
+    private static final long TIMEOUT = Duration.ofHours(1).toMillis();
 
     private final SseEmitterRepository sseEmitterRepository;
     private final SseMessageRepository sseMessageRepository;
@@ -72,7 +74,8 @@ public class SseServiceImpl implements SseService {
 
         // 즉시 연결 확인용 더미 이벤트(ping) 전송
         try {
-            sendToEmitter(sseEmitter, "ping", "connected");
+            // id 없이 ping 전송 → Last-Event-ID에 영향 없음
+            sseEmitter.send(SseEmitter.event().name("ping").data("connected"));
             log.info("[SSE] connect 이벤트 전송 완료 - userId={}", userId);
         } catch (Exception e) {
             log.warn("[SSE] connect 이벤트 전송 실패 - userId={}, error={}", userId, e.getMessage());
@@ -80,7 +83,7 @@ public class SseServiceImpl implements SseService {
 
         // 재연결 시 유실 이벤트 복원
         if (lastEventId != null) {
-            List<SseMessage> missed = sseMessageRepository.findAfter(lastEventId);
+            List<SseMessage> missed = sseMessageRepository.findAfter(userId, lastEventId);
             log.info("[SSE] 유실 이벤트 복원 - userId={}, lastEventId={}, 복원 개수={}",
                 userId, lastEventId, missed.size());
             missed.forEach(
@@ -91,20 +94,27 @@ public class SseServiceImpl implements SseService {
     }
 
     /**
-     * 주기적으로 무효(끊긴) Emitter를 정리합니다.
-     * ping 이벤트 전송 실패 시 해당 Emitter를 제거합니다.
+     * 주기적으로 무효(끊긴) Emitter를 정리
+     * ping 이벤트 전송 실패 시 해당 Emitter를 제거
      */
     @Scheduled(fixedDelay = 1000 * 60 * 30)
     @Override
     public void cleanUp() {
         sseEmitterRepository.findAll().forEach((userId, emitters) -> {
-            int before = emitters.size();
-            // ping 실패한 emitter를 제거
-            emitters.removeIf(e -> !ping(e));
-            int after = emitters.size();
-            if (before != after) {
-                log.info("[SSE] 만료 emitter 정리 - userId={}, before={}, after={}", userId, before,
-                    after);
+            int removed = 0;
+
+            // ping 실패한 emitter를 저장소에서 제거
+            for (SseEmitter emitter : emitters) {
+                if (!ping(emitter)) {
+                    sseEmitterRepository.remove(userId, emitter);
+                    removed++;
+                }
+            }
+
+            if (removed > 0) {
+                int remaining = sseEmitterRepository.get(userId).size();
+                log.info("[SSE] 만료 emitter 정리 - userId={}, removed={}, remaining={}",
+                    userId, removed, remaining);
             }
         });
     }
@@ -127,7 +137,6 @@ public class SseServiceImpl implements SseService {
             log.debug("[SSE] Broadcast → userId={}, targets={}", userId, emitters.size());
             emitters.forEach(e -> sendToEmitter(e, eventName, data, message.getId()));
         });
-        log.debug("[SSE] 만료 emitter 정리 종료");
     }
 
     /**
@@ -140,7 +149,13 @@ public class SseServiceImpl implements SseService {
     @Override
     public void send(Collection<UUID> receiverIds, String eventName, Object data) {
         // 메시지 생성 및 저장(재전송 대비)
-        SseMessage message = new SseMessage(eventName, data);
+        SseMessage message = SseMessage.builder()
+            .eventName(eventName)
+            .data(data)
+            .targetUserIds(new HashSet<>(receiverIds))
+            .build();
+
+        // 저장 (재전송 대비)
         sseMessageRepository.save(message);
         log.info("[SSE] 개별 전송 이벤트 - event={}, id={}, targets={}",
             eventName, message.getId(), receiverIds.size());
