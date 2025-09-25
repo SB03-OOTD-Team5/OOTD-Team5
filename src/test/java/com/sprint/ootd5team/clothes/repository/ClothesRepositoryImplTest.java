@@ -25,7 +25,7 @@ import org.springframework.test.context.jdbc.Sql;
 @TestPropertySource(properties = "spring.sql.init.mode=never")
 @Sql(scripts = "classpath:clothesData.sql")
 @ActiveProfiles("test")
-@DisplayName("ClothesRepositoryImpl 테스트")
+@DisplayName("ClothesRepositoryImpl 슬라이스 테스트")
 class ClothesRepositoryImplTest {
 
     private static final UUID ownerId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");

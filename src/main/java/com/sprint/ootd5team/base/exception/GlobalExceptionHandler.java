@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -40,8 +41,16 @@ public class GlobalExceptionHandler {
         );
     }
 
+    /* 공통 - PathVariable 파라미터 누락/오류 */
+    @ExceptionHandler(MissingPathVariableException.class)
+    public ResponseEntity<ErrorResponse> handleMissingPathVar(
+        MissingPathVariableException ex) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(ex));
+    }
 
-    // Valid 위반시 실행
+    /* 공통 - @Valid 위반 */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(
         MethodArgumentNotValidException ex) {
@@ -50,11 +59,11 @@ public class GlobalExceptionHandler {
             .body(new ErrorResponse(ex));
     }
 
-    // 필수 파라미터가 존재하지 않을때 실행
+    /* 공통 - 요청 필수 파라미터 누락 */
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(
         MissingServletRequestParameterException ex
-    ){
+    ) {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST) // 400
             .body(new ErrorResponse(ex));
