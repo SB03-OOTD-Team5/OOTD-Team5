@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.domain.notification.respository;
+package com.sprint.ootd5team.domain.notification.repository;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;

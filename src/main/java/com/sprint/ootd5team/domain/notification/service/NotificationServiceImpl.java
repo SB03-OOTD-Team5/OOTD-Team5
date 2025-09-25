@@ -3,7 +3,7 @@ package com.sprint.ootd5team.domain.notification.service;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDtoCursorResponse;
 import com.sprint.ootd5team.domain.notification.entity.Notification;
 import com.sprint.ootd5team.domain.notification.mapper.NotificationMapper;
-import com.sprint.ootd5team.domain.notification.respository.NotificationRepository;
+import com.sprint.ootd5team.domain.notification.repository.NotificationRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;

@@ -8,7 +8,7 @@ import static org.mockito.BDDMockito.given;
 import com.sprint.ootd5team.domain.notification.entity.Notification;
 import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
 import com.sprint.ootd5team.domain.notification.mapper.NotificationMapper;
-import com.sprint.ootd5team.domain.notification.respository.NotificationRepository;
+import com.sprint.ootd5team.domain.notification.repository.NotificationRepository;
 import com.sprint.ootd5team.domain.notification.service.NotificationServiceImpl;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.notification.fixture.NotificationFixture;

@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sprint.ootd5team.base.config.QuerydslConfig;
 import com.sprint.ootd5team.domain.notification.entity.Notification;
-import com.sprint.ootd5team.domain.notification.respository.NotificationRepository;
+import com.sprint.ootd5team.domain.notification.repository.NotificationRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
