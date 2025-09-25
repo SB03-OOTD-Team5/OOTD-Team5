@@ -43,8 +43,7 @@ class NotificationControllerTest {
     private AuthService authService;
 
     @Test
-    @DisplayName("알림 전체 조회 성공")
-    void getNotifications_success() throws Exception {
+    void 알림_전체_조회_성공() throws Exception {
         // given
         UUID userId = UUID.randomUUID();
         given(authService.getCurrentUserId()).willReturn(userId);

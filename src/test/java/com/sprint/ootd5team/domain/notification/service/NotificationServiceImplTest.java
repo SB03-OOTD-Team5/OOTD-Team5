@@ -42,8 +42,7 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    @DisplayName("조회 결과가 limit 이하 → hasNext=false, nextCursor=null")
-    void findAll_noHasNext() {
+    void 조회_결과가_limit_이하이면_hasNext_false_nextCursor_null() {
         // given
         var notifications = NotificationFixture.createTestNotifications(user).subList(0, 2);
         given(notificationRepository.findByUserWithCursor(eq(user.getId()), any(), any(), eq(3),
@@ -65,8 +64,7 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    @DisplayName("조회 결과가 limit+1 → hasNext=true, nextCursor/nextIdAfter 세팅")
-    void findAll_hasNext() {
+    void 조회_결과가_limit초과이면_hasNext_true__nextCursor_nextIdAfter_세팅() {
         // given
         var notifications = NotificationFixture.createTestNotifications(user);
 
