@@ -8,6 +8,7 @@ import com.sprint.ootd5team.domain.user.controller.api.UserApi;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
+import com.sprint.ootd5team.domain.user.dto.request.UserLockUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
 import com.sprint.ootd5team.domain.user.service.UserService;
@@ -117,4 +118,16 @@ public class UserController implements UserApi {
             .body(profileDto);
     }
 
+    @Override
+    @PatchMapping("/{userId}/lock")
+    public ResponseEntity<UserDto> updateUserLock(
+        @PathVariable UUID userId,
+        @RequestBody UserLockUpdateRequest request) {
+
+        UserDto userDto = userService.updateUserLock(userId, request);
+
+        return ResponseEntity
+            .status(HttpStatusCode.OK)
+            .body(userDto);
+    }
 }

@@ -87,6 +87,10 @@ public class User extends BaseUpdatableEntity {
         this.role = role;
     }
 
+    public void updateLock(Boolean lock){
+        this.locked = lock;
+    }
+
     @Override
     public String toString() {
         return "User{" +
