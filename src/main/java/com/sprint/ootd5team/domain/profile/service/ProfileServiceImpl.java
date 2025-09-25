@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.domain.profile.service;
 
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
+import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.domain.profile.dto.data.ProfileUpdateRequest;
@@ -57,7 +58,7 @@ public class ProfileServiceImpl implements ProfileService{
 
         // 해당 userId의 프로필이 존재하는지 확인
         Profile profile = profileRepository.findByUserId(userId)
-            .orElseThrow(UserNotFoundException::new);
+            .orElseThrow(ProfileNotFoundException::new);
 
         profileImage.ifPresent(
             image -> {
