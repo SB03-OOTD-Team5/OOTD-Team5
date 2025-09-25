@@ -210,14 +210,14 @@ CREATE TABLE IF NOT EXISTS tbl_locations
 
 /****** 알림 ******/
 -- 알림 테이블
-CREATE TABLE tbl_notification
+CREATE TABLE IF NOT EXISTS tbl_notifications
 (
     id                        UUID                     PRIMARY KEY,
     receiver_id               UUID                     NOT NULL,
     title                     VARCHAR                  NOT NULL,
     content                   TEXT                     NOT NULL,
     level                     VARCHAR(10)              NOT NULL,
-    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     -- constraints
     CONSTRAINT check_level CHECK (level IN ('INFO', 'WARNING', 'ERROR')),
     CONSTRAINT fk_user_notification FOREIGN KEY (receiver_id) REFERENCES tbl_users (id) ON DELETE CASCADE
@@ -295,7 +295,7 @@ ALTER TABLE tbl_locations
 ALTER TABLE tbl_locations
     ADD COLUMN location_code VARCHAR(20);
 
--- tbl_notification_receiver index
-CREATE INDEX idx_notification_receiver_created
-    ON tbl_notification (receiver_id, created_at DESC);
+-- tbl_notifications_receiver index
+CREATE INDEX IF NOT EXISTS idx_notifications_receiver_created
+    ON tbl_notifications (receiver_id, created_at DESC);
 
