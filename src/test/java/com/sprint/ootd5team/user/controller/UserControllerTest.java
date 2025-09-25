@@ -27,6 +27,7 @@ import com.sprint.ootd5team.domain.user.controller.UserController;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
+import com.sprint.ootd5team.domain.user.dto.request.UserLockUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
 import com.sprint.ootd5team.domain.user.entity.Role;
@@ -36,7 +37,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -528,6 +528,32 @@ null,
                 .with(req -> { req.setMethod("PATCH"); return req; }))
             .andDo(print())
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("계정 잠금 상태 변경 성공")
+    void updateUserLock_Success_Admin() throws Exception {
+        // given
+        UserDto userDto = new UserDto(
+            testUserId,
+            Instant.now(),
+            "user@example.com",
+            "테스트유저",
+            Role.USER,
+            null,
+            true
+        );
+
+        given(userService.updateUserLock(eq(testUserId), any(UserLockUpdateRequest.class)))
+            .willReturn(userDto);
+
+        // when & then
+        mockMvc.perform(patch("/api/users/{userId}/lock", testUserId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new UserLockUpdateRequest(true))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(testUserId.toString()))
+            .andExpect(jsonPath("$.locked").value(true));
     }
 
 
