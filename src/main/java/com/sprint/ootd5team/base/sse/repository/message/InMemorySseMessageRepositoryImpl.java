@@ -67,26 +67,26 @@ public class InMemorySseMessageRepositoryImpl implements SseMessageRepository {
      * 저장된 마지막 이벤트 ID 이후에 발생한 모든 메시지를 반환
      */
     @Override
-    public List<SseMessage> findAfter(UUID lastEventId) {
+    public List<SseMessage> findAfter(UUID userId, UUID lastEventId) {
         if (lastEventId == null) {
             log.debug("[InMemorySseMessageRepositoryImpl] SSE 조회: lastEventId가 없어 빈 결과 반환");
             return List.of();
         }
         log.debug("[InMemorySseMessageRepositoryImpl] SSE 조회 시작: lastEventId={}", lastEventId);
         List<SseMessage> result = new ArrayList<>();
+        boolean start = false;
 
         for (UUID id : eventIdQueue) {
-            if (id.equals(lastEventId)) {
-                boolean start = false;
-                for (UUID laterId : eventIdQueue) {
-                    if (start) {
-                        result.add(messages.get(laterId));
-                    }
-                    if (laterId.equals(id)) {
-                        start = true;
+            if (start) {
+                SseMessage msg = messages.get(id);
+                if (msg != null) {
+                    if (msg.getTargetUserIds() == null || msg.getTargetUserIds().contains(userId)) {
+                        result.add(msg);
                     }
                 }
-                break;
+            }
+            if (id.equals(lastEventId)) {
+                start = true;
             }
         }
 

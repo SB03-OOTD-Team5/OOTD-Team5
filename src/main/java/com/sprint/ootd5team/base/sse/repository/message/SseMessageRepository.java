@@ -8,5 +8,5 @@ public interface SseMessageRepository {
 
     void save(SseMessage message);
 
-    List<SseMessage> findAfter(UUID lastEventId);
+    List<SseMessage> findAfter(UUID userId, UUID lastEventId);
 }

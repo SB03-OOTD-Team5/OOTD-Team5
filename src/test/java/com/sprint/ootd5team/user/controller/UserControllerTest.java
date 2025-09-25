@@ -16,12 +16,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.exception.user.UserAlreadyExistException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.profile.dto.request.ProfileDto;
 import com.sprint.ootd5team.domain.profile.service.ProfileService;
 import com.sprint.ootd5team.domain.user.controller.UserController;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
+import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import com.sprint.ootd5team.domain.user.service.UserService;
@@ -37,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -58,6 +61,9 @@ class UserControllerTest {
 
     @MockitoBean
     private ProfileService profileService;
+
+    @MockitoBean
+    private AuthService authService;
 
     private UserDto testUserDto;
     private UserCreateRequest userCreateRequest;
@@ -389,4 +395,62 @@ null,
             .andDo(print())
             .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("사용자 권한 업데이트 성공")
+    void updateUserRole_Success() throws Exception{
+        UserDto adminUserDto = new UserDto(testUserId, Instant.now(), "", "admin", Role.ADMIN, null,
+            false);
+
+        //given
+        given(authService.updateRoleInternal(testUserId,
+            new UserRoleUpdateRequest("ADMIN"))).willReturn(adminUserDto);
+
+        //when & then
+        mockMvc.perform(patch("/api/users/{userId}/role", testUserId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new UserRoleUpdateRequest("ADMIN"))))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.role").value(Role.ADMIN.toString()));
+    }
+
+    @Test
+    @DisplayName("사용자 권한 업데이트 실패 - 요청자의 Role이 ADMIN이 아님")
+    void updateUserRole_Fail_() throws Exception{
+        UserDto adminUserDto = new UserDto(testUserId, Instant.now(), "", "admin", Role.ADMIN, null,
+            false);
+
+        //given
+        given(authService.updateRoleInternal(testUserId,
+            new UserRoleUpdateRequest("ADMIN"))).willThrow(new AccessDeniedException("관리자 권한이 필요합니다."));
+
+        //when & then
+        mockMvc.perform(patch("/api/users/{userId}/role", testUserId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new UserRoleUpdateRequest("ADMIN"))))
+            .andDo(print())
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("사용자 권한 업데이트 실패 - 사용자 없음")
+    void updateUserRole_Fail_UserNotFound() throws Exception{
+        UserDto adminUserDto = new UserDto(testUserId, Instant.now(), "", "admin", Role.ADMIN, null,
+            false);
+
+        //given
+        given(authService.updateRoleInternal(testUserId,
+            new UserRoleUpdateRequest("ADMIN"))).willThrow(new UserNotFoundException());
+
+        //when & then
+        mockMvc.perform(patch("/api/users/{userId}/role", testUserId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new UserRoleUpdateRequest("ADMIN"))))
+            .andDo(print())
+            .andExpect(status().isNotFound());
+    }
+
+
+
 }
