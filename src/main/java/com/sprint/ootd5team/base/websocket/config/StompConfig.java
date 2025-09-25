@@ -72,12 +72,12 @@ public class StompConfig implements WebSocketMessageBrokerConfigurer {
 
                 // payload가 byte[]이면 길이만 출력 (민감정보 노출 방지)
                 Object payload = message.getPayload();
-                String payloadInfo = (payload instanceof byte[])
-                    ? ("byte[" + ((byte[]) payload).length + "]")
-                    : String.valueOf(payload);
+                int payloadSize = (payload instanceof byte[])
+                    ? ((byte[]) payload).length
+                    : (payload != null ? String.valueOf(payload).length() : 0);
 
-                log.debug("[{}] type={}, headers={}, payload={}",
-                    direction, type, message.getHeaders(), payloadInfo);
+                log.debug("[{}] type={}, headers={}, payloadSize={}",
+                    direction, type, message.getHeaders(), payloadSize);
                 return message;
             }
         };
