@@ -6,6 +6,7 @@ import com.sprint.ootd5team.base.sse.repository.emitter.SseEmitterRepository;
 import com.sprint.ootd5team.base.sse.repository.message.SseMessageRepository;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -72,7 +73,8 @@ public class SseServiceImpl implements SseService {
 
         // 즉시 연결 확인용 더미 이벤트(ping) 전송
         try {
-            sendToEmitter(sseEmitter, "ping", "connected");
+            // id 없이 ping 전송 → Last-Event-ID에 영향 없음
+            sseEmitter.send(SseEmitter.event().name("ping").data("connected"));
             log.info("[SSE] connect 이벤트 전송 완료 - userId={}", userId);
         } catch (Exception e) {
             log.warn("[SSE] connect 이벤트 전송 실패 - userId={}, error={}", userId, e.getMessage());
@@ -80,7 +82,7 @@ public class SseServiceImpl implements SseService {
 
         // 재연결 시 유실 이벤트 복원
         if (lastEventId != null) {
-            List<SseMessage> missed = sseMessageRepository.findAfter(lastEventId);
+            List<SseMessage> missed = sseMessageRepository.findAfter(userId, lastEventId);
             log.info("[SSE] 유실 이벤트 복원 - userId={}, lastEventId={}, 복원 개수={}",
                 userId, lastEventId, missed.size());
             missed.forEach(
@@ -140,7 +142,13 @@ public class SseServiceImpl implements SseService {
     @Override
     public void send(Collection<UUID> receiverIds, String eventName, Object data) {
         // 메시지 생성 및 저장(재전송 대비)
-        SseMessage message = new SseMessage(eventName, data);
+        SseMessage message = SseMessage.builder()
+            .eventName(eventName)
+            .data(data)
+            .targetUserIds(new HashSet<>(receiverIds))
+            .build();
+
+        // 저장 (재전송 대비)
         sseMessageRepository.save(message);
         log.info("[SSE] 개별 전송 이벤트 - event={}, id={}, targets={}",
             eventName, message.getId(), receiverIds.size());

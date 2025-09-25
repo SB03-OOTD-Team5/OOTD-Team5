@@ -6,6 +6,7 @@ import com.sprint.ootd5team.base.sse.SseMessage;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +28,11 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class RedisSseMessageRepositoryImpl implements SseMessageRepository {
 
-    // SSE 메시지를 저장하는 Redis ZSET의 키
-    private static final String KEY = "sse:messages";
+    // 정렬 관리용 ZSET(id만)
+    private static final String SSE_MESSAGES_KEY = "sse:messages";
+
+    // 본문 저장용 HASH(id -> Hash 매핑)
+    private static final String SSE_PAYLOADS_KEY = "sse:payloads";
 
     // 키 만료 시간(초). 기본값 1시간
     private static final long TTL = 60 * 60;
@@ -52,24 +56,22 @@ public class RedisSseMessageRepositoryImpl implements SseMessageRepository {
     @Override
     public void save(SseMessage message) {
         try {
+            String id = message.getId().toString();
             log.debug("[RedisSseMessageRepositoryImpl] SSE 메시지 저장 시도: id={}, event={}",
                 message.getId(), message.getEventName());
             String json = objectMapper.writeValueAsString(message);
             long score = System.currentTimeMillis();
 
-            // SortedSet에 저장
-            Boolean added = redisTemplate.opsForZSet().add(KEY, json, score);
+            // ZSET에는 id만 저장
+            redisTemplate.opsForZSet().add(SSE_MESSAGES_KEY, id, score);
+            redisTemplate.expire(SSE_MESSAGES_KEY, Duration.ofSeconds(TTL));
 
-            // TTL 설정
-            Boolean expired = redisTemplate.expire(KEY, Duration.ofSeconds(TTL));
+            // HASH에는 payload 저장
+            redisTemplate.opsForHash().put(SSE_PAYLOADS_KEY, id, json);
+            redisTemplate.expire(SSE_PAYLOADS_KEY, Duration.ofSeconds(TTL));
 
-            log.info(
-                "[RedisSseMessageRepositoryImpl] SSE 메시지 저장 완료: id={}, added={}, score={}, ttlApplied={}",
-                message.getId(), added, score, expired);
-
+            log.info("[RedisSseMessageRepositoryImpl] 저장 완료: id={}, score={}", id, score);
         } catch (JsonProcessingException e) {
-            log.error("[RedisSseMessageRepositoryImpl] SseMessage 직렬화 실패: id={}, event={}",
-                message.getId(), message.getEventName(), e);
             throw new RuntimeException("SseMessage 직렬화 실패", e);
         }
     }
@@ -86,33 +88,40 @@ public class RedisSseMessageRepositoryImpl implements SseMessageRepository {
      * @throws RuntimeException 메시지 역직렬화에 실패한 경우
      */
     @Override
-    public List<SseMessage> findAfter(UUID lastEventId) {
-        try {
-            log.debug("[RedisSseMessageRepositoryImpl] SSE 메시지 조회: lastEventId={}", lastEventId);
-
-            // 전체 메시지를 가져와서 lastEventId 이후만 필터링
-            Set<String> jsonMessages = redisTemplate.opsForZSet()
-                .range(KEY, 0, -1);
-
-            if (jsonMessages == null) {
-                log.debug("[RedisSseMessageRepositoryImpl] SSE 메시지 없음: key={}, fetched=0", KEY);
-                return List.of();
-            }
-
-            List<SseMessage> messages = new ArrayList<>();
-            for (String json : jsonMessages) {
-                SseMessage m = objectMapper.readValue(json, SseMessage.class);
-                if (m.getId().compareTo(lastEventId) > 0) {
-                    messages.add(m);
-                }
-            }
-            log.info("[RedisSseMessageRepositoryImpl] SSE 메시지 조회 완료: fetched={}, returned={}",
-                jsonMessages.size(), messages.size());
-            return messages;
-        } catch (Exception e) {
-            log.error("[RedisSseMessageRepositoryImpl] SseMessage 역직렬화/조회 실패: lastEventId={}",
-                lastEventId, e);
-            throw new RuntimeException("[RedisSseMessageRepositoryImpl] SseMessage 역직렬화 실패", e);
+    public List<SseMessage> findAfter(UUID userId, UUID lastEventId) {
+        if (lastEventId == null) {
+            return List.of();
         }
+
+        // lastEventId의 위치 찾기
+        Long rank = redisTemplate.opsForZSet().rank(SSE_MESSAGES_KEY, lastEventId.toString());
+        if (rank == null) {
+            return List.of();
+        }
+
+        // lastEventId 이후의 id들 가져오기
+        Set<String> ids = redisTemplate.opsForZSet().range(SSE_MESSAGES_KEY, rank + 1, -1);
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+
+        // HASH에서 payload 조회
+        List<String> jsons = redisTemplate.opsForHash()
+            .multiGet(SSE_PAYLOADS_KEY, new ArrayList<>(ids))
+            .stream()
+            .filter(Objects::nonNull)
+            .map(Object::toString)
+            .toList();
+
+        return jsons.stream()
+            .map(json -> {
+                try {
+                    return objectMapper.readValue(json, SseMessage.class);
+                } catch (Exception e) {
+                    throw new RuntimeException("SseMessage 역직렬화 실패", e);
+                }
+            })
+            .filter(m -> m.getTargetUserIds() == null || m.getTargetUserIds().contains(userId))
+            .toList();
     }
 }
