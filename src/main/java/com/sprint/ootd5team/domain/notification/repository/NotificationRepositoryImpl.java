@@ -28,24 +28,24 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
         int size,
         Direction direction
     ) {
-
         QNotification n = QNotification.notification;
-
         BooleanBuilder where = new BooleanBuilder()
             .and(n.receiver.id.eq(userId));
 
         if (cursor != null) {
+            BooleanBuilder cursorCond = new BooleanBuilder();
             if (direction == Sort.Direction.DESC) {
-                where.and(
-                    n.createdAt.lt(cursor)
-                        .or(n.createdAt.eq(cursor).and(n.id.lt(idAfter)))
-                );
+                cursorCond.or(n.createdAt.lt(cursor));
+                if (idAfter != null) {
+                    cursorCond.or(n.createdAt.eq(cursor).and(n.id.lt(idAfter)));
+                }
             } else {
-                where.and(
-                    n.createdAt.gt(cursor)
-                        .or(n.createdAt.eq(cursor).and(n.id.gt(idAfter)))
-                );
+                cursorCond.or(n.createdAt.gt(cursor));
+                if (idAfter != null) {
+                    cursorCond.or(n.createdAt.eq(cursor).and(n.id.gt(idAfter)));
+                }
             }
+            where.and(cursorCond);
         }
 
         return queryFactory.selectFrom(n)
