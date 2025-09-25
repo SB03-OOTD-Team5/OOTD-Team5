@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.clothes.repository;
+package com.sprint.ootd5team.domain.clothes.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,9 +23,9 @@ import org.springframework.test.context.jdbc.Sql;
 @DataJpaTest
 @Import(QuerydslConfig.class)
 @TestPropertySource(properties = "spring.sql.init.mode=never")
-@Sql(scripts = "classpath:clothesData.sql")
+@Sql(scripts = {"classpath:user-data.sql", "classpath:clothes-data.sql"})
 @ActiveProfiles("test")
-@DisplayName("ClothesRepositoryImpl 테스트")
+@DisplayName("ClothesRepositoryImpl 슬라이스 테스트")
 class ClothesRepositoryImplTest {
 
     private static final UUID ownerId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
@@ -40,7 +40,8 @@ class ClothesRepositoryImplTest {
         ClothesType type = ClothesType.TOP;
 
         // when
-        List<Clothes> result = clothesRepository.findByOwnerWithCursor(ownerId, type, null, null, 10,
+        List<Clothes> result = clothesRepository.findByOwnerWithCursor(ownerId, type, null, null,
+            10,
             Direction.DESC);
 
         // then

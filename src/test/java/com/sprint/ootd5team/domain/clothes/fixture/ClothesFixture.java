@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.clothes.fixture;
+package com.sprint.ootd5team.domain.clothes.fixture;
 
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
