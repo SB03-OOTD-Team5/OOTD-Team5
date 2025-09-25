@@ -23,6 +23,9 @@ spring:
     multipart:
       max-file-size: 50MB        # 스프링 전역 업로드 허용 파일 크기
       max-request-size: 50MB     # 요청 전체 크기
+  batch: # 앱 실행시 Job 기본 실행 설정
+    job:
+      enabled: true
 
 # SecurityConfig 비활성화/활성화 on off
 app:

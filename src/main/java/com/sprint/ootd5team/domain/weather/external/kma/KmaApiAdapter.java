@@ -19,8 +19,7 @@ public class KmaApiAdapter {
 
     private static final ZoneId SEOUL_ZONE_ID = ZoneId.of("Asia/Seoul");
     private static final String[] baseTimes = {"2300", "2000", "1700", "1400", "1100", "0800",
-        "0500",
-        "0200"};
+        "0500", "0200"};
     private final WebClient kmaWebClient;
     private final ObjectMapper mapper;
 
