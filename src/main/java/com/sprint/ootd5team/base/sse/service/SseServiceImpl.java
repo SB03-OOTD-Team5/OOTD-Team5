@@ -5,6 +5,7 @@ import com.sprint.ootd5team.base.sse.SseMessage;
 import com.sprint.ootd5team.base.sse.repository.emitter.SseEmitterRepository;
 import com.sprint.ootd5team.base.sse.repository.message.SseMessageRepository;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -33,7 +34,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class SseServiceImpl implements SseService {
 
     // 기본 Emitter 타임아웃
-    private static final long TIMEOUT = 1000L * 60 * 60;
+    private static final long TIMEOUT = Duration.ofHours(1).toMillis();
 
     private final SseEmitterRepository sseEmitterRepository;
     private final SseMessageRepository sseMessageRepository;
@@ -93,20 +94,27 @@ public class SseServiceImpl implements SseService {
     }
 
     /**
-     * 주기적으로 무효(끊긴) Emitter를 정리합니다.
-     * ping 이벤트 전송 실패 시 해당 Emitter를 제거합니다.
+     * 주기적으로 무효(끊긴) Emitter를 정리
+     * ping 이벤트 전송 실패 시 해당 Emitter를 제거
      */
     @Scheduled(fixedDelay = 1000 * 60 * 30)
     @Override
     public void cleanUp() {
         sseEmitterRepository.findAll().forEach((userId, emitters) -> {
-            int before = emitters.size();
-            // ping 실패한 emitter를 제거
-            emitters.removeIf(e -> !ping(e));
-            int after = emitters.size();
-            if (before != after) {
-                log.info("[SSE] 만료 emitter 정리 - userId={}, before={}, after={}", userId, before,
-                    after);
+            int removed = 0;
+
+            // ping 실패한 emitter를 저장소에서 제거
+            for (SseEmitter emitter : emitters) {
+                if (!ping(emitter)) {
+                    sseEmitterRepository.remove(userId, emitter);
+                    removed++;
+                }
+            }
+
+            if (removed > 0) {
+                int remaining = sseEmitterRepository.get(userId).size();
+                log.info("[SSE] 만료 emitter 정리 - userId={}, removed={}, remaining={}",
+                    userId, removed, remaining);
             }
         });
     }
@@ -129,7 +137,6 @@ public class SseServiceImpl implements SseService {
             log.debug("[SSE] Broadcast → userId={}, targets={}", userId, emitters.size());
             emitters.forEach(e -> sendToEmitter(e, eventName, data, message.getId()));
         });
-        log.debug("[SSE] Broadcast 전송 완료");
     }
 
     /**
