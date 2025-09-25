@@ -163,15 +163,10 @@ CREATE TABLE IF NOT EXISTS tbl_feed_likes
 CREATE TABLE IF NOT EXISTS tbl_weathers
 (
     id                        UUID                     PRIMARY KEY,
-    profile_id                UUID                     NOT NULL,
+    location_id               UUID                     NOT NULL,
     forecasted_at             TIMESTAMP WITH TIME ZONE NOT NULL, -- 예보 산출 시각
     forecast_at               TIMESTAMP WITH TIME ZONE NOT NULL, -- 예보 대상 시각
     sky_status                VARCHAR(20)              NOT NULL,
-    latitude                  NUMERIC(8, 4)            NOT NULL,
-    longitude                 NUMERIC(8, 4)            NOT NULL,
-    x_coord                   INTEGER,
-    y_coord                   INTEGER,
-    location_names            VARCHAR(100),
     precipitation_type        VARCHAR(20),
     precipitation_amount      DOUBLE PRECISION,
     precipitation_probability DOUBLE PRECISION,
@@ -188,7 +183,7 @@ CREATE TABLE IF NOT EXISTS tbl_weathers
     CONSTRAINT check_sky_status CHECK (sky_status IN ('CLEAR','MOSTLY_CLOUDY','CLOUDY')),
     CONSTRAINT check_precipitation_type CHECK (precipitation_type IN ('NONE','RAIN','RAIN_SNOW','SNOW','SHOWER')),
     CONSTRAINT check_windspeed_level CHECK (windspeed_level IN ('WEAK','MODERATE','STRONG')),
-    CONSTRAINT fk_tbl_weathers_profile FOREIGN KEY (profile_id) REFERENCES tbl_profiles (id) ON DELETE CASCADE
+    CONSTRAINT fk_tbl_weathers_locations FOREIGN KEY (location_id) REFERENCES tbl_locations (id) ON DELETE CASCADE
 );
 /****** 위치 ******/
 -- 위치 테이블
@@ -245,11 +240,11 @@ CREATE TABLE IF NOT EXISTS tbl_follows
 
 /* 인덱스 설정 */
 -- tbl_weathers index
-CREATE INDEX idx_tbl_weathers_profile_forecasted_at
-    ON tbl_weathers (profile_id, forecasted_at);
+CREATE INDEX idx_tbl_weathers_location_forecasted_at
+    ON tbl_weathers (location_id, forecasted_at);
 
-CREATE INDEX idx_tbl_weathers_lat_lon
-    ON tbl_weathers (latitude, longitude);
+CREATE INDEX idx_tbl_weathers_locations
+    ON tbl_weathers (location_id);
 
 -- tbl_locations index
 CREATE INDEX idx_tbl_locations_lat_lon
