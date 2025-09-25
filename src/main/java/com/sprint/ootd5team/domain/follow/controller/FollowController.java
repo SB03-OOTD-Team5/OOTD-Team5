@@ -1,7 +1,8 @@
 package com.sprint.ootd5team.domain.follow.controller;
 
 import com.sprint.ootd5team.domain.follow.controller.api.FollowApi;
-import com.sprint.ootd5team.domain.follow.dto.request.FollowListRequest;
+import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
+import com.sprint.ootd5team.domain.follow.dto.request.FollowingListRequest;
 import com.sprint.ootd5team.domain.follow.dto.response.FollowListResponse;
 import com.sprint.ootd5team.domain.follow.service.FollowService;
 import jakarta.validation.Valid;
@@ -21,8 +22,18 @@ public class FollowController implements FollowApi {
 
     @Override
     @GetMapping("/followings")
-    public ResponseEntity<FollowListResponse> getFollowings(@Valid FollowListRequest followListRequest) {
-        FollowListResponse followListResponse = followService.getFollowingList(followListRequest);
+    public ResponseEntity<FollowListResponse> getFollowings(@Valid FollowingListRequest followingListRequest) {
+        FollowListResponse followListResponse = followService.getFollowingList(followingListRequest);
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(followListResponse);
+    }
+
+    @Override
+    @GetMapping("/followers")
+    public ResponseEntity<FollowListResponse> getFollowers(@Valid FollowerListRequest followerListRequest) {
+        FollowListResponse followListResponse = followService.getFollowerList(followerListRequest);
 
         return ResponseEntity
             .status(HttpStatus.OK)
