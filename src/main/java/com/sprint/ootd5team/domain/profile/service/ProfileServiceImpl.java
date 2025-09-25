@@ -60,23 +60,24 @@ public class ProfileServiceImpl implements ProfileService{
         Profile profile = profileRepository.findByUserId(userId)
             .orElseThrow(ProfileNotFoundException::new);
 
-        profileImage.ifPresent(
-            image -> {
-                // 프로필 사진이 이미 존재한다면 삭제
-                if(profile.getProfileImageUrl() != null){
-                    fileStorage.delete(profile.getProfileImageUrl());
+        profileImage.ifPresent(image -> {
+            String previousImageUrl = profile.getProfileImageUrl();
+
+            try (InputStream in = image.getInputStream()) {
+                String profileImageUrl = fileStorage.upload(
+                    image.getOriginalFilename(), in, image.getContentType(), profilesPrefix
+                );
+                profile.updateProfileImageUrl(profileImageUrl);
+                log.debug("[Profile] 이미지 업로드 완료: url={}", profileImageUrl);
+
+                if (previousImageUrl != null) {
+                    fileStorage.delete(previousImageUrl);
                 }
-                // 프로필 이미지 업로드
-                try (InputStream in = image.getInputStream()) {
-                    String profileImageUrl = fileStorage.upload(image.getOriginalFilename(), in, image.getContentType(),profilesPrefix);
-                    profile.updateProfileImageUrl(profileImageUrl);
-                    log.debug("[ClothesService] 이미지 업로드 완료: url={}", profileImageUrl);
-                } catch (IOException e) {
-                    log.warn("[Profile] 이미지 업로드 실패 {}", e.getMessage());
-                    throw FileSaveFailedException.withFileName(image.getOriginalFilename());
-                }
+            } catch (IOException e) {
+                log.warn("[Profile] 이미지 업로드 실패 {}", e.getMessage());
+                throw FileSaveFailedException.withFileName(image.getOriginalFilename());
             }
-        );
+        });
 
 
         // 프로필 업데이트

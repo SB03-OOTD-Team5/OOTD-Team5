@@ -381,7 +381,7 @@ class UserServiceTest {
             false
         );
 
-        given(userRepository.findById(testUser.getId())).willThrow(UserNotFoundException.class);
+        given(userRepository.findById(testUser.getId())).willReturn(Optional.empty());
 
         // when
         assertThatThrownBy(() -> authService.updateRoleInternal(testUser.getId(), new UserRoleUpdateRequest("ADMIN")))
@@ -456,7 +456,7 @@ class UserServiceTest {
             "updatedName", "MALE", LocalDate.now(), weatherAPILocationDto, 4);
 
         // given
-        given(profileRepository.findByUserId(testUser.getId())).willThrow(new ProfileNotFoundException());
+        given(profileRepository.findByUserId(testUser.getId())).willReturn(Optional.empty());
 
         // when
         assertThatThrownBy(
