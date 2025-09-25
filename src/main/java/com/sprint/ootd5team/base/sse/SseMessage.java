@@ -10,23 +10,15 @@ import lombok.Getter;
 
 @Getter
 @EqualsAndHashCode
-@Builder
 public class SseMessage {
 
-    @Builder.Default
-    private final UUID id = UUID.randomUUID();
-
+    private final UUID id;
     private final String eventName;
     private final Object data;
     private Set<UUID> targetUserIds;
 
-    public SseMessage(String eventName, Object data) {
-        this.id = UUID.randomUUID();
-        this.eventName = eventName;
-        this.data = data;
-    }
-
     // Jackson 역직렬화용 생성자
+    @Builder
     @JsonCreator
     public SseMessage(
         @JsonProperty("id") UUID id,
@@ -40,11 +32,13 @@ public class SseMessage {
         this.targetUserIds = targetUserIds;
     }
 
-    // 테스트용 편의 메서드
+    public SseMessage(String eventName, Object data) {
+        this(null, eventName, data, null);
+
+    }
+
     public SseMessage(UUID id, String eventName, Object data) {
-        this.id = id == null ? UUID.randomUUID() : id;
-        this.eventName = eventName;
-        this.data = data;
-        this.targetUserIds = null;
+        this(id, eventName, data, null);
+
     }
 }
