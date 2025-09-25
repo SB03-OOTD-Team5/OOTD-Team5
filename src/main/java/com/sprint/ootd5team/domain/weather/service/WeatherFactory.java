@@ -2,7 +2,6 @@ package com.sprint.ootd5team.domain.weather.service;
 
 import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.location.service.LocationService;
-import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
 import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.enums.SkyStatus;
@@ -43,8 +42,7 @@ public class WeatherFactory {
     //FIXME : service 의존하면 X
     private final LocationService locationService;
 
-    public List<Weather> findOrCreateWeathers(BigDecimal latitude, BigDecimal longitude,
-        Profile profile) {
+    public List<Weather> findOrCreateWeathers(BigDecimal latitude, BigDecimal longitude) {
         String baseDate = LocalDate.now(SEOUL_ZONE_ID).format(DATE_FORMATTER);
         String baseTime = kmaApiAdapter.getBaseTime(baseDate); // 기상청 API BaseTime
 

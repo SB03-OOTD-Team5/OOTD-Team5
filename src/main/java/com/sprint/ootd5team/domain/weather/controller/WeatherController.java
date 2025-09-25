@@ -15,7 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
@@ -31,8 +30,8 @@ public class WeatherController implements WeatherApi {
 
     @GetMapping
     @Override
-    public ResponseEntity<List<WeatherDto>> getWeatherByLocation(@RequestParam BigDecimal latitude,
-        @RequestParam BigDecimal longitude
+    public ResponseEntity<List<WeatherDto>> getWeatherByLocation(BigDecimal latitude,
+        BigDecimal longitude
     ) {
         try {
             UUID userId = authService.getCurrentUserId();
@@ -48,8 +47,8 @@ public class WeatherController implements WeatherApi {
 
     @GetMapping("/location")
     @Override
-    public ResponseEntity<WeatherAPILocationDto> getLocation(@RequestParam BigDecimal latitude,
-        @RequestParam BigDecimal longitude
+    public ResponseEntity<WeatherAPILocationDto> getLocation(BigDecimal latitude,
+        BigDecimal longitude
     ) {
         try {
             UUID userId = authService.getCurrentUserId();
