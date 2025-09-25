@@ -110,14 +110,16 @@ class InMemorySseMessageRepositoryImplTest {
     @Test
     void targetUserIds가_null이면_모든사용자가_조회가능() {
         // given
+        SseMessage baseline = new SseMessage("init", "init");
+        repository.save(baseline);
         SseMessage broadcastMsg = new SseMessage("broadcast", "data");
         repository.save(broadcastMsg);
 
         // when
-        List<SseMessage> result = repository.findAfter(userId, broadcastMsg.getId());
+        List<SseMessage> result = repository.findAfter(userId, baseline.getId());
 
         // then
-        assertThat(result).isEmpty();
+        assertThat(result).containsExactly(broadcastMsg);
     }
 
     @Test
@@ -129,15 +131,16 @@ class InMemorySseMessageRepositoryImplTest {
             .data("secret")
             .targetUserIds(Set.of(targetUser))
             .build();
-
+        SseMessage baseline = new SseMessage("init", "init");
+        repository.save(baseline);
         repository.save(msg);
 
         // when
-        List<SseMessage> resultForTarget = repository.findAfter(targetUser, msg.getId());
-        List<SseMessage> resultForOther = repository.findAfter(userId, msg.getId());
+        List<SseMessage> resultForTarget = repository.findAfter(targetUser, baseline.getId());
+        List<SseMessage> resultForOther = repository.findAfter(userId, baseline.getId());
 
         // then
-        assertThat(resultForTarget).isEmpty();
+        assertThat(resultForTarget).containsExactly(msg);
         assertThat(resultForOther).isEmpty();
     }
 }

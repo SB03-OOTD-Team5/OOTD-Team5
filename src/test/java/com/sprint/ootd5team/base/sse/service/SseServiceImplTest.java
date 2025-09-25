@@ -201,13 +201,12 @@ class SseServiceImplTest {
 
         Map<UUID, List<SseEmitter>> allEmitters = new HashMap<>();
         allEmitters.put(userId, new ArrayList<>(List.of(brokenEmitter)));
-
         given(emitterRepository.findAll()).willReturn(allEmitters);
 
         // when
         sseService.cleanUp();
 
         // then
-        assertThat(allEmitters.get(userId)).isEmpty();
+        then(emitterRepository).should().remove(eq(userId), eq(brokenEmitter));
     }
 }
