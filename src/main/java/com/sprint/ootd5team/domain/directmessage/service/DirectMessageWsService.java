@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageCreateRequest;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageDto;
 import com.sprint.ootd5team.domain.directmessage.dto.ParticipantDto;
+import com.sprint.ootd5team.domain.directmessage.dto.event.DirectMessageCommittedEvent;
 import com.sprint.ootd5team.domain.directmessage.entity.DirectMessage;
 import com.sprint.ootd5team.domain.directmessage.entity.DirectMessageRoom;
 import com.sprint.ootd5team.domain.directmessage.repository.DirectMessageRepository;
@@ -18,8 +19,8 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,10 +31,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class DirectMessageWsService {
 
 	private final ObjectMapper objectMapper;                         // 문자열을 JSON으로 파싱
-	private final SimpMessagingTemplate messagingTemplate;           // 구독 브로드캐스트
 	private final DirectMessageRepository messageRepository;         // 영속화
 	private final DirectMessageRoomRepository roomRepository;        // 방 조회/생성
 	private final UserRepository userRepository;                     // 이름 맵핑 보강
+	private final ApplicationEventPublisher eventPublisher;           // 구독 브로드캐스트 이벤트 발행
 	private final ProfileRepository profileRepository;
 
 	//방 조회시 Username,profileUrl 캐시
@@ -47,16 +48,16 @@ public class DirectMessageWsService {
 		DirectMessageCreateRequest req = objectMapper.readValue(payload, DirectMessageCreateRequest.class);
 		log.debug("[WebSocket DM Service] payload JSON으로 파싱됨: {}", req);
 
-		// 2) dmKey계산, 방조회 또는 생성
+		// 2) dmKey계산, 방 조회 또는 생성
 		DirectMessageRoom room = getOrCreateRoomCached(req.senderId(), req.receiverId());
 		log.debug("[WebSocket DM Service] 채팅방 연결됨 : roomId={}", room.getId());
 
-		// ** 올바른 이용자 검증
+		// 3) 올바른 이용자 검증
 		boolean member = Objects.equals(req.senderId(), room.getUser1Id()) || Objects.equals(req.senderId(), room.getUser2Id());
 		if (!member) throw new AccessDeniedException("채팅방 멤버가 아닙니다.");
 
 
-		// 3) 메시지 저장
+		// 4) 메시지 저장
 		DirectMessage saved = messageRepository.save(DirectMessage.builder()
 			.directMessageRoom(room)
 			.senderId(req.senderId())
@@ -68,7 +69,7 @@ public class DirectMessageWsService {
 		ParticipantDto sender = toParticipant(req.senderId());
 		ParticipantDto receiver = toParticipant(resolveReceiverId(room, req.senderId()));
 
-		// 6) 엔티티 -> 기본 DTO(id, createdAt, content) 매핑 후 sender/receiver 보강
+		// 6) 발행 Dto 구성: 기본 DTO(id, createdAt, content) 매핑 후 sender/receiver 보강
 		DirectMessageDto dto = DirectMessageDto.builder()
 			.id(saved.getId())
 			.createdAt(saved.getCreatedAt())
@@ -77,10 +78,9 @@ public class DirectMessageWsService {
 			.content(saved.getContent())
 			.build();
 
-		// 5) 구독 채널로 브로드캐스트
+		// 7) 구독 채널로 브로드캐스트
 		String destination = "/sub/direct-messages_" + room.getDmKey();
-		messagingTemplate.convertAndSend(destination, dto);
-		log.debug("[WebSocket DM Service] 구독자에게 브로드캐스트: destination={}", destination);
+		eventPublisher.publishEvent(new DirectMessageCommittedEvent(destination, dto));
 	}
 
 	// ===== 내부 헬퍼 =====
