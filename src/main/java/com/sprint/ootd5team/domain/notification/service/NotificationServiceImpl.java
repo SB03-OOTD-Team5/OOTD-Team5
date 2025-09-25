@@ -87,8 +87,9 @@ public class NotificationServiceImpl implements NotificationService {
             .orElseThrow(() -> NotificationNotFoundException.withId(notificationId));
 
         if (!notification.getReceiver().getId().equals(receiverId)) {
-            log.warn("[NotificationService] 알림 삭제 거부: receiverId={}, notificationId={}", receiverId, notificationId);
-            throw new AccessDeniedException("본인 알림만 읽음 처리할 수 있습니다.");
+            log.warn("[NotificationService] 알림 삭제 거부: receiverId={}, notificationId={}", receiverId,
+                notificationId);
+            throw new AccessDeniedException("본인 알림만 삭제할 수 있습니다.");
         }
 
         notificationRepository.delete(notification);

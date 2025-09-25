@@ -17,9 +17,9 @@ public class NotificationNotFoundException extends NotificationException {
         return exception;
     }
 
-    public static NotificationNotFoundException withIds(Set<UUID> notificationId) {
+    public static NotificationNotFoundException withIds(Set<UUID> notificationIds) {
         NotificationNotFoundException exception = new NotificationNotFoundException();
-        exception.addDetail("notificationId", notificationId);
+        exception.addDetail("notificationIds", notificationIds);
         return exception;
     }
 }
