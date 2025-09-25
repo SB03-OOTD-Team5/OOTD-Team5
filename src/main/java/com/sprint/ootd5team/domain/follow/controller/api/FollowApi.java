@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 public interface FollowApi {
 
@@ -24,5 +25,5 @@ public interface FollowApi {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))
         )
     })
-    ResponseEntity<FollowListResponse> getFollowings(@ParameterObject FollowListRequest followListRequest);
+    ResponseEntity<FollowListResponse> getFollowings(@ParameterObject @ModelAttribute FollowListRequest followListRequest);
 }
