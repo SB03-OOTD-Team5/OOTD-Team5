@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
- * SEE(Server-Sent Events) 전송을 처리하는 서비스 구현체
+ * SSE(Server-Sent Events) 전송을 처리하는 서비스 구현체
  * <p>
  * 클라이언트 연결 생성 및 수명관리
  * 브로드캐스트/개별 대상 이벤트 전송
@@ -129,7 +129,7 @@ public class SseServiceImpl implements SseService {
             log.debug("[SSE] Broadcast → userId={}, targets={}", userId, emitters.size());
             emitters.forEach(e -> sendToEmitter(e, eventName, data, message.getId()));
         });
-        log.debug("[SSE] 만료 emitter 정리 종료");
+        log.debug("[SSE] Broadcast 전송 완료");
     }
 
     /**
