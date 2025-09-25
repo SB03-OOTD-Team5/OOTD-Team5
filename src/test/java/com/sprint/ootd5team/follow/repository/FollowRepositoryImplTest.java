@@ -137,4 +137,29 @@ public class FollowRepositoryImplTest {
         assertThat(results).hasSize(1);
         assertThat(results.get(0).followee().name()).isEqualTo("user1");
     }
+
+    @Test
+    @DisplayName("팔로잉 수 조회 - nameLike 조건 없이 전체 카운트")
+    void countByFollowerIdAndNameLike_noFilter() {
+        long count = followRepositoryImpl.countByFollowerIdAndNameLike(followerId, null);
+
+        assertThat(count).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("팔로잉 수 조회 - nameLike 조건 적용 (대소문자 무시)")
+    void countByFollowerIdAndNameLike_withFilter() {
+        long count = followRepositoryImpl.countByFollowerIdAndNameLike(followerId, "USER1");
+
+        assertThat(count).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("팔로잉 수 조회 - nameLike 조건에 해당하는 사용자가 없을 때 0 반환")
+    void countByFollowerIdAndNameLike_noMatch() {
+        long count = followRepositoryImpl.countByFollowerIdAndNameLike(followerId, "zzz");
+
+        assertThat(count).isZero();
+    }
+
 }

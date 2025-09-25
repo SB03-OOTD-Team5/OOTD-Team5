@@ -93,7 +93,7 @@ public class FollowServiceTest {
                 new FollowDto(projection1.id(), user3, user1),
                 new FollowDto(projection2.id(), user2, user1)
             ));
-        given(followRepository.countByFollowerId(followerId)).willReturn(2L);
+        given(followRepository.countByFollowerIdAndNameLike(followerId, request.nameLike())).willReturn(2L);
 
         // when
         FollowListResponse response = followService.getFollowingList(request);
@@ -107,7 +107,7 @@ public class FollowServiceTest {
     }
 
     @Test
-    @DisplayName("팔로잉 목록 조회 성공 - hasNext=true (limit보다 많은 결과)")
+    @DisplayName("팔로잉 목록 조회 성공 - hasNext=true")
     void getFollowingList_success_hasNext() {
         // given
         FollowListRequest request = new FollowListRequest(followerId, null, null, 1, null);
@@ -117,7 +117,7 @@ public class FollowServiceTest {
             .willReturn(List.of(projection1, projection2));
         given(followMapper.toFollowDtoList(argThat(list -> list.size() == 1)))
             .willReturn(List.of(new FollowDto(projection1.id(), user3, user1)));
-        given(followRepository.countByFollowerId(followerId)).willReturn(2L);
+        given(followRepository.countByFollowerIdAndNameLike(followerId, request.nameLike())).willReturn(2L);
 
         // when
         FollowListResponse response = followService.getFollowingList(request);
