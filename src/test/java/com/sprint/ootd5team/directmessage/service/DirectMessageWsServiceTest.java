@@ -82,7 +82,7 @@ class DirectMessageWsServiceTest {
     }
 
     @Test
-    @DisplayName("handleSend 호출 시 메시지를 저장하고 이벤트를 발행한다")
+    @DisplayName("1. 성공: 메세지Send호출시 메시지를 저장하고 이벤트를 발행")
     void handleSend_success() throws Exception {
         UUID senderId = UUID.randomUUID();
         UUID receiverId = UUID.randomUUID();
@@ -148,7 +148,7 @@ class DirectMessageWsServiceTest {
     }
 
     @Test
-    @DisplayName("채팅방 멤버가 아니면 AccessDeniedException을 던진다")
+    @DisplayName("2. 실패: DM 채팅방의 참가자가 아니면 예외 발생")
     void handleSend_accessDenied() throws Exception {
         UUID senderId = UUID.randomUUID();
         UUID receiverId = UUID.randomUUID();
