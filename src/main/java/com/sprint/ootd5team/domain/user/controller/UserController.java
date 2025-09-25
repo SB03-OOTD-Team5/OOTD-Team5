@@ -1,15 +1,17 @@
 package com.sprint.ootd5team.domain.user.controller;
 
+import com.sprint.ootd5team.base.security.service.AuthService;
+import com.sprint.ootd5team.domain.profile.dto.data.ProfileUpdateRequest;
 import com.sprint.ootd5team.domain.profile.dto.request.ProfileDto;
 import com.sprint.ootd5team.domain.profile.service.ProfileService;
 import com.sprint.ootd5team.domain.user.controller.api.UserApi;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
+import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
 import com.sprint.ootd5team.domain.user.service.UserService;
 import jakarta.validation.Valid;
-import java.awt.print.Pageable;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +32,7 @@ public class UserController implements UserApi {
 
     private final UserService userService;
     private final ProfileService profileService;
+    private final AuthService authService;
 
     @Override
     @PostMapping
@@ -83,7 +86,15 @@ public class UserController implements UserApi {
     }
 
 
+    @Override
+    @PatchMapping("/{userId}/role")
+    public ResponseEntity<UserDto> updateUserRole(@PathVariable UUID userId, @RequestBody UserRoleUpdateRequest request) {
+        UserDto userDto = authService.updateRoleInternal(userId, request);
 
+        return ResponseEntity
+            .status(HttpStatusCode.OK)
+            .body(userDto);
+    }
 
 
 }
