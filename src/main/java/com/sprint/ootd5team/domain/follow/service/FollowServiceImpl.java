@@ -31,6 +31,7 @@ public class FollowServiceImpl implements FollowService {
 
         UUID followerId = request.followerId();
         int limit = request.limit();
+        String nameLike = request.nameLike();
 
         if (!profileRepository.existsByUserId(followerId)) {
             log.warn("[FollowService] 프로필이 존재하지 않습니다. userId: {}", followerId);
@@ -45,7 +46,7 @@ public class FollowServiceImpl implements FollowService {
             createdCursor,
             idCursor,
             limit,
-            request.nameLike()
+            nameLike
         );
 
         boolean hasNext = follows.size() > limit;
@@ -63,7 +64,7 @@ public class FollowServiceImpl implements FollowService {
             hasNext ? last.createdAt().toString() : null,
             hasNext ? last.id() : null,
             hasNext,
-            followRepository.countByFollowerId(followerId),
+            followRepository.countByFollowerIdAndNameLike(followerId, nameLike),
             "createdAt",
             SortDirection.DESCENDING
         );

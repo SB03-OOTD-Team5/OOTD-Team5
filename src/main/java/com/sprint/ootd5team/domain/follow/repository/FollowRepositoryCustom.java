@@ -10,4 +10,6 @@ public interface FollowRepositoryCustom {
     List<FollowProjectionDto> findByFollowIdWithCursor(
         UUID followerId, Instant createdCursor, UUID idCursor, int limit, String nameLike
     );
+
+    long countByFollowerIdAndNameLike(UUID followerId, String nameLike);
 }
