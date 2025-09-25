@@ -33,16 +33,10 @@ public class WeatherController implements WeatherApi {
     public ResponseEntity<List<WeatherDto>> getWeatherByLocation(BigDecimal latitude,
         BigDecimal longitude
     ) {
-        try {
-            UUID userId = authService.getCurrentUserId();
-            List<WeatherDto> weatherDtos = weatherService.fetchWeatherByLocation(latitude,
-                longitude, userId);
-            return ResponseEntity.status(HttpStatus.OK).body(weatherDtos);
-        } catch (Exception e) {
-            //TODO: body에 ErrorResponse 넣기
-            log.error(e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        UUID userId = authService.getCurrentUserId();
+        List<WeatherDto> weatherDtos = weatherService.fetchWeatherByLocation(latitude,
+            longitude, userId);
+        return ResponseEntity.status(HttpStatus.OK).body(weatherDtos);
     }
 
     @GetMapping("/location")
@@ -50,16 +44,11 @@ public class WeatherController implements WeatherApi {
     public ResponseEntity<WeatherAPILocationDto> getLocation(BigDecimal latitude,
         BigDecimal longitude
     ) {
-        try {
-            UUID userId = authService.getCurrentUserId();
-            WeatherAPILocationDto locationDto = locationService.fetchLocation(latitude,
-                longitude, userId);
-            return ResponseEntity.status(HttpStatus.OK).body(locationDto);
-        } catch (Exception e) {
-            //TODO: body에 ErrorResponse 넣기
-            log.error(e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        UUID userId = authService.getCurrentUserId();
+        WeatherAPILocationDto locationDto = locationService.fetchLocation(latitude,
+            longitude, userId);
+        return ResponseEntity.status(HttpStatus.OK).body(locationDto);
+
     }
 
 }
