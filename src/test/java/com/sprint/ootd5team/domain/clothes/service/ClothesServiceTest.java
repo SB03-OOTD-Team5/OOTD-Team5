@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.clothes.service;
+package com.sprint.ootd5team.domain.clothes.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -17,7 +17,7 @@ import com.sprint.ootd5team.base.exception.clothesattribute.AttributeValueNotAll
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
-import com.sprint.ootd5team.clothes.fixture.ClothesFixture;
+import com.sprint.ootd5team.domain.clothes.fixture.ClothesFixture;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
@@ -31,7 +31,6 @@ import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothes.mapper.ClothesMapper;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
-import com.sprint.ootd5team.domain.clothes.service.ClothesServiceImpl;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import java.io.IOException;

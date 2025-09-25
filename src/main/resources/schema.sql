@@ -190,6 +190,7 @@ CREATE TABLE IF NOT EXISTS tbl_weathers
     CONSTRAINT check_windspeed_level CHECK (windspeed_level IN ('WEAK','MODERATE','STRONG')),
     CONSTRAINT fk_tbl_weathers_profile FOREIGN KEY (profile_id) REFERENCES tbl_profiles (id) ON DELETE CASCADE
 );
+
 /****** 위치 ******/
 -- 위치 테이블
 CREATE TABLE IF NOT EXISTS tbl_locations
@@ -206,6 +207,7 @@ CREATE TABLE IF NOT EXISTS tbl_locations
     CONSTRAINT uq_locations UNIQUE (latitude,longitude)
 
 );
+
 /****** DM ******/
 -- DM 채팅방
 CREATE TABLE IF NOT EXISTS tbl_dm_rooms (
@@ -243,6 +245,21 @@ CREATE TABLE IF NOT EXISTS tbl_follows
 );
 
 
+/****** 알림 ******/
+-- 알림 테이블
+CREATE TABLE IF NOT EXISTS tbl_notifications
+(
+    id                        UUID                     PRIMARY KEY,
+    receiver_id               UUID                     NOT NULL,
+    title                     VARCHAR                  NOT NULL,
+    content                   TEXT                     NOT NULL,
+    level                     VARCHAR(10)              NOT NULL,
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    -- constraints
+    CONSTRAINT check_level CHECK (level IN ('INFO', 'WARNING', 'ERROR')),
+    CONSTRAINT fk_user_notification FOREIGN KEY (receiver_id) REFERENCES tbl_users (id) ON DELETE CASCADE
+);
+
 /* 인덱스 설정 */
 -- tbl_weathers index
 CREATE INDEX idx_tbl_weathers_profile_forecasted_at
@@ -262,7 +279,7 @@ CREATE INDEX idx_tbl_clothes_owner_id
 -- DM 메세지 인덱스 (마지막 메세지부터 조회)
 CREATE INDEX IF NOT EXISTS idx_dm_messages_room_created
     ON tbl_dm_messages(room_id, created_at DESC);
-    
+
 CREATE INDEX IF NOT EXISTS ix_cav_clothes_attr
     ON tbl_clothes_attributes_values (clothes_id, attribute_id);
 
@@ -319,4 +336,9 @@ ALTER TABLE tbl_locations
     ADD CONSTRAINT uq_locations UNIQUE (latitude, longitude);
 
 ALTER TABLE tbl_locations
-    ADD COLUMN location_code  VARCHAR(20);
+    ADD COLUMN location_code VARCHAR(20);
+
+-- tbl_notifications_receiver index
+CREATE INDEX IF NOT EXISTS idx_notifications_receiver_created
+    ON tbl_notifications (receiver_id, created_at DESC);
+
