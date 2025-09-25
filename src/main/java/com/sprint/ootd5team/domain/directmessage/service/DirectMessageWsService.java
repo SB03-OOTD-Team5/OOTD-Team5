@@ -46,7 +46,8 @@ public class DirectMessageWsService {
 	public void handleSend(String payload) throws Exception {
 		// 1) JSON 파싱 (DirectMessageCreateRequest: receiverId, senderId, content)
 		DirectMessageCreateRequest req = objectMapper.readValue(payload, DirectMessageCreateRequest.class);
-		log.debug("[WebSocket DM Service] payload JSON으로 파싱됨: {}", req);
+		log.debug("[WebSocket DM Service] payload JSON으로 파싱됨: receiverId={}, contentLen={}",
+			req.receiverId(), (req.content() == null ? 0 : req.content().length()));
 
 		// 2) dmKey계산, 방 조회 또는 생성
 		DirectMessageRoom room = getOrCreateRoomCached(req.senderId(), req.receiverId());
@@ -63,7 +64,8 @@ public class DirectMessageWsService {
 			.senderId(req.senderId())
 			.content(req.content())
 			.build());
-		log.debug("[WebSocket DM Service] 서버에 메세지 저장 : content={}", saved.getContent());
+		log.debug("[WebSocket DM Service] 서버에 메세지 저장 : id={}, len={}",
+			saved.getId(), (saved.getContent() == null ? 0 : saved.getContent().length()));
 
 		// 5) 송/수신자 ParticipantDto 구성
 		ParticipantDto sender = toParticipant(req.senderId());
