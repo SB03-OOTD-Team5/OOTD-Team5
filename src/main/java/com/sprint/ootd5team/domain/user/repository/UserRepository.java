@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
 
@@ -16,5 +17,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("select u.id from User u")
     List<UUID> findAllUserIds();
 
-    String findUserNameById(UUID id);
+    @Query("select u.name from User u where u.id = :id")
+    String findUserNameById(@Param("id") UUID id);
 }
