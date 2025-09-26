@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.clothes.controller;
+package com.sprint.ootd5team.domain.clothes.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
