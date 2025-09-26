@@ -1,7 +1,7 @@
 package com.sprint.ootd5team.domain.notification.event.producer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sprint.ootd5team.domain.notification.event.type.DomainEvent;
+import com.sprint.ootd5team.domain.notification.event.type.base.DomainEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -13,6 +13,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 @RequiredArgsConstructor
 public class KafkaEventPublisher {
+
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
@@ -22,7 +23,11 @@ public class KafkaEventPublisher {
         try {
             String payload = objectMapper.writeValueAsString(event);
             kafkaTemplate.send("ootd.Notifications", payload);
-            log.info("[Kafka] Published event: {}", payload);
+            log.info("[Kafka] Published event: type={}, receiverCount={}",
+                event.getClass().getSimpleName(),
+                event.getReceiverIds().size()
+            );
+            log.debug("[Kafka] Payload={}", payload);
         } catch (Exception e) {
             log.error("Failed to publish notification event", e);
         }

@@ -3,7 +3,7 @@ package com.sprint.ootd5team.domain.notification.event.consumer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.sse.service.SseService;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDto;
-import com.sprint.ootd5team.domain.notification.event.type.DomainEvent;
+import com.sprint.ootd5team.domain.notification.event.type.base.DomainEvent;
 import com.sprint.ootd5team.domain.notification.service.NotificationService;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import java.util.List;
@@ -26,9 +26,9 @@ public class NotificationEventConsumer {
     @KafkaListener(topics = "ootd.Notifications", groupId = "ootd.notification")
     public void consume(String message) {
         try {
-            log.info("[Kafka] Consume: {}", message);
-
             DomainEvent<?> event = objectMapper.readValue(message, DomainEvent.class);
+            log.info("[Kafka] Consumed event: type={}", event.getClass().getSimpleName());
+            log.debug("[Kafka] Full message: {}", message);
 
             List<UUID> receiverIds = event.getReceiverIds();
             if (receiverIds == null || receiverIds.isEmpty()) {
@@ -37,7 +37,11 @@ public class NotificationEventConsumer {
             }
 
             for (UUID userId : receiverIds) {
-                createAndSendNotification(userId, event);
+                try {
+                    createAndSendNotification(userId, event);
+                } catch (Exception e) {
+                    log.error("[Kafka] Failed to send notification to userId={}", userId, e);
+                }
             }
 
         } catch (Exception ex) {
@@ -50,6 +54,9 @@ public class NotificationEventConsumer {
             receiverId, event.getTemplateType(), event.getLevel(), event.getArgs()
         );
         sseService.send(List.of(receiverId), "notifications", dto);
-        log.info("[Kafka] Sent notification: {}", dto);
+        log.info("[Kafka] Sent notification: id={}, receiverId={}, type={}",
+            dto.id(), receiverId, event.getTemplateType()
+        );
+        log.debug("[Kafka] Full dto={}", dto);
     }
 }
