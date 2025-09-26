@@ -53,6 +53,13 @@ public class NotificationController implements NotificationApi {
 
     @Override
     public ResponseEntity<Void> delete(UUID notificationId) {
+        UUID currentUserId = authService.getCurrentUserId();
+
+        log.info("[NotificationController] 삭제 요청: currentUserId={}, notificationId={}", currentUserId, notificationId);
+
+        notificationService.delete(currentUserId, notificationId);
+
+        log.info("[NotificationController] 삭제 응답 완료");
         return ResponseEntity
             .status(HttpStatus.NO_CONTENT)
             .build();

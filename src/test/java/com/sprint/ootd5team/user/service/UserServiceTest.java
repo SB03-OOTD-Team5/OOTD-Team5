@@ -8,13 +8,21 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
+import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.base.exception.user.UserAlreadyExistException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.service.AuthService;
+import com.sprint.ootd5team.base.storage.FileStorage;
+import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
+import com.sprint.ootd5team.domain.profile.dto.data.ProfileUpdateRequest;
+import com.sprint.ootd5team.domain.profile.dto.request.ProfileDto;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
+import com.sprint.ootd5team.domain.profile.mapper.ProfileMapper;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
+import com.sprint.ootd5team.domain.profile.service.ProfileService;
+import com.sprint.ootd5team.domain.profile.service.ProfileServiceImpl;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
@@ -26,7 +34,9 @@ import com.sprint.ootd5team.domain.user.mapper.UserMapper;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import com.sprint.ootd5team.domain.user.repository.UserRepositoryCustom;
 import com.sprint.ootd5team.domain.user.service.UserService;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +55,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 
-@SpringBootTest(classes = {AuthService.class, UserService.class})
+@SpringBootTest(classes = {AuthService.class, UserService.class, ProfileServiceImpl.class})
 @EnableMethodSecurity
 class UserServiceTest {
 
@@ -54,6 +64,9 @@ class UserServiceTest {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private ProfileService profileService;
 
     @MockitoBean
     private UserRepository userRepository;
@@ -82,10 +95,18 @@ class UserServiceTest {
     @MockitoBean
     private ProfileRepository profileRepository;
 
+    @MockitoBean
+    private ProfileMapper profileMapper;
+
+    @MockitoBean
+    private FileStorage fileStorage;
+
+
     private User testUser;
     private UserDto testUserDto;
     private UserCreateRequest userCreateRequest;
     private ChangePasswordRequest changePasswordRequest;
+
 
     @BeforeEach
     void setUp() {
@@ -360,7 +381,7 @@ class UserServiceTest {
             false
         );
 
-        given(userRepository.findById(testUser.getId())).willThrow(UserNotFoundException.class);
+        given(userRepository.findById(testUser.getId())).willReturn(Optional.empty());
 
         // when
         assertThatThrownBy(() -> authService.updateRoleInternal(testUser.getId(), new UserRoleUpdateRequest("ADMIN")))
@@ -386,6 +407,67 @@ class UserServiceTest {
         verify(userMapper, never()).toDto(any(User.class));
     }
 
+    @Test
+    @DisplayName("사용자 프로필 수정 성공")
+    void update_UserProfile_Success() {
+        BigDecimal latitude = BigDecimal.valueOf(37.52);
+        BigDecimal longitude = BigDecimal.valueOf(129.11);
+        String[] locationNames = {"서울특별시", "광진구", "능동", ""};
+
+        WeatherAPILocationDto weatherAPILocationDto = new WeatherAPILocationDto(
+            latitude, longitude, 96, 127, locationNames, latitude, longitude);
+
+        ProfileUpdateRequest profileUpdateRequest = new ProfileUpdateRequest(
+            "updatedName", "MALE", LocalDate.now(), weatherAPILocationDto, 4);
+
+        ProfileDto profileDto = new ProfileDto(
+            testUser.getId(), "updatedName", "MALE", LocalDate.now(), weatherAPILocationDto, 4, null);
+
+        Profile profile = new Profile(testUser.getId(),testUser.getName(),null,null,null,null,null,null,null,null,null);
+
+        // given
+        given(profileRepository.findByUserId(testUser.getId())).willReturn(Optional.of(profile));
+        given(profileRepository.save(any(Profile.class))).willReturn(profile);
+        given(profileMapper.toDto(any(Profile.class))).willReturn(profileDto);
+
+        // when
+        ProfileDto result = profileService.updateProfile(testUser.getId(),profileUpdateRequest,Optional.ofNullable(null));
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.birthDate()).isNotNull();
+        assertThat(result.location()).isEqualTo(weatherAPILocationDto);
+        assertThat(result.name()).isEqualTo("updatedName");
+        assertThat(result.gender()).isEqualTo("MALE");
+        assertThat(result.temperatureSensitivity()).isEqualTo(4);
+    }
+
+    @Test
+    @DisplayName("사용자 프로필 수정 실패 - 존재하지 않는 사용자")
+    void update_UserProfile_Fail_ProfileNotFound() {
+        BigDecimal latitude = BigDecimal.valueOf(37.52);
+        BigDecimal longitude = BigDecimal.valueOf(129.11);
+        String[] locationNames = {"서울특별시", "광진구", "능동", ""};
+
+        WeatherAPILocationDto weatherAPILocationDto = new WeatherAPILocationDto(
+            latitude, longitude, 96, 127, locationNames, latitude, longitude);
+
+        ProfileUpdateRequest profileUpdateRequest = new ProfileUpdateRequest(
+            "updatedName", "MALE", LocalDate.now(), weatherAPILocationDto, 4);
+
+        // given
+        given(profileRepository.findByUserId(testUser.getId())).willReturn(Optional.empty());
+
+        // when
+        assertThatThrownBy(
+            () -> profileService.updateProfile(testUser.getId(),profileUpdateRequest,Optional.ofNullable(null)))
+            .isInstanceOf(ProfileNotFoundException.class);
+
+        // then
+        verify(profileMapper,never()).toDto(any(Profile.class));
+        verify(profileRepository,never()).save(any(Profile.class));
+    }
+
 
     private User createTestUser(String email, String name) {
         User user = new User(name, email, "encodedPassword", Role.USER);
@@ -404,4 +486,6 @@ class UserServiceTest {
             false
         );
     }
+
+
 }
