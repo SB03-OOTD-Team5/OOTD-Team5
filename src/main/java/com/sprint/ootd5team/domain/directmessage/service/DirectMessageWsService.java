@@ -10,6 +10,7 @@ import com.sprint.ootd5team.domain.directmessage.entity.DirectMessage;
 import com.sprint.ootd5team.domain.directmessage.entity.DirectMessageRoom;
 import com.sprint.ootd5team.domain.directmessage.repository.DirectMessageRepository;
 import com.sprint.ootd5team.domain.directmessage.repository.DirectMessageRoomRepository;
+import com.sprint.ootd5team.domain.notification.event.type.single.DmCreatedEvent;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.entity.User;
@@ -83,6 +84,9 @@ public class DirectMessageWsService {
 		// 7) 구독 채널로 브로드캐스트
 		String destination = "/sub/direct-messages_" + room.getDmKey();
 		eventPublisher.publishEvent(new DirectMessageCommittedEvent(destination, dto));
+
+		// 8) 알림 이벤트 발행
+		eventPublisher.publishEvent(new DmCreatedEvent(dto));
 	}
 
 	// ===== 내부 헬퍼 =====

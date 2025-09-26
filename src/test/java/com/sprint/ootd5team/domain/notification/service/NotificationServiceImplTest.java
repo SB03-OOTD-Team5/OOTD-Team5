@@ -11,9 +11,13 @@ import com.sprint.ootd5team.base.exception.notification.NotificationNotFoundExce
 import com.sprint.ootd5team.domain.notification.entity.Notification;
 import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
 import com.sprint.ootd5team.domain.notification.fixture.NotificationFixture;
+import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
+import com.sprint.ootd5team.domain.notification.fixture.NotificationFixture;
 import com.sprint.ootd5team.domain.notification.mapper.NotificationMapper;
 import com.sprint.ootd5team.domain.notification.repository.NotificationRepository;
 import com.sprint.ootd5team.domain.user.entity.User;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,6 +40,9 @@ class NotificationServiceImplTest {
 
     @Mock
     private NotificationMapper notificationMapper;
+
+    @Mock
+    private EntityManager entityManager;
 
     @InjectMocks
     private NotificationServiceImpl notificationService;
@@ -127,6 +134,56 @@ class NotificationServiceImplTest {
         // when & then
         assertThatThrownBy(() -> notificationService.delete(user.getId(), notification.getId()))
             .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("알림 생성 성공")
+    void 알림_생성_성공() {
+        // given
+        UUID receiverId = user.getId();
+        var notification = NotificationFixture.createNotification(
+            user, "제목", "내용", Instant.now()
+        );
+        given(entityManager.getReference(User.class, receiverId))
+            .willReturn(user);
+        given(notificationRepository.save(any(Notification.class)))
+            .willReturn(notification);
+        given(notificationMapper.toDto(any(Notification.class)))
+            .willReturn(NotificationFixture.toDto(notification));
+
+        // when
+        var result = notificationService.createNotification(
+            receiverId,
+            NotificationTemplateType.ROLE_UPDATED,
+            NotificationLevel.INFO,
+            "USER", "ADMIN"
+        );
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.title()).isEqualTo(notification.getTitle());
+        assertThat(result.content()).isEqualTo(notification.getContent());
+        assertThat(result.level()).isEqualTo(NotificationLevel.INFO);
+
+        then(notificationRepository).should().save(any(Notification.class));
+        then(notificationMapper).should().toDto(any(Notification.class));
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 유저에게 알림 생성 시 EntityNotFoundException 발생")
+    void 존재하지않는_유저에게_알림생성시_예외발생() {
+        // given
+        UUID invalidUserId = UUID.randomUUID();
+        given(entityManager.getReference(User.class, invalidUserId))
+            .willThrow(new EntityNotFoundException("User not found"));
+
+        // when & then
+        assertThatThrownBy(() -> notificationService.createNotification(
+            invalidUserId,
+            NotificationTemplateType.ROLE_UPDATED,
+            NotificationLevel.INFO,
+            "USER", "ADMIN"
+        )).isInstanceOf(EntityNotFoundException.class);
     }
 
 }
