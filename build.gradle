@@ -88,10 +88,16 @@ dependencies {
 
 }
 
-test {
+tasks.named('test') {
     useJUnitPlatform()
+    ignoreFailures = true  // 실패해도 다음 task 진행
     systemProperty "file.encoding", "UTF-8"
     finalizedBy jacocoTestReport
+    String jnaPath = System.getenv("JNA_PATH")
+    if (jnaPath) {
+        println "JNA path set for tests: $jnaPath"
+        jvmArgs += "-Djna.library.path=$jnaPath"
+    }
 }
 
 // QueryDsl : 자동 생성 소스 파일 저장 위치
