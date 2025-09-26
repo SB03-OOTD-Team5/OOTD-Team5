@@ -46,7 +46,8 @@ CREATE TABLE IF NOT EXISTS tbl_profiles
     -- constraints
     CONSTRAINT check_gender CHECK (gender IN ('MALE', 'FEMALE', 'OTHER')),
     CONSTRAINT check_temperature_sensitivity CHECK (temperature_sensitivity BETWEEN 1 AND 5),
-    CONSTRAINT fk_profiles_user FOREIGN KEY (user_id) REFERENCES tbl_users (id) ON DELETE CASCADE
+    CONSTRAINT fk_profiles_user FOREIGN KEY (user_id) REFERENCES tbl_users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_profiles_location FOREIGN KEY (location_id) REFERENCES tbl_locations (id) ON DELETE SET NULL
 );
 
 /****** 의상 ******/
