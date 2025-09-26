@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,25 +50,39 @@ public class WeatherFactory {
         //FIXME: find랑 create 분리하면 좋을듯
         Location location = locationService.findOrCreateLocation(latitude, longitude);
 
-        List<Weather> cachedWeathers = findWeathersInCache(baseDate, baseTime, location);
+        // 1. 날씨 찾기
+        List<Weather> cachedWeathers = findWeathers(baseDate, baseTime, location);
         if (!cachedWeathers.isEmpty()) {
             log.debug("[Weather] 날씨 데이터 이미 존재: {}건", cachedWeathers.size());
             return cachedWeathers;
         }
-        log.debug("[Weather] 날씨 데이터 존재 X, 생성 시작");
-        KmaResponseDto kmaResponse = kmaApiAdapter.getKmaWeather(baseDate, baseTime, latitude,
-            longitude);
-        List<Weather> newWeathers = buildWeathersFromKmaResponse(kmaResponse, baseDate, location);
-
+        // 2. 날씨 데이터 불러오기
+        log.debug("[Weather] 날씨 데이터 존재 X");
+        KmaResponseDto kmaResponseDto = kmaApiAdapter.getKmaWeather(baseDate, baseTime,
+            location.getLatitude(), location.getLongitude(), 1000);
+        // 3. 날씨 생성
+        List<Weather> newWeathers = createWeathers(kmaResponseDto, baseDate, location);
         return weatherRepository.saveAll(newWeathers);
     }
 
-    private List<Weather> findWeathersInCache(String baseDate, String baseTime, Location location) {
+
+    public List<Weather> findWeathers(String baseDate, String baseTime, Location location) {
         Instant forecastedAt = toInstant(baseDate, baseTime);
         log.debug("[Weather repository] 날씨 존재하는지 확인중 forecastedAt:{}, lat: {}, lon: {}",
             forecastedAt, location.getLatitude(), location.getLongitude());
 
         return weatherRepository.findAllByLocationIdAndForecastedAt(location.getId(), forecastedAt);
+    }
+
+    public boolean existsWeatherFor(String baseDate, String baseTime, UUID locationId) {
+        Instant forecastedAt = toInstant(baseDate, baseTime);
+        return weatherRepository.existsByLocationIdAndForecastedAt(locationId, forecastedAt);
+    }
+
+    public List<Weather> createWeathers(KmaResponseDto kmaResponseDto, String baseDate,
+        Location location) {
+        log.debug("[Weather] 날씨 dto 생성 시작");
+        return buildWeathersFromKmaResponse(kmaResponseDto, baseDate, location);
     }
 
     private List<Weather> buildWeathersFromKmaResponse(KmaResponseDto kmaResponse, String baseDate,
@@ -195,8 +210,10 @@ public class WeatherFactory {
     private Weather buildSingleWeather(List<WeatherItem> dailyItems,
         List<WeatherItem> targetDateItems, Location location, Weather yesterdayWeather) {
         WeatherItem anyItem = targetDateItems.get(0);
-        Instant forecastedAt = toInstant(anyItem.baseDate(), anyItem.baseTime());
-        Instant forecastAt = toInstant(anyItem.fcstDate(), anyItem.fcstTime());
+        Instant forecastedAt = toInstant(anyItem.baseDate(), String.format("%04d", Integer.parseInt(
+            anyItem.baseTime())));
+        Instant forecastAt = toInstant(anyItem.fcstDate(), String.format("%04d", Integer.parseInt(
+            anyItem.fcstTime())));
 
         SkyStatus skyStatus = SkyStatus.CLEAR;
         PrecipitationType precipitationType = PrecipitationType.NONE;

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.base.util.CoordinateUtils;
 import com.sprint.ootd5team.domain.location.dto.data.ClientCoords;
+import com.sprint.ootd5team.domain.location.dto.data.LocationWithProfileIds;
 import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
 import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.location.exception.LocationKakaoFetchException;
@@ -14,7 +15,11 @@ import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.weather.external.kakao.KakaoResponseDto;
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -79,6 +84,34 @@ public class LocationServiceImpl implements LocationService, LocationQueryServic
         KakaoResponseDto dto = parseToKakaoResponseDto(fetchKakaoApi(latitude, longitude));
         //2. 영속화
         return saveLocation(dto, latitude, longitude);
+    }
+
+    @Override
+    public List<LocationWithProfileIds> findAllLocationUsingInProfileDistinct() {
+        List<Profile> profiles = profileRepository.findAllByLocationIsNotNull();
+
+        //Location 별로 profile id 모으기
+        Map<Location, List<UUID>> grouped = profiles.stream()
+            .collect(Collectors.groupingBy(Profile::getLocation,
+                Collectors.mapping(Profile::getId, Collectors.toList())));
+
+        return grouped.entrySet().stream()
+            .map(entry -> {
+                Location location = entry.getKey();
+                if (location == null) {
+                    return null;
+                }
+                return new LocationWithProfileIds(
+                    location.getId(),
+                    location.getLatitude(),
+                    location.getLongitude(),
+                    location.getLocationNames(),
+                    entry.getValue()
+                );
+            })
+            .filter(Objects::nonNull)
+            .toList();
+
     }
 
     private Location getLocationIfExist(BigDecimal latitude,

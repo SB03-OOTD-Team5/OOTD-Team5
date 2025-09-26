@@ -26,4 +26,7 @@ public interface NotificationService {
     );
 
     void delete(UUID receiverId, UUID notificationId);
+
+    /* 임시: 날씨 관련 Notification 생성 */
+    void createWeatherNotification(UUID profileId, String Content);
 }

@@ -1,9 +1,12 @@
 package com.sprint.ootd5team.base.batch;
 
-import com.sprint.ootd5team.base.batch.dto.WeatherBatchItem;
-import com.sprint.ootd5team.domain.profile.entity.Profile;
-import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
-import java.math.BigDecimal;
+import com.sprint.ootd5team.domain.location.dto.data.LocationWithProfileIds;
+import com.sprint.ootd5team.domain.location.service.LocationService;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaApiAdapter;
+import com.sprint.ootd5team.domain.weather.service.WeatherFactory;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -14,46 +17,73 @@ import org.springframework.batch.item.ItemStreamException;
 import org.springframework.batch.item.ItemStreamReader;
 import org.springframework.stereotype.Component;
 
+/**
+ * @class WeatherBatchDataReader
+ * @brief 위치별로 프로필 ID 묶음을 제공해 배치가 처리할 LocationWithProfileIds를 공급한다.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class WeatherBatchDataReader implements ItemStreamReader<WeatherBatchItem>, ItemStream {
+public class WeatherBatchDataReader implements ItemStreamReader<LocationWithProfileIds>,
+    ItemStream {
 
-    private final ProfileRepository profileRepository;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final ZoneId SEOUL_ZONE_ID = ZoneId.of("Asia/Seoul");
+    private final LocationService locationService;
+    private final KmaApiAdapter kmaApiAdapter;
+    private final WeatherFactory weatherFactory;
+    //    private final String BASE_TIME = "2300";
+    private final String BASE_TIME = "2000"; // 테스트용
+    private Iterator<LocationWithProfileIds> iterator;
 
-    private Iterator<Profile> profileIterator;
-
+    /**
+     * @return 다음 LocationWithProfileIds 또는 더 이상 없을 때 null
+     * @brief 준비된 Iterator에서 다음 배치 아이템을 반환한다.
+     */
     @Override
-    public WeatherBatchItem read() {
-        if (profileIterator == null) {
+    public LocationWithProfileIds read() {
+        if (iterator == null || !iterator.hasNext()) {
+            log.info("[WeatherBatchDataReader] 더 이상 처리할 Location 정보가 없습니다.");
             return null;
         }
-        if (!profileIterator.hasNext()) {
+        LocationWithProfileIds withProfileIds = iterator.next();
+
+        String baseDate = LocalDate.now(SEOUL_ZONE_ID).format(DATE_FORMATTER);
+        // 기상청 API BaseTime
+
+        log.info("[WeatherBatchDataReader-read] 위도:{}, 경도:{}, 사용자 Id:{}",
+            withProfileIds.latitude(), withProfileIds.longitude(),
+            withProfileIds.profileIds().toString());
+
+        // 날씨 찾기
+        boolean exists = weatherFactory.existsWeatherFor(baseDate, BASE_TIME,
+            withProfileIds.locationId());
+        if (exists) {
+            log.info("[WeatherBatchDataReader] 기존 날씨 데이터 존재 locationId={}",
+                withProfileIds.locationId());
             return null;
         }
-        Profile profile = profileIterator.next();
-        BigDecimal latitude = profile.getLatitude();
-        BigDecimal longitude = profile.getLongitude();
-        if (latitude == null || longitude == null) {
-            log.debug("[WeatherBatchDataReader] 좌표가 없는 프로필 건너뜀: {}", profile.getId());
-            return read();
-        }
-        return new WeatherBatchItem(latitude, longitude, profile);
+
+        log.info("[WeatherBatchDataReader] 신규 처리 대상 locationId={}, profileCount={}",
+            withProfileIds.locationId(), withProfileIds.profileIds().size());
+
+        return withProfileIds;
     }
 
+    /**
+     * @brief Reader 시작 시 위치가 설정된 프로필만 필터링해 Iterator를 초기화한다.
+     */
     @Override
     public void open(ExecutionContext executionContext) throws ItemStreamException {
-        List<Profile> profiles = profileRepository.findAll();
-        profileIterator = profiles.iterator();
-        log.info("[WeatherBatchDataReader] 총 {}건의 프로필 로드", profiles.size());
-    }
+        List<LocationWithProfileIds> locationWithProfileIds = locationService.findAllLocationUsingInProfileDistinct();
 
-    @Override
-    public void update(ExecutionContext executionContext) throws ItemStreamException {
+        iterator = locationWithProfileIds.iterator();
+        log.info("[WeatherBatchDataReader-open] 총 {}건의 Location 묶음을 로드",
+            locationWithProfileIds.size());
     }
 
     @Override
     public void close() throws ItemStreamException {
-        profileIterator = null;
+        iterator = null;
     }
 }

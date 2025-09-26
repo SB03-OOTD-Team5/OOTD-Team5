@@ -1,6 +1,8 @@
 package com.sprint.ootd5team.domain.notification.service;
 
 import com.sprint.ootd5team.base.exception.notification.NotificationNotFoundException;
+import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
+import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDto;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDtoCursorResponse;
 import com.sprint.ootd5team.domain.notification.entity.Notification;
@@ -8,7 +10,10 @@ import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
 import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
 import com.sprint.ootd5team.domain.notification.mapper.NotificationMapper;
 import com.sprint.ootd5team.domain.notification.repository.NotificationRepository;
+import com.sprint.ootd5team.domain.profile.entity.Profile;
+import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.entity.User;
+import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.List;
@@ -28,6 +33,8 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
     private final EntityManager entityManager;
+    private final ProfileRepository profileRepository;
+    private final UserRepository userRepository;
 
     /**
      * 현재 로그인한 사용자의 알림을 커서 기반 페이지네이션 방식으로 조회
@@ -126,5 +133,24 @@ public class NotificationServiceImpl implements NotificationService {
 
         notificationRepository.delete(notification);
         log.info("[NotificationService] 알림 삭제 성공");
+    }
+
+    /* 임시: 날씨 관련 Notification 생성 */
+    @Override
+    public void createWeatherNotification(UUID profileId, String content) {
+        Profile profile = profileRepository.findById(profileId).orElseThrow(
+            ProfileNotFoundException::new);
+        User user = userRepository.findById(profile.getUserId()).orElseThrow(
+            UserNotFoundException::new);
+        log.info("[NotificationService] 알림 생성. profileId:{}, userId:{}", profileId, user.getId());
+
+        Notification notification = Notification.builder()
+            .title("날씨변경타이틀")
+            .content(content)
+            .level(NotificationLevel.INFO)
+            .receiver(user)
+            .build();
+
+        notificationRepository.save(notification);
     }
 }

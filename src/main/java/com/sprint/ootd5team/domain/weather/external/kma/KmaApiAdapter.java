@@ -42,8 +42,8 @@ public class KmaApiAdapter {
      * @brief 주어진 날짜/시간과 좌표로 기상청 API에서 날씨 예보 데이터를 조회한다
      */
     public KmaResponseDto getKmaWeather(String baseDate, String baseTime, BigDecimal latitude,
-        BigDecimal longitude) {
-        String responseJson = requestJsonFromKma(baseDate, baseTime, latitude, longitude);
+        BigDecimal longitude, int limit) {
+        String responseJson = requestJsonFromKma(baseDate, baseTime, latitude, longitude, limit);
         KmaResponseDto kmaResponseDto = parseToKmaResponseDto(responseJson);
         validateKmaData(kmaResponseDto);
         return kmaResponseDto;
@@ -82,7 +82,7 @@ public class KmaApiAdapter {
      * @brief 기상청 API를 호출해 원시 JSON 문자열을 가져온다
      */
     private String requestJsonFromKma(String baseDate, String baseTime, BigDecimal latitude,
-        BigDecimal longitude) {
+        BigDecimal longitude, int limit) {
         GridXY kmaXY = convertGridXY(latitude, longitude);
 
         try {
@@ -94,7 +94,7 @@ public class KmaApiAdapter {
             String response = kmaWebClient.get()
                 .uri(uriBuilder -> uriBuilder
                     .queryParam("pageNo", 1)
-                    .queryParam("numOfRows", 1000)
+                    .queryParam("numOfRows", limit)
                     .queryParam("base_date", baseDate)
                     .queryParam("base_time", baseTime)
                     .queryParam("nx", kmaXY.x())

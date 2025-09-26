@@ -7,6 +7,7 @@ import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.weather.dto.data.WeatherDto;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
 import com.sprint.ootd5team.domain.weather.mapper.WeatherMapper;
+import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +26,7 @@ public class WeatherServiceImpl implements WeatherService {
     private final ProfileRepository profileRepository;
     private final WeatherFactory weatherFactory;
     private final WeatherMapper weatherMapper;
+    private final WeatherRepository weatherRepository;
 
     @Override
     @Transactional
@@ -49,5 +51,12 @@ public class WeatherServiceImpl implements WeatherService {
         return weathers.stream()
             .map(weather -> weatherMapper.toDto(weather, new ClientCoords(latitude, longitude)))
             .toList();
+    }
+
+    //weather에서 location에 해당하는 최신 데이터 한개 가져옴
+    @Override
+    public Weather getLastestPerLocationId(UUID locationId) {
+        return weatherRepository.findTopByLocationIdOrderByForecastedAtDescForecastAtDescCreatedAtDesc(
+            locationId);
     }
 }
