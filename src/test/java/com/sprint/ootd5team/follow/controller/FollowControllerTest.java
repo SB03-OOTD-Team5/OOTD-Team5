@@ -11,7 +11,8 @@ import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.follow.controller.FollowController;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowDto;
-import com.sprint.ootd5team.domain.follow.dto.request.FollowListRequest;
+import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
+import com.sprint.ootd5team.domain.follow.dto.request.FollowingListRequest;
 import com.sprint.ootd5team.domain.follow.dto.response.FollowListResponse;
 import com.sprint.ootd5team.domain.follow.service.FollowService;
 import com.sprint.ootd5team.domain.user.dto.AuthorDto;
@@ -63,16 +64,19 @@ public class FollowControllerTest {
 
         List<FollowDto> data = List.of(
             new FollowDto(UUID.randomUUID(), user2, user1),
-            new FollowDto(UUID.randomUUID(), user3, user1)
+            new FollowDto(UUID.randomUUID(), user3, user1),
+            new FollowDto(UUID.randomUUID(), user2, user3)
         );
-        listResponse = new FollowListResponse(data, null, null, false, 2, "createdAt", SortDirection.DESCENDING);
+        listResponse = new FollowListResponse(
+            data, null, null, false, 2, "createdAt", SortDirection.DESCENDING
+        );
     }
 
     @Test
     @DisplayName("팔로잉 목록 조회 성공")
     void getFollowings_success() throws Exception {
         // given
-        given(followService.getFollowingList(any(FollowListRequest.class)))
+        given(followService.getFollowingList(any(FollowingListRequest.class)))
             .willReturn(listResponse);
 
         // when & then
@@ -86,10 +90,36 @@ public class FollowControllerTest {
     }
 
     @Test
-    @DisplayName("잘못된 요청 파라미터로 검증 실패 시 400 반환")
+    @DisplayName("팔로잉 목록 조회 중 잘못된 요청 파라미터로 검증 실패 시 400 반환")
     void getFollowings_validationFail() throws Exception {
         mockMvc.perform(get("/api/follows/followings")
                 .param("followerId", "")
+                .param("limit", "-1"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("팔로워 목록 조회 성공")
+    void getFollowers_success() throws Exception {
+        // given
+        given(followService.getFollowerList(any(FollowerListRequest.class)))
+            .willReturn(listResponse);
+
+        // when & then
+        mockMvc.perform(get("/api/follows/followers")
+                .param("followeeId", followerId.toString())
+                .param("limit", "10"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data").isArray())
+            .andExpect(jsonPath("$.data[0].follower.name").value("user1"))
+            .andExpect(jsonPath("$.data[2].follower.name").value("user3"));
+    }
+
+    @Test
+    @DisplayName("팔로워 목록 조회 중 잘못된 요청 파라미터로 검증 실패 시 400 반환")
+    void getFollowers_validationFail() throws Exception {
+        mockMvc.perform(get("/api/follows/followers")
+                .param("followeeId", "")
                 .param("limit", "-1"))
             .andExpect(status().isBadRequest());
     }
