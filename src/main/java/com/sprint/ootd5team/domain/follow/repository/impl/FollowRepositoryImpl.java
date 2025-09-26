@@ -4,6 +4,7 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowProjectionDto;
+import com.sprint.ootd5team.domain.follow.dto.data.FollowSummaryDto;
 import com.sprint.ootd5team.domain.follow.dto.enums.FollowDirection;
 import com.sprint.ootd5team.domain.follow.entity.QFollow;
 import com.sprint.ootd5team.domain.follow.repository.FollowRepositoryCustom;
@@ -124,6 +125,46 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
             .fetchOne();
 
         return count != null ? count : 0L;
+    }
+
+    @Override
+    public FollowSummaryDto getSummary(UUID userId, UUID currentUserId) {
+        QFollow follow = QFollow.follow;
+
+        Long followerCount = queryFactory
+            .select(follow.count())
+            .from(follow)
+            .where(follow.followeeId.eq(userId))
+            .fetchOne();
+
+        Long followingCount = queryFactory
+            .select(follow.count())
+            .from(follow)
+            .where(follow.followerId.eq(userId))
+            .fetchOne();
+
+        boolean isFollowing = queryFactory
+            .selectFrom(follow)
+            .where(follow.followeeId.eq(userId)
+                .and(follow.followerId.eq(currentUserId)))
+            .fetchFirst() != null;
+
+        UUID followId = queryFactory
+            .select(follow.id)
+            .from(follow)
+            .where(follow.followeeId.eq(userId)
+                .and(follow.followerId.eq(currentUserId)))
+            .fetchOne();
+
+        boolean isFollowedBack = queryFactory
+            .selectFrom(follow)
+            .where(follow.followeeId.eq(currentUserId)
+                .and(follow.followerId.eq(userId)))
+            .fetchFirst() != null;
+
+        return new FollowSummaryDto(
+            userId, followerCount, followingCount, isFollowing, followId, isFollowedBack
+        );
     }
 
     /**

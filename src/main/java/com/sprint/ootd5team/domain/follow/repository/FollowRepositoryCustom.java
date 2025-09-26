@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.domain.follow.repository;
 
 import com.sprint.ootd5team.domain.follow.dto.data.FollowProjectionDto;
+import com.sprint.ootd5team.domain.follow.dto.data.FollowSummaryDto;
 import com.sprint.ootd5team.domain.follow.dto.enums.FollowDirection;
 import java.time.Instant;
 import java.util.List;
@@ -15,4 +16,6 @@ public interface FollowRepositoryCustom {
     long countByUserIdAndNameLike(
         UUID followerId, String nameLike, FollowDirection direction
     );
+
+    FollowSummaryDto getSummary(UUID userId, UUID currentUserId);
 }

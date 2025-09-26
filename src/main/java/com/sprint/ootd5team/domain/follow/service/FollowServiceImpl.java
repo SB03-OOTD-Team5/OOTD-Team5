@@ -4,6 +4,7 @@ import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowDto;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowProjectionDto;
+import com.sprint.ootd5team.domain.follow.dto.data.FollowSummaryDto;
 import com.sprint.ootd5team.domain.follow.dto.enums.FollowDirection;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowListBaseRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
@@ -49,6 +50,13 @@ public class FollowServiceImpl implements FollowService {
             FollowerListRequest::followeeId,
             FollowDirection.FOLLOWER
         );
+    }
+
+    @Override
+    public FollowSummaryDto getSummary(UUID userId, UUID currentUserId) {
+        log.info("[FollowService] 팔로우 요약 정보 조회 요청 시작");
+
+        return followRepository.getSummary(userId, currentUserId);
     }
 
     private <T extends FollowListBaseRequest> FollowListResponse getFollowListCommon(

@@ -1,11 +1,14 @@
 package com.sprint.ootd5team.domain.follow.controller;
 
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.follow.controller.api.FollowApi;
+import com.sprint.ootd5team.domain.follow.dto.data.FollowSummaryDto;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowingListRequest;
 import com.sprint.ootd5team.domain.follow.dto.response.FollowListResponse;
 import com.sprint.ootd5team.domain.follow.service.FollowService;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class FollowController implements FollowApi {
 
     private final FollowService followService;
+    private final AuthService authService;
 
     @Override
     @GetMapping("/followings")
@@ -38,5 +42,17 @@ public class FollowController implements FollowApi {
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(followListResponse);
+    }
+
+    @Override
+    @GetMapping("/summary")
+    public ResponseEntity<FollowSummaryDto> getSummary(UUID userId) {
+        UUID currentUserId = authService.getCurrentUserId();
+
+        FollowSummaryDto followSummaryDto = followService.getSummary(userId, currentUserId);
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(followSummaryDto);
     }
 }
