@@ -53,7 +53,7 @@ public class UserService {
                 Role.USER));
 
         // 프로필 생성해서 저장
-        Profile profile = new Profile(user.getId(),user.getName(),null,null,null,null,null,null,null,null,null);
+        Profile profile = new Profile(user,user.getName(),null,null,null,null,null);
         profileRepository.save(profile);
         log.debug("[user]유저 생성 완료");
 

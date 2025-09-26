@@ -13,7 +13,9 @@ import org.mapstruct.Mapping;
 public abstract class ProfileMapper {
 
     @Mapping(target = "location", source = ".", qualifiedByName = "profileToLocationDto")
+    @Mapping(target = "userId",source = "user.id")
     public abstract ProfileDto toDto(Profile profile);
 
+    @Mapping(target = "userId",source = "user.id")
     public abstract AuthorDto toAuthorDto(Profile profile);
 }

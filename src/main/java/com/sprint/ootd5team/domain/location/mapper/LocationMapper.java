@@ -39,22 +39,22 @@ public interface LocationMapper {
             return null;
         }
 
-        if(profile.getLocationNames()==null){
+        if(profile.getLocation()==null){
             return null;
         }
 
-        String names = profile.getLocationNames();
+        String names = profile.getLocation().getLocationNames();
         String[] locationNames =
             (names == null || names.isBlank()) ? new String[0] : names.split(" ");
 
         return new WeatherAPILocationDto(
-            profile.getLatitude(),
-            profile.getLongitude(),
-            profile.getXCoord(),
-            profile.getYCoord(),
+            profile.getLocation().getLatitude(),
+            profile.getLocation().getLongitude(),
+            profile.getLocation().getXCoord(),
+            profile.getLocation().getYCoord(),
             locationNames,
-            profile.getLatitude(),
-            profile.getLongitude()
+            profile.getLocation().getLatitude(),
+            profile.getLocation().getLongitude()
         );
     }
 

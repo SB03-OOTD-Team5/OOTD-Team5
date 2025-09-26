@@ -33,14 +33,14 @@ public class FeedCommentRepositoryImpl implements FeedCommentRepositoryCustom {
                 comment.createdAt,
                 comment.feedId,
                 Projections.constructor(AuthorDto.class,
-                    profile.userId,
+                    profile.user.id,
                     profile.name,
                     profile.profileImageUrl
                 ),
                 comment.content
             ))
             .from(comment)
-            .leftJoin(profile).on(comment.authorId.eq(profile.userId))
+            .leftJoin(profile).on(comment.authorId.eq(profile.user.id))
             .where(
                 comment.feedId.eq(feedId),
                 cursorPredicate(comment, createdAtCursor, idCursor)

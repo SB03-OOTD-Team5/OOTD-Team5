@@ -52,8 +52,7 @@ public class LocationServiceImpl implements LocationService, LocationQueryServic
 
         Location location = findOrCreateLocation(latitude, longitude);
         // 프로필 위치 업데이트
-        profile.relocate(location.getLatitude(), location.getLongitude(),
-            location.getLocationNames());
+        profile.relocate(location);
 
         return locationMapper.toDto(location, new ClientCoords(latitude, longitude));
     }

@@ -37,7 +37,7 @@ public class AdminInitializer implements ApplicationRunner {
         try {
             userRepository.findByEmail(email).ifPresent(user -> {throw new UserAlreadyExistException();});
             User user = userRepository.save(new User(username, email, passwordEncoder.encode(password), Role.ADMIN));
-            profileRepository.save(new Profile(user.getId(),user.getName(),null,null,null,null,null,null,null,null,null));
+            profileRepository.save(new Profile(user,user.getName(),null,null,null,null,null));
             log.info("관리자 계정이 성공적으로 생성되었습니다.");
         } catch (UserAlreadyExistException e) {
             log.warn("관리자 계정이 이미 존재합니다");

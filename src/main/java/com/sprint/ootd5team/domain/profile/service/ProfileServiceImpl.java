@@ -4,6 +4,9 @@ import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
+import com.sprint.ootd5team.domain.location.entity.Location;
+import com.sprint.ootd5team.domain.location.exception.LocationNotFoundException;
+import com.sprint.ootd5team.domain.location.repository.LocationRepository;
 import com.sprint.ootd5team.domain.profile.dto.data.ProfileUpdateRequest;
 import com.sprint.ootd5team.domain.profile.dto.request.ProfileDto;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
@@ -27,6 +30,7 @@ public class ProfileServiceImpl implements ProfileService{
     private final ProfileRepository profileRepository;
     private final ProfileMapper profileMapper;
     private final FileStorage fileStorage;
+    private final LocationRepository locationRepository;
 
     @Value("${ootd.storage.s3.prefix.profiles}")
     private String profilesPrefix;
@@ -79,9 +83,15 @@ public class ProfileServiceImpl implements ProfileService{
             }
         });
 
+        Location location=null;
+        if(request.location()!=null) {
+            location = locationRepository.findByLatitudeAndLongitude(
+                    request.location().matchedLatitude(), request.location().matchedLongitude())
+                .orElseThrow(LocationNotFoundException::new);
 
+        }
         // 프로필 업데이트
-        profile.update(request.name(), request.gender(), request.birthDate(),request.location(),
+        profile.update(request.name(), request.gender(), request.birthDate(),location,
             request.temperatureSensitivity());
 
         return profileMapper.toDto(profileRepository.save(profile));
