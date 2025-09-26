@@ -15,4 +15,5 @@ public interface NotificationService {
         Sort.Direction direction
     );
 
+    void delete(UUID receiverId, UUID notificationId);
 }
