@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.sprint.ootd5team.base.exception.directmessage.DirectMessageAccessDeniedException;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageDto;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageDtoCursorResponse;
 import com.sprint.ootd5team.domain.directmessage.entity.DirectMessage;
@@ -164,7 +165,7 @@ class DirectMessageRestServiceTest {
 
         // when / then
         assertThatThrownBy(() -> directMessageRestService.listByPartner(partnerUserId, null, null, 20))
-            .isInstanceOf(AccessDeniedException.class);
+            .isInstanceOf(DirectMessageAccessDeniedException.class);
 
         verify(messageRepository, never()).firstPageDesc(any(), any());
     }

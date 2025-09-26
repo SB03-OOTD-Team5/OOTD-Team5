@@ -14,6 +14,8 @@ import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
+import com.sprint.ootd5team.base.exception.directmessage.DirectMessageAccessDeniedException;
+import com.sprint.ootd5team.base.exception.directmessage.DirectMessageRoomCreationFailedException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,7 +56,7 @@ public class DirectMessageWsService {
 
 		// 3) 올바른 이용자 검증
 		boolean member = Objects.equals(req.senderId(), room.getUser1Id()) || Objects.equals(req.senderId(), room.getUser2Id());
-		if (!member) throw new AccessDeniedException("채팅방 멤버가 아닙니다.");
+		if (!member) throw DirectMessageAccessDeniedException.notParticipant(room.getId(), req.senderId());
 
 
 		// 4) 메시지 저장
@@ -137,7 +138,7 @@ public class DirectMessageWsService {
 		} catch (DataIntegrityViolationException e) {
 			// 동시 생성 충돌 → 기존 것을 재조회
 			return roomRepository.findByDmKey(dmKey)
-				.orElseThrow(() -> new IllegalStateException("dmKey 충돌 후 재조회 실패: " + dmKey, e));
+				.orElseThrow(() -> DirectMessageRoomCreationFailedException.withDmKey(dmKey, a, b, e));
 		}
 	}
 	private UUID min(UUID a, UUID b) { return (a.toString().compareTo(b.toString()) <= 0) ? a : b; }
