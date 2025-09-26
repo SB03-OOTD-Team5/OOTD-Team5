@@ -26,6 +26,7 @@ import com.sprint.ootd5team.domain.profile.service.ProfileServiceImpl;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
+import com.sprint.ootd5team.domain.user.dto.request.UserLockUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
 import com.sprint.ootd5team.domain.user.entity.Role;
@@ -466,6 +467,59 @@ class UserServiceTest {
         // then
         verify(profileMapper,never()).toDto(any(Profile.class));
         verify(profileRepository,never()).save(any(Profile.class));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("계정 잠금 상태 변경 성공")
+    void updateUserLock_Success() {
+        // given
+        UUID userId = UUID.randomUUID();
+        User user = new User("테스트", "test@example.com", "encodedPassword", Role.USER);
+        ReflectionTestUtils.setField(user, "id", userId);
+
+        UserLockUpdateRequest request = new UserLockUpdateRequest(true);
+        UserDto userDto = new UserDto(userId, user.getCreatedAt(), user.getEmail(), user.getName(), Role.USER, null, true);
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(userRepository.save(any(User.class))).willReturn(user);
+        given(userMapper.toDto(any(User.class))).willReturn(userDto);
+
+        // when
+        UserDto result = userService.updateUserLock(userId, request);
+
+        // then
+        assertThat(result.locked()).isTrue();
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("계정 잠금 상태 변경 실패 - 유저 없음")
+    void updateUserLock_Fail_UserNotFound() {
+        // given
+        UUID userId = UUID.randomUUID();
+        UserLockUpdateRequest request = new UserLockUpdateRequest(true);
+
+        given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> userService.updateUserLock(userId, request))
+            .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    @WithMockUser(roles = "USER") // 일반 사용자 권한
+    @DisplayName("계정 잠금 상태 변경 실패 - ADMIN이 아님")
+    void updateUserLock_Fail_Forbidden() {
+
+        // when & then
+        assertThatThrownBy(
+            () -> userService.updateUserLock(testUser.getId(), new UserLockUpdateRequest(true)))
+            .isInstanceOf(AccessDeniedException.class);
+
+        verify(userRepository, never()).findById(any(UUID.class));
+        verify(userRepository, never()).save(any(User.class));
+        verify(userMapper, never()).toDto(any(User.class));
     }
 
 

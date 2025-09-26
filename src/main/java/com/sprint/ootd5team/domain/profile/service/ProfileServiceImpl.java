@@ -40,7 +40,7 @@ public class ProfileServiceImpl implements ProfileService{
     @Override
     public ProfileDto getProfile(UUID userId) {
         Profile profile = profileRepository.findByUserId(userId)
-            .orElseThrow(UserNotFoundException::new);
+            .orElseThrow(ProfileNotFoundException::new);
 
         return profileMapper.toDto(profile);
     }

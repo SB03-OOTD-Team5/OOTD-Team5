@@ -6,6 +6,7 @@ import com.sprint.ootd5team.domain.profile.dto.request.ProfileDto;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
+import com.sprint.ootd5team.domain.user.dto.request.UserLockUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "User", description = "사용자 계정 관련 API")
 public interface UserApi {
+
     @Operation(
         summary = "계정 목록 조회",
         description = "cursor, idAfter, limit, sortBy, sortDirection, emailLike, roleEqual, locked 등의 파라미터를 이용해 계정 목록을 조회합니다."
@@ -54,11 +56,11 @@ public interface UserApi {
 
         @Parameter(description = "이메일 LIKE 검색") String emailLike,
 
-        @Parameter(description = "역할 필터링", schema = @Schema(allowableValues = {"USER", "ADMIN"})) String roleEqual,
+        @Parameter(description = "역할 필터링", schema = @Schema(allowableValues = {"USER",
+            "ADMIN"})) String roleEqual,
 
         @Parameter(description = "계정 잠금 여부") Boolean locked
     );
-
 
 
     @Operation(
@@ -85,13 +87,13 @@ public interface UserApi {
     })
     ResponseEntity<UserDto> createUser(
         @io.swagger.v3.oas.annotations.parameters.RequestBody(
-        description = "회원가입 요청 바디",
-        required = true,
-        content = @Content(
-            schema = @Schema(implementation = UserCreateRequest.class)
+            description = "회원가입 요청 바디",
+            required = true,
+            content = @Content(
+                schema = @Schema(implementation = UserCreateRequest.class)
+            )
         )
-    )
-    UserCreateRequest request);
+        UserCreateRequest request);
 
 
     @Operation(
@@ -124,7 +126,6 @@ public interface UserApi {
         )
         UUID userId
     );
-
 
 
     @Operation(
@@ -171,7 +172,6 @@ public interface UserApi {
         ChangePasswordRequest request);
 
 
-
     @Operation(
         summary = "사용자 권한 수정",
         description = "특정 사용자의 권한을 수정합니다."
@@ -194,7 +194,6 @@ public interface UserApi {
             )
         )
     })
-
     ResponseEntity<UserDto> updateUserRole(
         @Parameter(
             description = "권한을 수정할 사용자 ID (UUID)",
@@ -217,7 +216,7 @@ public interface UserApi {
         summary = "프로필 업데이트",
         description = "프로필 업데이트 API"
     )
-    @ApiResponses(value ={
+    @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200",
             description = "프로필 업데이트 성공",
@@ -241,5 +240,46 @@ public interface UserApi {
         MultipartFile image
     );
 
-
+    @Operation(
+        summary = "계정 잠금 상태 변경",
+        description = "[어드민 기능] 특정 사용자의 계정 잠금 상태를 변경합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "계정 잠금 상태 변경 성공",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = UserDto.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "계정 잠금 상태 변경 실패 (사용자 없음)",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "권한 부족 (ADMIN이 아닌 경우)",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    ResponseEntity<UserDto> updateUserLock(
+        @Parameter(description = "잠금 상태를 변경할 사용자 ID", required = true, example = "8aa83147-a43e-413f-b56e-f3f619a0f5a4")
+        UUID userId,
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "계정 잠금 상태 요청",
+            required = true,
+            content = @Content(
+                schema = @Schema(implementation = UserLockUpdateRequest.class)
+            )
+        )
+        UserLockUpdateRequest request
+    );
 }
