@@ -3,6 +3,7 @@ package com.sprint.ootd5team.base.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -28,14 +29,19 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         String password = authentication.getCredentials().toString();
 
         try{
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+            OotdUserDetails userDetails = (OotdUserDetails)userDetailsService.loadUserByUsername(email);
 
-            // 1. 일반 비밀번호 체크
+            // 1. 계정 잠금 체크
+            if(userDetails.getUserDto().locked()==true){
+                throw new LockedException("User account is locked");
+            }
+
+            // 2. 일반 비밀번호 체크
             if(passwordEncoder.matches(password, userDetails.getPassword())){
                 return new UsernamePasswordAuthenticationToken(userDetails, password, userDetails.getAuthorities());
             }
 
-            // 2. 임시 비밀번호 체크
+            // 3. 임시 비밀번호 체크
             if(userDetailsService.authenticateTemporaryPassword(email, password)){
                 return new UsernamePasswordAuthenticationToken(userDetails, password, userDetails.getAuthorities());
             }

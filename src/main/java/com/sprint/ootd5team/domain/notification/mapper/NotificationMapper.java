@@ -8,7 +8,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface NotificationMapper {
 
-    @Mapping(source = "receiver.id", target = "receiverId")
+    @Mapping(target = "receiverId", expression = "java(entity.getReceiver() != null ? entity.getReceiver().getId() : null)")
     NotificationDto toDto(Notification entity);
 
 }

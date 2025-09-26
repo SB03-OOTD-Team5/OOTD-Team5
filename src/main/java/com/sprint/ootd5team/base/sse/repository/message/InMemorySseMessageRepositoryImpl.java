@@ -8,7 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Repository;
  */
 @Slf4j
 @Repository
-@ConditionalOnMissingBean(SseMessageRepository.class)
+@ConditionalOnProperty(name = "ootd.sse.repository", havingValue = "memory")
 public class InMemorySseMessageRepositoryImpl implements SseMessageRepository {
 
     // 메모리에 보관할 SSE 메시지의 최대 개수. 초과 시 가장 오래된 메시지를 제거
