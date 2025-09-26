@@ -25,4 +25,5 @@ public interface NotificationService {
         Object... args
     );
 
+    void delete(UUID receiverId, UUID notificationId);
 }

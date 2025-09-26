@@ -1,7 +1,8 @@
 package com.sprint.ootd5team.domain.follow.controller.api;
 
 import com.sprint.ootd5team.base.exception.ErrorResponse;
-import com.sprint.ootd5team.domain.follow.dto.request.FollowListRequest;
+import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
+import com.sprint.ootd5team.domain.follow.dto.request.FollowingListRequest;
 import com.sprint.ootd5team.domain.follow.dto.response.FollowListResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -25,5 +26,19 @@ public interface FollowApi {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))
         )
     })
-    ResponseEntity<FollowListResponse> getFollowings(@ParameterObject @ModelAttribute FollowListRequest followListRequest);
+    ResponseEntity<FollowListResponse> getFollowings(@ParameterObject @ModelAttribute FollowingListRequest followingListRequest);
+
+
+    @Operation(summary = "팔로워 목록 조회")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", description = "팔로워 목록 조회 성공",
+            content = @Content(schema = @Schema(implementation = FollowListResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400", description = "팔로워 목록 조회 실패",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    ResponseEntity<FollowListResponse> getFollowers(@ParameterObject @ModelAttribute FollowerListRequest followerListRequest);
 }

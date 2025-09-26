@@ -2,7 +2,7 @@ package com.sprint.ootd5team.domain.weather.entity;
 
 
 import com.sprint.ootd5team.base.entity.BaseEntity;
-import com.sprint.ootd5team.domain.profile.entity.Profile;
+import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.enums.SkyStatus;
 import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
@@ -10,13 +10,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -41,21 +38,6 @@ public class Weather extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "sky_status")
     private SkyStatus skyStatus;
-
-    @Column(nullable = false)
-    private BigDecimal latitude;
-
-    @Column(nullable = false)
-    private BigDecimal longitude;
-
-    @Column(name = "x_coord")
-    private Integer xCoord;
-
-    @Column(name = "y_coord")
-    private Integer yCoord;
-
-    @Column(name = "location_names")
-    private String locationNames;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "precipitation_type")
@@ -93,7 +75,7 @@ public class Weather extends BaseEntity {
     private WindspeedLevel windspeedLevel;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "profile_id", nullable = false)
-    private Profile profile;
+    @JoinColumn(name = "location_id", nullable = false)
+    private Location location;
 
 }

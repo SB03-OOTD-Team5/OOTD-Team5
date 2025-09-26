@@ -22,8 +22,6 @@ public interface WeatherMapper {
 
     // ========= Entity -> DTO =========
     @Mapping(target = "id", source = "id")
-    @Mapping(target = "profileId", source = "profile.id")
-    @Mapping(target = "location", source = ".", qualifiedByName = "toLocationDto")
     @Mapping(target = "precipitation", source = ".", qualifiedByName = "toPrecipitationDto")
     @Mapping(target = "humidity", source = ".", qualifiedByName = "toHumidityDto")
     @Mapping(target = "temperature", source = ".", qualifiedByName = "toTemperatureDto")

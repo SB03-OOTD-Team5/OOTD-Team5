@@ -3,12 +3,13 @@ package com.sprint.ootd5team.domain.notification.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sprint.ootd5team.base.security.service.AuthService;
-import com.sprint.ootd5team.domain.notification.controller.NotificationController;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDto;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDtoCursorResponse;
 import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
@@ -77,5 +78,21 @@ class NotificationControllerTest {
             .andExpect(jsonPath("$.data[0].content").value("알림 내용"))
             .andExpect(jsonPath("$.data[0].level").value("INFO"))
             .andExpect(jsonPath("$.hasNext").value(true));
+    }
+
+    @Test
+    void 알림_삭제_요청_성공시_204반환() throws Exception {
+        // given
+        UUID currentUserId = UUID.randomUUID();
+        UUID notificationId = UUID.randomUUID();
+        given(authService.getCurrentUserId()).willReturn(currentUserId);
+
+        // when & then
+        mockMvc.perform(delete("/api/notifications/{id}", notificationId)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNoContent());
+
+        // then
+        then(notificationService).should().delete(currentUserId, notificationId);
     }
 }
