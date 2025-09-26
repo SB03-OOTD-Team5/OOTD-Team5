@@ -9,7 +9,6 @@ import lombok.Builder;
 @Builder
 public record WeatherDto(
     UUID id,
-    UUID profileId,
     Instant forecastedAt,       // 예보 산출 시각
     Instant forecastAt,         // 예보 대상 시각
     WeatherAPILocationDto location,
@@ -18,4 +17,6 @@ public record WeatherDto(
     HumidityDto humidity,
     TemperatureDto temperature,
     WindSpeedDto windSpeed
-) { }
+) {
+
+}

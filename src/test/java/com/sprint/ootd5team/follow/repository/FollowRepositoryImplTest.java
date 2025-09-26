@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.sprint.ootd5team.base.config.JpaAuditingConfig;
 import com.sprint.ootd5team.base.config.QuerydslConfig;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowProjectionDto;
+import com.sprint.ootd5team.domain.follow.dto.enums.FollowDirection;
 import com.sprint.ootd5team.domain.follow.entity.Follow;
 import com.sprint.ootd5team.domain.follow.repository.impl.FollowRepositoryImpl;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
@@ -20,7 +21,6 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest
 @Import({QuerydslConfig.class, JpaAuditingConfig.class})
@@ -92,14 +92,15 @@ public class FollowRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("기본 조회 - 최신순 정렬, limit 동작 확인")
-    void findByFollowIdWithCursor_basic() {
-        List<FollowProjectionDto> results = followRepositoryImpl.findByFollowIdWithCursor(
+    @DisplayName("팔로잉 목록 조회 - 기본 조회 (최신순 정렬, limit 동작)")
+    void findByCursor_following_basic() {
+        List<FollowProjectionDto> results = followRepositoryImpl.findByCursor(
             followerId,
             null,
             null,
-            1,
-            null
+            10,
+            null,
+            FollowDirection.FOLLOWING
         );
 
         assertThat(results).hasSize(2);
@@ -108,24 +109,25 @@ public class FollowRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("cursor 조건 적용 - createdAt, id 기반 페이징")
-    void findByFollowIdWithCursor_withCursor() {
-        List<FollowProjectionDto> firstPage = followRepositoryImpl.findByFollowIdWithCursor(
+    @DisplayName("팔로잉 목록 조회 - cursor 조건 적용")
+    void findByCursor_following_withCursor() {
+        List<FollowProjectionDto> firstPage = followRepositoryImpl.findByCursor(
             followerId,
             null,
             null,
             1,
-            null
+            null,
+            FollowDirection.FOLLOWING
         );
         FollowProjectionDto last = firstPage.get(0);
 
-        // cursor 로 전달
-        List<FollowProjectionDto> secondPage = followRepositoryImpl.findByFollowIdWithCursor(
+        List<FollowProjectionDto> secondPage = followRepositoryImpl.findByCursor(
             followerId,
             last.createdAt(),
             last.id(),
             1,
-            null
+            null,
+            FollowDirection.FOLLOWING
         );
 
         assertThat(secondPage).extracting(dto -> dto.followee().name())
@@ -133,14 +135,15 @@ public class FollowRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("이름 필터 적용 - nameLike")
-    void findByFollowIdWithCursor_nameLike() {
-        List<FollowProjectionDto> results = followRepositoryImpl.findByFollowIdWithCursor(
+    @DisplayName("팔로잉 목록 조회 - nameLike 조건 적용")
+    void findByCursor_following_nameLike() {
+        List<FollowProjectionDto> results = followRepositoryImpl.findByCursor(
             followerId,
             null,
             null,
             10,
-            "user1"
+            "user1",
+            FollowDirection.FOLLOWING
         );
 
         assertThat(results).hasSize(1);
@@ -149,26 +152,132 @@ public class FollowRepositoryImplTest {
 
     @Test
     @DisplayName("팔로잉 수 조회 - nameLike 조건 없이 전체 카운트")
-    void countByFollowerIdAndNameLike_noFilter() {
-        long count = followRepositoryImpl.countByFollowerIdAndNameLike(followerId, null);
+    void countByUserIdAndNameLike_noFilter() {
+        long count = followRepositoryImpl.countByUserIdAndNameLike(
+            followerId,
+            null,
+            FollowDirection.FOLLOWING
+        );
 
         assertThat(count).isEqualTo(2);
     }
 
     @Test
     @DisplayName("팔로잉 수 조회 - nameLike 조건 적용 (대소문자 무시)")
-    void countByFollowerIdAndNameLike_withFilter() {
-        long count = followRepositoryImpl.countByFollowerIdAndNameLike(followerId, "USER1");
+    void countByUserIdAndNameLike_withFilter() {
+        long count = followRepositoryImpl.countByUserIdAndNameLike(
+            followerId,
+            "USER1",
+            FollowDirection.FOLLOWING
+        );
 
         assertThat(count).isEqualTo(1);
     }
 
     @Test
     @DisplayName("팔로잉 수 조회 - nameLike 조건에 해당하는 사용자가 없을 때 0 반환")
-    void countByFollowerIdAndNameLike_noMatch() {
-        long count = followRepositoryImpl.countByFollowerIdAndNameLike(followerId, "zzz");
+    void countByUserIdAndNameLike_noMatch() {
+        long count = followRepositoryImpl.countByUserIdAndNameLike(
+            followerId,
+            "zzz",
+            FollowDirection.FOLLOWING
+        );
 
         assertThat(count).isZero();
     }
 
+    @Test
+    @DisplayName("팔로워 목록 조회 - 기본 조회 (최신순 정렬, limit 동작)")
+    void findByCursor_follower_basic() {
+        List<FollowProjectionDto> results = followRepositoryImpl.findByCursor(
+            followee1Id,
+            null,
+            null,
+            10,
+            null,
+            FollowDirection.FOLLOWER
+        );
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).follower().name()).isEqualTo("follower");
+    }
+
+    @Test
+    @DisplayName("팔로워 목록 조회 - cursor 조건 적용")
+    void findByCursor_follower_withCursor() {
+        List<FollowProjectionDto> firstPage = followRepositoryImpl.findByCursor(
+            followee1Id,
+            null,
+            null,
+            1,
+            null,
+            FollowDirection.FOLLOWER
+        );
+        assertThat(firstPage).isNotEmpty();
+
+        FollowProjectionDto last = firstPage.get(0);
+
+        List<FollowProjectionDto> secondPage = followRepositoryImpl.findByCursor(
+            followee1Id,
+            last.createdAt(),
+            last.id(),
+            1,
+            null,
+            FollowDirection.FOLLOWER
+        );
+
+        assertThat(secondPage).isEmpty();
+    }
+
+    @Test
+    @DisplayName("팔로워 목록 조회 - nameLike 조건 적용")
+    void findByCursor_follower_nameLike() {
+        List<FollowProjectionDto> results = followRepositoryImpl.findByCursor(
+            followee2Id,
+            null,
+            null,
+            10,
+            "follower",
+            FollowDirection.FOLLOWER
+        );
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).follower().name()).isEqualTo("follower");
+    }
+
+    @Test
+    @DisplayName("팔로워 수 조회 - nameLike 없이 전체 카운트")
+    void countByUserIdAndNameLike_follower_noFilter() {
+        long count = followRepositoryImpl.countByUserIdAndNameLike(
+            followee1Id,
+            null,
+            FollowDirection.FOLLOWER
+        );
+
+        assertThat(count).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("팔로워 수 조회 - nameLike 조건 적용")
+    void countByUserIdAndNameLike_follower_withFilter() {
+        long count = followRepositoryImpl.countByUserIdAndNameLike(
+            followee1Id,
+            "follower",
+            FollowDirection.FOLLOWER
+        );
+
+        assertThat(count).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("팔로워 수 조회 - nameLike 조건 불일치시 0 반환")
+    void countByUserIdAndNameLike_follower_noMatch() {
+        long count = followRepositoryImpl.countByUserIdAndNameLike(
+            followee1Id,
+            "zzz",
+            FollowDirection.FOLLOWER
+        );
+
+        assertThat(count).isZero();
+    }
 }
