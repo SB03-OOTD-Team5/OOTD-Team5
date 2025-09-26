@@ -10,6 +10,7 @@ import com.sprint.ootd5team.domain.comment.entity.FeedComment;
 import com.sprint.ootd5team.domain.comment.mapper.FeedCommentMapper;
 import com.sprint.ootd5team.domain.comment.repository.FeedCommentRepository;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
+import com.sprint.ootd5team.domain.notification.event.type.single.CommentCreatedEvent;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import java.time.Instant;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,7 @@ public class FeedCommentServiceImpl implements FeedCommentService {
     private final FeedRepository feedRepository;
     private final ProfileRepository profileRepository;
     private final FeedCommentMapper feedCommentMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 피드에 달린 댓글 목록을 커서 기반 페이지네이션으로 조회한다.
@@ -100,8 +103,17 @@ public class FeedCommentServiceImpl implements FeedCommentService {
         log.debug("[FeedCommentService] 저장된 FeedComment: {}", saved);
 
         feedRepository.incrementCommentCount(feedId);
+        CommentDto dto = feedCommentMapper.toDto(saved, profile);
 
-        return feedCommentMapper.toDto(saved, profile);
+        // 알림 받는 피드 작성자 id
+        // >> validateFeed와 통합도 가능할 듯
+//        레포: Optionl<UUID> findAuthorIdByFeedId(@Param("feedId") UUID feedId);
+//        서비스: UUID receiverId = feedRepository.findAuthorIdByFeedId(feedId)
+//            .orElseThrow(() -> FeedNotFoundException.withId(feedId));
+        UUID receiverId = feedRepository.findAuthorIdByFeedId(feedId);
+        eventPublisher.publishEvent(new CommentCreatedEvent(dto, receiverId));
+
+        return dto;
     }
 
     private void validateFeed(UUID feedId) {

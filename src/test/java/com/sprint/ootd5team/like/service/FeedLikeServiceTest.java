@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.sprint.ootd5team.base.exception.feed.AlreadyLikedException;
 import com.sprint.ootd5team.base.exception.feed.LikeCountUnderflowException;
@@ -14,6 +15,8 @@ import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.like.entity.FeedLike;
 import com.sprint.ootd5team.domain.like.repository.FeedLikeRepository;
 import com.sprint.ootd5team.domain.like.service.FeedLikeServiceImpl;
+import com.sprint.ootd5team.domain.notification.event.type.single.FeedLikedEvent;
+import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.ActiveProfiles;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +39,12 @@ public class FeedLikeServiceTest {
 
     @Mock
     private FeedRepository feedRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private FeedLikeServiceImpl feedLikeService;
@@ -51,7 +61,7 @@ public class FeedLikeServiceTest {
     }
 
     @Test
-    @DisplayName("like() - 성공적으로 좋아요 등록")
+    @DisplayName("like() - 성공적으로 좋아요 등록_(알림 이벤트 포함)")
     void like_success() {
         // given
         given(feedRepository.findById(feedId)).willReturn(Optional.of(feed));
@@ -63,6 +73,9 @@ public class FeedLikeServiceTest {
         // then
         then(feedLikeRepository).should().save(any(FeedLike.class));
         then(feedRepository).should().incrementLikeCount(feedId);
+
+        // 알림 이벤트 발행
+        verify(eventPublisher).publishEvent(any(FeedLikedEvent.class));
     }
 
     @Test

@@ -43,7 +43,7 @@ ootd:
     password: ${OOTD_ADMIN_PASSWORD:qwe123}
     email: ${OOTD_ADMIN_EMAIL:admin@test.com}
   email:
-      sender: test@example.com
+    sender: ${OOTD_EMAIL_SENDER:test@example.com}
 
   # Access Token 및 Refresh Token 비밀키, 만료시간 설정
   jwt:
@@ -67,3 +67,6 @@ ootd:
       prefix:
         clothes: "clothes/"
         profiles: "profiles/"
+
+  sse:
+    repository: ${OOTD_SSE_REPOSITORY:memory}

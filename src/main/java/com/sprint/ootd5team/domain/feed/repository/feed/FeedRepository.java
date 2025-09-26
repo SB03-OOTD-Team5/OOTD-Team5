@@ -20,4 +20,7 @@ public interface FeedRepository extends JpaRepository<Feed, UUID>, FeedRepositor
     @Modifying
     @Query("update Feed f set f.commentCount = f.commentCount + 1 where f.id = :feedId")
     void incrementCommentCount(@Param("feedId") UUID feedId);
+
+    @Query("select f.authorId from Feed f where f.id = :feedId")
+    UUID findAuthorIdByFeedId(@Param("feedId") UUID feedId);
 }
