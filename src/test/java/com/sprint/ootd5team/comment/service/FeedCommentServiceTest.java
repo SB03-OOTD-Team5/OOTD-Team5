@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.sprint.ootd5team.base.exception.feed.FeedNotFoundException;
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
@@ -19,6 +20,7 @@ import com.sprint.ootd5team.domain.comment.mapper.FeedCommentMapper;
 import com.sprint.ootd5team.domain.comment.repository.FeedCommentRepository;
 import com.sprint.ootd5team.domain.comment.service.FeedCommentServiceImpl;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
+import com.sprint.ootd5team.domain.notification.event.type.single.CommentCreatedEvent;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.dto.AuthorDto;
@@ -32,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.ActiveProfiles;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +53,9 @@ public class FeedCommentServiceTest {
 
     @Mock
     private FeedCommentMapper feedCommentMapper;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private FeedCommentServiceImpl feedCommentService;
@@ -174,6 +180,7 @@ public class FeedCommentServiceTest {
         // then
         assertThat(result).isEqualTo(commentDto);
         then(feedRepository).should().incrementCommentCount(feedId);
+        verify(eventPublisher).publishEvent(any(CommentCreatedEvent.class));
     }
 
     @Test

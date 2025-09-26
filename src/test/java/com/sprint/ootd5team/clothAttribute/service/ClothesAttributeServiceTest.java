@@ -20,6 +20,8 @@ import com.sprint.ootd5team.domain.clothattribute.mapper.ClothesAttributeMapper;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeValueRepository;
 import com.sprint.ootd5team.domain.clothattribute.service.BasicClothesAttributeService;
+import com.sprint.ootd5team.domain.notification.event.type.multi.ClothesAttributeCreatedEvent;
+import com.sprint.ootd5team.domain.notification.event.type.multi.ClothesAttributeUpdatedEvent;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.List;
@@ -38,6 +40,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,6 +60,9 @@ class ClothesAttributeServiceTest {
 	@Mock
 	private EntityManager entityManager;
 
+	@Mock
+	private ApplicationEventPublisher eventPublisher;
+
 	@InjectMocks
 	private BasicClothesAttributeService service;
 
@@ -71,7 +77,7 @@ class ClothesAttributeServiceTest {
 	class Create {
 
 		@Test
-		@DisplayName("1_1 생성: 새 속성과 정의 생성")
+		@DisplayName("1_1 생성: 새 속성과 정의 생성_(알림 이벤트 포함)")
 		void createAttribute() {
 			// given
 			ClothesAttributeDefCreateRequest request =
@@ -101,6 +107,9 @@ class ClothesAttributeServiceTest {
 			verify(clothesAttributeRepository).save(captor.capture());
 			assertThat(captor.getValue().getName()).isEqualTo("소재");
 			assertThat(captor.getValue().getDefs()).hasSize(2);
+
+			// 이벤트 발행
+			verify(eventPublisher).publishEvent(any(ClothesAttributeCreatedEvent.class));
 		}
 
 		@Nested
@@ -133,6 +142,7 @@ class ClothesAttributeServiceTest {
 			}
 		}
 	}
+
 
 	@Nested
 	@DisplayName("2. 옷 속성 정의 전체정렬,조회")
@@ -222,7 +232,7 @@ class ClothesAttributeServiceTest {
 	class Update {
 
 		@Test
-		@DisplayName("3_1 수정: 속성명과 정의 수정")
+		@DisplayName("3_1 수정: 속성명과 정의 수정_ 알림 이벤트 포함")
 		void updateAttribute() {
 			UUID attributeId = UUID.randomUUID();
 			ClothesAttribute attribute = new ClothesAttribute("소재");
@@ -248,6 +258,7 @@ class ClothesAttributeServiceTest {
 			assertThat(attribute.getDefs()).extracting(ClothesAttributeDef::getAttDef)
 				.containsExactlyInAnyOrder("울", "실크");
 			verify(entityManager).flush();
+			verify(eventPublisher).publishEvent(any(ClothesAttributeUpdatedEvent.class));
 		}
 
 		@Nested
