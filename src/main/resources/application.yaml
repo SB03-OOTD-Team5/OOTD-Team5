@@ -112,3 +112,6 @@ ootd:
   jsoup:
     timeout: 5000
     user-agent: "OOTD-Extractor/1.0"
+
+  sse:
+    repository: ${OOTD_SSE_REPOSITORY:redis}  #momory

@@ -42,6 +42,8 @@ ootd:
     username: ${OOTD_ADMIN_USERNAME:admin}
     password: ${OOTD_ADMIN_PASSWORD:qwe123}
     email: ${OOTD_ADMIN_EMAIL:admin@test.com}
+  email:
+    sender: ${OOTD_EMAIL_SENDER:test@example.com}
 
   # Access Token 및 Refresh Token 비밀키, 만료시간 설정
   jwt:
@@ -52,3 +54,6 @@ ootd:
     refresh-token:
       expiration-ms: 604800000 # 7일
       secret: ${JWT_REFRESH_TOKEN_SECRET:test-refresh-secret-32-bytes-minimum-abcdef1234567890}
+
+  sse:
+    repository: ${OOTD_SSE_REPOSITORY:memory}
