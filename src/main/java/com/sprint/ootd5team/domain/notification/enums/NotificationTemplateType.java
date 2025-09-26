@@ -8,15 +8,15 @@ public enum NotificationTemplateType {
     ROLE_UPDATED("내 권한이 변경되었어요.", "내 권한이 [%s]에서 [%s]로 변경 되었어요."),
 
     // 피드
-    FEED_LIKED("%s님이 내 피드를 좋아합니다.", "%s"),
-    FEED_FOLLOW_CREATED("%s님이 새로운 피드를 작성했어요.", "%s"),
-    FEED_COMMENTED("%s님이 댓글을 달았어요.", "%s"),
+    FEED_LIKED("%s님이 내 피드를 좋아합니다.", "%2$s"),
+    FEED_FOLLOW_CREATED("%s님이 새로운 피드를 작성했어요.", "%2$s"),
+    FEED_COMMENTED("%s님이 댓글을 달았어요.", "%2$s"),
 
     // 팔로우
-    FOLLOWED("%님이 나를 팔로우 했어요", "%s"),
+    FOLLOWED("%s님이 나를 팔로우 했어요", ""),
 
     // DM
-    DM_RECEIVED("[DM] %s", "%s"),
+    DM_RECEIVED("[DM] %s", "%2$s"),
 
     // 의상 속성
     CLOTHES_ATTRIBUTE_CREATED("새로운 의상 속성이 추가되었어요.", "내 의상에 [%s]속성을 추가해보세요."),
