@@ -4,6 +4,7 @@ import com.sprint.ootd5team.base.exception.file.FileTooLargeException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -86,6 +87,16 @@ public class GlobalExceptionHandler {
     ){
         return ResponseEntity
             .status(HttpStatus.UNAUTHORIZED) // 401
+            .body(new ErrorResponse(ex));
+    }
+
+    // 계정 잠김시 발생하는 예외
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ErrorResponse> handleLockedException(
+        LockedException ex
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.LOCKED) // 423
             .body(new ErrorResponse(ex));
     }
 }

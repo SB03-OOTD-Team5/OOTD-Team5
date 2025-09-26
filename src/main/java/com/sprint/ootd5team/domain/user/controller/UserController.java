@@ -106,7 +106,7 @@ public class UserController implements UserApi {
     consumes = { MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<ProfileDto> updateUserProfile(
         @PathVariable UUID userId,
-        @RequestPart @Valid ProfileUpdateRequest request,
+        @RequestPart(value = "request") @Valid ProfileUpdateRequest request,
         @RequestPart(value = "image",required = false) MultipartFile image) {
 
         Optional<MultipartFile> profileImageRequest = Optional.ofNullable(image);
