@@ -11,7 +11,7 @@ public abstract class SingleReceiverEvent<T> extends DomainEvent<T> {
 
     protected SingleReceiverEvent(
         @JsonProperty("data") T data,
-        @JsonProperty("data") UUID receiver
+        @JsonProperty("receiver") UUID receiver
     ) {
         super(data);
         this.receiver = receiver;

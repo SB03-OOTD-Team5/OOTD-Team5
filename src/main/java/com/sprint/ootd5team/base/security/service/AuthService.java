@@ -8,7 +8,7 @@ import com.sprint.ootd5team.base.security.JwtInformation;
 import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.OotdUserDetails;
-import com.sprint.ootd5team.domain.notification.event.type.RoleUpdateEvent;
+import com.sprint.ootd5team.domain.notification.event.type.single.RoleUpdatedEvent;
 import com.sprint.ootd5team.domain.user.dto.TemporaryPasswordCreatedEvent;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ResetPasswordRequest;
@@ -57,7 +57,7 @@ public class AuthService {
         Role newRole = Role.valueOf(request.role());
         user.updateRole(newRole);
 
-         eventPublisher.publishEvent(new RoleUpdateEvent(user.getId(), oldRole.name(), newRole.name()));
+        eventPublisher.publishEvent(new RoleUpdatedEvent(user.getId(), oldRole.name(), newRole.name()));
 
         return userMapper.toDto(userRepository.save(user));
     }

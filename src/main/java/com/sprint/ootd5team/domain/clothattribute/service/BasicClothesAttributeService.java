@@ -12,8 +12,8 @@ import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
 import com.sprint.ootd5team.domain.clothattribute.mapper.ClothesAttributeMapper;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeValueRepository;
-import com.sprint.ootd5team.domain.notification.event.type.ClothesAttributeCreateEvent;
-import com.sprint.ootd5team.domain.notification.event.type.ClothesAttributeUpdateEvent;
+import com.sprint.ootd5team.domain.notification.event.type.multi.ClothesAttributeCreatedEvent;
+import com.sprint.ootd5team.domain.notification.event.type.multi.ClothesAttributeUpdatedEvent;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.Comparator;
@@ -64,7 +64,7 @@ public class BasicClothesAttributeService implements ClothesAttributeService {
         ClothesAttributeDefDto dto = mapper.toDto(saved);
 
         // 알림 전송
-        eventPublisher.publishEvent(new ClothesAttributeCreateEvent(dto));
+        eventPublisher.publishEvent(new ClothesAttributeCreatedEvent(dto));
 
         return dto;
     }
@@ -137,7 +137,7 @@ public class BasicClothesAttributeService implements ClothesAttributeService {
         ClothesAttributeDefDto dto = mapper.toDto(saved);
 
         // 알림 전송
-        eventPublisher.publishEvent(new ClothesAttributeUpdateEvent(dto));
+        eventPublisher.publishEvent(new ClothesAttributeUpdatedEvent(dto));
 
         return dto;
     }

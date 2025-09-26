@@ -4,13 +4,11 @@ import com.sprint.ootd5team.base.exception.feed.AlreadyLikedException;
 import com.sprint.ootd5team.base.exception.feed.FeedNotFoundException;
 import com.sprint.ootd5team.base.exception.feed.LikeCountUnderflowException;
 import com.sprint.ootd5team.base.exception.feed.LikeNotFoundException;
-import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.domain.feed.entity.Feed;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.like.entity.FeedLike;
 import com.sprint.ootd5team.domain.like.repository.FeedLikeRepository;
-import com.sprint.ootd5team.domain.notification.event.type.FeedLikeEvent;
-import com.sprint.ootd5team.domain.user.entity.User;
+import com.sprint.ootd5team.domain.notification.event.type.single.FeedLikedEvent;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -45,11 +43,9 @@ public class FeedLikeServiceImpl implements FeedLikeService {
 
         // 알림 전송
         // 좋아요 누른 사람 이름 가져오기
-        User actor = userRepository.findById(currentUserId)
-            .orElseThrow(() -> UserNotFoundException.withId(currentUserId));
-
+        String username = userRepository.findUserNameById(currentUserId);
         eventPublisher.publishEvent(
-            new FeedLikeEvent(feed.getId(), feed.getAuthorId(), feed.getContent(), actor.getName())
+            new FeedLikedEvent(feed.getId(), feed.getAuthorId(), feed.getContent(), username)
         );
     }
 

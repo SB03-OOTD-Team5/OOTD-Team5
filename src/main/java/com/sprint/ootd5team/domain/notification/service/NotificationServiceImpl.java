@@ -1,7 +1,7 @@
 package com.sprint.ootd5team.domain.notification.service;
 
-import com.sprint.ootd5team.domain.notification.dto.response.NotificationDto;
 import com.sprint.ootd5team.base.exception.notification.NotificationNotFoundException;
+import com.sprint.ootd5team.domain.notification.dto.response.NotificationDto;
 import com.sprint.ootd5team.domain.notification.dto.response.NotificationDtoCursorResponse;
 import com.sprint.ootd5team.domain.notification.entity.Notification;
 import com.sprint.ootd5team.domain.notification.enums.NotificationLevel;
@@ -20,13 +20,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 알림(Notification) 관련 비즈니스 로직을 처리하는 서비스 구현체
- * <p>
- * - 알림 생성
- * - 사용자별 알림 조회 (커서 기반 페이지네이션)
- * - 알림 삭제
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -79,7 +72,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
-     * 특정 사용자에게 알림을 생성하고 SSE로 전송
+     * 특정 사용자에게 알림을 생성
      *
      * @param receiverId 알림 수신자 UUID
      * @param type       알림 타입
