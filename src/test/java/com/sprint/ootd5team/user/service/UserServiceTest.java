@@ -424,7 +424,7 @@ class UserServiceTest {
         ProfileDto profileDto = new ProfileDto(
             testUser.getId(), "updatedName", "MALE", LocalDate.now(), weatherAPILocationDto, 4, null);
 
-        Profile profile = new Profile(testUser.getId(),testUser.getName(),null,null,null,null,null,null,null,null,null);
+        Profile profile = new Profile(testUser,testUser.getName(),null,null,null,null,null);
 
         // given
         given(profileRepository.findByUserId(testUser.getId())).willReturn(Optional.of(profile));

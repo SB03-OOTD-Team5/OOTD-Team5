@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -42,6 +43,7 @@ public class ProfileServiceImpl implements ProfileService{
      * @return 해당 유저의 프로필 Dto
      */
     @Override
+    @Transactional
     public ProfileDto getProfile(UUID userId) {
         Profile profile = profileRepository.findByUserId(userId)
             .orElseThrow(ProfileNotFoundException::new);
@@ -57,6 +59,7 @@ public class ProfileServiceImpl implements ProfileService{
      * @return 변경된 프로필 Dto
      */
     @Override
+    @Transactional
     public ProfileDto updateProfile(UUID userId, ProfileUpdateRequest request,
         Optional<MultipartFile> profileImage) {
 
@@ -74,6 +77,7 @@ public class ProfileServiceImpl implements ProfileService{
                 profile.updateProfileImageUrl(profileImageUrl);
                 log.debug("[Profile] 이미지 업로드 완료: url={}", profileImageUrl);
 
+                // DB 저장 성공 후 이전 파일 삭제
                 if (previousImageUrl != null) {
                     fileStorage.delete(previousImageUrl);
                 }

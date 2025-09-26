@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
+import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationClothesDto;
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationDto;
@@ -24,6 +25,7 @@ import com.sprint.ootd5team.domain.weather.exception.WeatherNotFoundException;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -65,18 +67,23 @@ class RecommendationServiceTest {
     void setUp() {
         weatherId = UUID.randomUUID();
         userId = UUID.randomUUID();
-
-        Profile profile = new Profile(
-            userId,
-            "테스트 프로필",
-            null,
-            null,
-            null,
+        User user = new User("테스트 프로필", "test@test.com","pw", Role.USER);
+        ReflectionTestUtils.setField(user, "id", userId);
+        Location location = new Location(
             BigDecimal.valueOf(37.5665),
             BigDecimal.valueOf(126.9780),
             60,
             127,
             "서울특별시 중구",
+            null);
+
+        Profile profile = new Profile(
+            user,
+            "테스트 프로필",
+            "MALE",
+            LocalDate.now(),
+            null,
+            location,
             2
         );
 

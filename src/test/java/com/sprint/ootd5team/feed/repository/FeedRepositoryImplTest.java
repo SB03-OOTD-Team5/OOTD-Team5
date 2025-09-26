@@ -321,7 +321,7 @@ public class FeedRepositoryImplTest {
     }
 
     private Profile createProfile(User user) {
-        Profile profile = new Profile(user.getId(), "닉네임", null, null,
+        Profile profile = new Profile(user, "닉네임", null, null,
             null, null, null, null, null, null, 2);
         em.persist(profile);
         return profile;

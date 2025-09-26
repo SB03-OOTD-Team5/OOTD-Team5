@@ -69,19 +69,19 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
                 follow.id,
                 follow.createdAt,
                 Projections.constructor(AuthorDto.class,
-                    followeeProfile.userId,
+                    followeeProfile.user.id,
                     followeeProfile.name,
                     followeeProfile.profileImageUrl
                 ),
                 Projections.constructor(AuthorDto.class,
-                    followerProfile.userId,
+                    followerProfile.user.id,
                     followerProfile.name,
                     followerProfile.profileImageUrl
                 )
             ))
             .from(follow)
-            .join(followeeProfile).on(follow.followeeId.eq(followeeProfile.userId))
-            .join(followerProfile).on(follow.followerId.eq(followerProfile.userId))
+            .join(followeeProfile).on(follow.followeeId.eq(followeeProfile.user.id))
+            .join(followerProfile).on(follow.followerId.eq(followerProfile.user.id))
             .where(where)
             .orderBy(follow.createdAt.desc(), follow.id.desc())
             .limit(limit + 1)
@@ -110,7 +110,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
         Long count = queryFactory
             .select(follow.count())
             .from(follow)
-            .join(followeeProfile).on(follow.followeeId.eq(followeeProfile.userId))
+            .join(followeeProfile).on(follow.followeeId.eq(followeeProfile.user.id))
             .where(
                 follow.followerId.eq(followerId),
                 nameLike != null && !nameLike.isBlank()
