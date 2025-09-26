@@ -16,6 +16,9 @@ import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
+import com.sprint.ootd5team.domain.location.entity.Location;
+import com.sprint.ootd5team.domain.location.exception.LocationNotFoundException;
+import com.sprint.ootd5team.domain.location.repository.LocationRepository;
 import com.sprint.ootd5team.domain.profile.dto.data.ProfileUpdateRequest;
 import com.sprint.ootd5team.domain.profile.dto.request.ProfileDto;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
@@ -101,6 +104,9 @@ class UserServiceTest {
 
     @MockitoBean
     private FileStorage fileStorage;
+
+    @MockitoBean
+    private LocationRepository locationRepository;
 
 
     private User testUser;
@@ -430,6 +436,7 @@ class UserServiceTest {
         given(profileRepository.findByUserId(testUser.getId())).willReturn(Optional.of(profile));
         given(profileRepository.save(any(Profile.class))).willReturn(profile);
         given(profileMapper.toDto(any(Profile.class))).willReturn(profileDto);
+        given(locationRepository.findByLatitudeAndLongitude(any(),any())).willReturn(Optional.of(new Location(latitude,longitude,96,127,"서울특별시 광진구 능동",null)));
 
         // when
         ProfileDto result = profileService.updateProfile(testUser.getId(),profileUpdateRequest,Optional.ofNullable(null));
@@ -441,6 +448,32 @@ class UserServiceTest {
         assertThat(result.name()).isEqualTo("updatedName");
         assertThat(result.gender()).isEqualTo("MALE");
         assertThat(result.temperatureSensitivity()).isEqualTo(4);
+    }
+    @Test
+    @DisplayName("사용자 프로필 수정 실패 - 존재하지않는 Location")
+    void update_UserProfile_Fail_LocationNotFound() {
+        BigDecimal latitude = BigDecimal.valueOf(37.52);
+        BigDecimal longitude = BigDecimal.valueOf(129.11);
+        String[] locationNames = {"서울특별시", "광진구", "능동", ""};
+
+        WeatherAPILocationDto weatherAPILocationDto = new WeatherAPILocationDto(
+            latitude, longitude, 96, 127, locationNames, latitude, longitude);
+
+        ProfileUpdateRequest profileUpdateRequest = new ProfileUpdateRequest(
+            "updatedName", "MALE", LocalDate.now(), weatherAPILocationDto, 4);
+
+
+        Profile profile = new Profile(testUser,testUser.getName(),null,null,null,null,null);
+        given(profileRepository.findByUserId(testUser.getId())).willReturn(Optional.of(profile));
+
+        // when
+        assertThatThrownBy(
+            () -> profileService.updateProfile(testUser.getId(),profileUpdateRequest,Optional.ofNullable(null)))
+            .isInstanceOf(LocationNotFoundException.class);
+
+        // then
+        verify(profileRepository,never()).save(any());
+        verify(profileMapper,never()).toDto(any());
     }
 
     @Test

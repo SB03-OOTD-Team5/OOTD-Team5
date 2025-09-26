@@ -9,6 +9,8 @@ import com.sprint.ootd5team.domain.comment.mapper.FeedCommentMapperImpl;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.mapper.ProfileMapper;
 import com.sprint.ootd5team.domain.profile.mapper.ProfileMapperImpl;
+import com.sprint.ootd5team.domain.user.entity.Role;
+import com.sprint.ootd5team.domain.user.entity.User;
 import java.lang.reflect.Field;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -35,11 +37,13 @@ class FeedCommentMapperTest {
     void toDto_success() {
         UUID feedId = UUID.randomUUID();
         UUID authorId = UUID.randomUUID();
+        User user = new User("user","user@test.com","pw", Role.USER);
+        ReflectionTestUtils.setField(user, "id", authorId);
 
         FeedComment comment = new FeedComment(feedId, authorId, "테스트 댓글");
 
         Profile profile = new Profile();
-        ReflectionTestUtils.setField(profile, "userId", authorId);
+        ReflectionTestUtils.setField(profile, "user", user);
         ReflectionTestUtils.setField(profile, "name", "테스터");
 
         CommentDto dto = mapper.toDto(comment, profile);

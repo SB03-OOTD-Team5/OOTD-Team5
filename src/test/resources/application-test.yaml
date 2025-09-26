@@ -42,6 +42,8 @@ ootd:
     username: ${OOTD_ADMIN_USERNAME:admin}
     password: ${OOTD_ADMIN_PASSWORD:qwe123}
     email: ${OOTD_ADMIN_EMAIL:admin@test.com}
+  email:
+      sender: test@example.com
 
   # Access Token 및 Refresh Token 비밀키, 만료시간 설정
   jwt:

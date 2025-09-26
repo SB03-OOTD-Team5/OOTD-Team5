@@ -92,7 +92,6 @@ public class ProfileServiceImpl implements ProfileService{
             location = locationRepository.findByLatitudeAndLongitude(
                     request.location().matchedLatitude(), request.location().matchedLongitude())
                 .orElseThrow(LocationNotFoundException::new);
-
         }
         // 프로필 업데이트
         profile.update(request.name(), request.gender(), request.birthDate(),location,

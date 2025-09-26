@@ -55,14 +55,14 @@ class UserRepositoryTest {
         entityManager.persistAndFlush(testUser1);
         // createdAt이 다르게 설정되도록 약간의 지연
         try {
-            Thread.sleep(300);
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
         entityManager.persistAndFlush(testUser2);
         try {
-            Thread.sleep(300);
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
