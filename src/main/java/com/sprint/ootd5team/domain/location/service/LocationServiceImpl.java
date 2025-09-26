@@ -67,7 +67,8 @@ public class LocationServiceImpl implements LocationService, LocationQueryServic
     }
 
 
-    private Location findOrCreateLocation(BigDecimal latitude, BigDecimal longitude) {
+    @Override
+    public Location findOrCreateLocation(BigDecimal latitude, BigDecimal longitude) {
         //0. 이미 존재하는 데이터면 가져와서 전달
         Location cached = getLocationIfExist(latitude, longitude);
         log.debug("[location] 해당 데이터 존재 유무: {}", cached != null);
