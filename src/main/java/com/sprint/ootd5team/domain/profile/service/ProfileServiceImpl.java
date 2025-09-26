@@ -87,15 +87,14 @@ public class ProfileServiceImpl implements ProfileService{
             }
         });
 
-        Location location=null;
+        Location location = profile.getLocation();
         if(request.location()!=null) {
             location = locationRepository.findByLatitudeAndLongitude(
                     request.location().matchedLatitude(), request.location().matchedLongitude())
                 .orElseThrow(LocationNotFoundException::new);
         }
         // 프로필 업데이트
-        profile.update(request.name(), request.gender(), request.birthDate(),location,
-            request.temperatureSensitivity());
+        profile.update(request.name(), request.gender(), request.birthDate(),location, request.temperatureSensitivity());
 
         return profileMapper.toDto(profileRepository.save(profile));
 
