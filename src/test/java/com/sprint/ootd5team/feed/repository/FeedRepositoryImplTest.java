@@ -331,13 +331,10 @@ public class FeedRepositoryImplTest {
             .forecastedAt(Instant.now())
             .forecastAt(Instant.now())
             .skyStatus(skyStatus)
-            .latitude(BigDecimal.ONE)
-            .longitude(BigDecimal.ONE)
             .precipitationType(type)
             .temperature(20.0)
             .temperatureMin(18.0)
             .temperatureMax(25.0)
-            .profile(profile)
             .build();
         em.persist(weather);
         return weather;

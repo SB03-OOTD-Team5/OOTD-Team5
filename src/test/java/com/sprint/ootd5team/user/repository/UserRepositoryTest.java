@@ -19,11 +19,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest
-@EnableJpaAuditing
 @ActiveProfiles("test")
 @Import({QuerydslConfig.class})
 @DisplayName("User Repository 단위 테스트")
@@ -49,25 +48,17 @@ class UserRepositoryTest {
         testUser2 = new User("Regular User", "user@test.com", "password456", Role.USER);
         testUser3 = new User("Locked User", "locked@test.com", "password789", Role.USER);
 
-        // testUser3을 잠금 상태로 설정 (리플렉션 또는 별도 메서드 필요)
         setLockedState(testUser3, true);
 
+        Instant base = Instant.parse("2025-01-01T00:00:00Z");
+        ReflectionTestUtils.setField(testUser1, "createdAt", base.minusSeconds(7200));
+        ReflectionTestUtils.setField(testUser2, "createdAt", base.minusSeconds(3600));
+        ReflectionTestUtils.setField(testUser3, "createdAt", base.minusSeconds(1800));
+
         entityManager.persistAndFlush(testUser1);
-        // createdAt이 다르게 설정되도록 약간의 지연
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
         entityManager.persistAndFlush(testUser2);
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
         entityManager.persistAndFlush(testUser3);
+
         entityManager.clear();
     }
 

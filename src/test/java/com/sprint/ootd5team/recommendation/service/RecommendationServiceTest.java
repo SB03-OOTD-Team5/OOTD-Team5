@@ -92,12 +92,9 @@ class RecommendationServiceTest {
             .forecastAt(Instant.parse("2024-04-01T03:00:00Z"))
             .skyStatus(SkyStatus.CLEAR)
             .precipitationType(PrecipitationType.NONE)
-            .latitude(BigDecimal.valueOf(37.5665))
-            .longitude(BigDecimal.valueOf(126.9780))
             .temperature(20.0)
             .temperatureMin(18.0)
             .temperatureMax(23.0)
-            .profile(profile)
             .build();
 
         Weather candidate = Weather.builder()
@@ -105,12 +102,9 @@ class RecommendationServiceTest {
             .forecastAt(Instant.parse("2024-04-01T06:00:00Z"))
             .skyStatus(SkyStatus.CLEAR)
             .precipitationType(PrecipitationType.NONE)
-            .latitude(BigDecimal.valueOf(37.5665))
-            .longitude(BigDecimal.valueOf(126.9780))
             .temperature(21.0)
             .temperatureMin(19.0)
             .temperatureMax(24.0)
-            .profile(profile)
             .build();
 
         weatherCandidates = List.of(candidate);
