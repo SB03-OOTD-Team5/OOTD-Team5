@@ -68,7 +68,7 @@ public class FollowControllerTest {
             new FollowDto(UUID.randomUUID(), user2, user3)
         );
         listResponse = new FollowListResponse(
-            data, null, null, false, 2, "createdAt", SortDirection.DESCENDING
+            data, null, null, false, 3, "createdAt", SortDirection.DESCENDING
         );
     }
 

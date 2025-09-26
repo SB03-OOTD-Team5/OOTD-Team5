@@ -43,10 +43,8 @@ public class FollowRepositoryImplTest {
         followee2Id = UUID.randomUUID();
 
         Profile followerProfile = new Profile(
-            followerId,
-            "follower",
-            null, null, null, null,
-            null, null, null, null, 2
+            followerId, "follower", null, null, null,
+            null, null, null, null, null, 2
         );
         em.persist(followerProfile);
 
@@ -57,8 +55,8 @@ public class FollowRepositoryImplTest {
         em.persist(followee1);
 
         Profile followee2 = new Profile(
-            followee2Id, "user2", null, null, null, null,
-            null, null, null, null, 2
+            followee2Id, "user2", null, null, null,
+            null, null, null, null, null, 2
         );
         em.persist(followee2);
 
