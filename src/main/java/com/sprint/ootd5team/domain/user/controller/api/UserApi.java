@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "User", description = "사용자 계정 관련 API")
 public interface UserApi {
@@ -212,6 +213,33 @@ public interface UserApi {
         UserRoleUpdateRequest request
     );
 
+    @Operation(
+        summary = "프로필 업데이트",
+        description = "프로필 업데이트 API"
+    )
+    @ApiResponses(value ={
+        @ApiResponse(
+            responseCode = "200",
+            description = "프로필 업데이트 성공",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ProfileDto.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "프로필 업데이트 실패",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )}
+    )
+    ResponseEntity<ProfileDto> updateUserProfile(
+        UUID userId,
+        ProfileUpdateRequest request,
+        MultipartFile image
+    );
 
 
 }

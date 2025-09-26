@@ -35,6 +35,11 @@ public interface LocationMapper {
         if (profile == null) {
             return null;
         }
+
+        if(profile.getLocationNames()==null){
+            return null;
+        }
+
         String names = profile.getLocationNames();
         String[] locationNames =
             (names == null || names.isBlank()) ? new String[0] : names.split(" ");
