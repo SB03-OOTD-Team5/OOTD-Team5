@@ -3,6 +3,8 @@ package com.sprint.ootd5team.base.exception;
 import com.sprint.ootd5team.base.exception.file.FileTooLargeException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -75,6 +77,26 @@ public class GlobalExceptionHandler {
     ){
         return ResponseEntity
             .status(HttpStatus.FORBIDDEN) // 403
+            .body(new ErrorResponse(ex));
+    }
+
+    // 인증 실패(로그인시 사용자를 찾을수없음 or 비밀번호 아이디 일치 오류)일 때 실행
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentialsException(
+        BadCredentialsException ex
+    ){
+        return ResponseEntity
+            .status(HttpStatus.UNAUTHORIZED) // 401
+            .body(new ErrorResponse(ex));
+    }
+
+    // 계정 잠김시 발생하는 예외
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ErrorResponse> handleLockedException(
+        LockedException ex
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.LOCKED) // 423
             .body(new ErrorResponse(ex));
     }
 }

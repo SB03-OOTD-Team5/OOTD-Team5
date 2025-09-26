@@ -1,11 +1,10 @@
-package com.sprint.ootd5team.storage;
+package com.sprint.ootd5team.base.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sprint.ootd5team.base.exception.file.FileDeleteFailedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
-import com.sprint.ootd5team.base.storage.LocalFileStorage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +18,7 @@ import org.junit.jupiter.api.Test;
 public class LocalFileStorageTest {
 
     private LocalFileStorage localFileStorage;
-    private static final String TEST_IMAGE = "/test-image.png";
+    private static final String TEST_IMAGE = "/testdata/test-image.png";
     private static final String TEST_PREFIX = "prefix/";
     /**
      * 각 테스트 종료 후 업로드된 파일 삭제.
@@ -42,8 +41,8 @@ public class LocalFileStorageTest {
     @Test
     void 업로드_성공() throws Exception {
         // given
-        String filename = "test-image.png";
-        try (InputStream input = getClass().getResourceAsStream("/test-image.png")) {
+        String filename = "testdata/test-image.png";
+        try (InputStream input = getClass().getResourceAsStream("/testdata/test-image.png")) {
             assertThat(input).isNotNull();
 
             // when

@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sprint.ootd5team.base.config.QuerydslConfig;
 import com.sprint.ootd5team.domain.notification.entity.Notification;
-import com.sprint.ootd5team.domain.notification.repository.NotificationRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -21,7 +20,7 @@ import org.springframework.test.context.jdbc.Sql;
 @DataJpaTest
 @Import(QuerydslConfig.class)
 @ActiveProfiles("test")
-@Sql(scripts = {"classpath:user-data.sql", "classpath:notification-data.sql"})
+@Sql(scripts = {"classpath:testdata/user-data.sql", "classpath:testdata/notification-data.sql"})
 @TestPropertySource(properties = "spring.sql.init.mode=never")
 @DisplayName("NotificationRepositoryImpl 슬라이스 테스트")
 class NotificationRepositoryImplTest {

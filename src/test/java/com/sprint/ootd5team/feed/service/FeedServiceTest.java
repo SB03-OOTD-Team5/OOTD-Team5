@@ -31,6 +31,8 @@ import com.sprint.ootd5team.domain.feed.entity.Feed;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.feed.repository.feedClothes.FeedClothesRepository;
 import com.sprint.ootd5team.domain.feed.service.FeedServiceImpl;
+import com.sprint.ootd5team.domain.follow.repository.FollowRepository;
+import com.sprint.ootd5team.domain.notification.event.type.multi.FeedCreatedEvent;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.dto.AuthorDto;
 import com.sprint.ootd5team.domain.user.entity.User;
@@ -53,6 +55,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -75,6 +78,12 @@ public class FeedServiceTest {
 
     @Mock
     private ClothesRepository clothesRepository;
+
+    @Mock
+    private FollowRepository followRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private FeedServiceImpl feedService;
@@ -338,7 +347,7 @@ public class FeedServiceTest {
     }
 
     @Test
-    @DisplayName("피드 생성 성공")
+    @DisplayName("피드 생성 성공(알림 이벤트 발행 포함)")
     void createFeed_success() {
         // given
         UUID authorId = UUID.randomUUID();
@@ -403,7 +412,7 @@ public class FeedServiceTest {
         when(feedClothesRepository.findOotdsByFeedIds(List.of(feed.getId())))
             .thenReturn(Map.of(feed.getId(), List.of(ootd1, ootd2)));
 
-        // when
+         // when
         FeedDto result = feedService.create(request, authorId);
 
         // then
@@ -412,6 +421,8 @@ public class FeedServiceTest {
 
         verify(feedRepository).save(any(Feed.class));
         verify(feedClothesRepository).saveAll(anyList());
+        // 알림 이벤트 발행 검증
+        verify(eventPublisher).publishEvent(any(FeedCreatedEvent.class));
     }
 
     @Test

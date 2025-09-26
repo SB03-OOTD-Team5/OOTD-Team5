@@ -12,7 +12,9 @@ import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowDto;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowProjectionDto;
-import com.sprint.ootd5team.domain.follow.dto.request.FollowListRequest;
+import com.sprint.ootd5team.domain.follow.dto.enums.FollowDirection;
+import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
+import com.sprint.ootd5team.domain.follow.dto.request.FollowingListRequest;
 import com.sprint.ootd5team.domain.follow.dto.response.FollowListResponse;
 import com.sprint.ootd5team.domain.follow.mapper.FollowMapper;
 import com.sprint.ootd5team.domain.follow.repository.FollowRepository;
@@ -83,17 +85,20 @@ public class FollowServiceTest {
     @DisplayName("팔로잉 목록 조회 성공 - hasNext=false")
     void getFollowingList_success_noHasNext() {
         // given
-        FollowListRequest request = new FollowListRequest(followerId, null, null, 10, null);
+        FollowingListRequest request = new FollowingListRequest(
+            followerId, null, null, 10, null
+        );
 
         given(profileRepository.existsByUserId(followerId)).willReturn(true);
-        given(followRepository.findByFollowIdWithCursor(eq(followerId), any(), any(), eq(10), any()))
+        given(followRepository.findByCursor(eq(followerId), any(), any(), eq(10), any(), eq(FollowDirection.FOLLOWING)))
             .willReturn(List.of(projection1, projection2));
         given(followMapper.toFollowDtoList(anyList()))
             .willReturn(List.of(
                 new FollowDto(projection1.id(), user3, user1),
                 new FollowDto(projection2.id(), user2, user1)
             ));
-        given(followRepository.countByFollowerIdAndNameLike(followerId, request.nameLike())).willReturn(2L);
+        given(followRepository.countByUserIdAndNameLike(followerId, request.nameLike(), FollowDirection.FOLLOWING))
+            .willReturn(2L);
 
         // when
         FollowListResponse response = followService.getFollowingList(request);
@@ -110,14 +115,17 @@ public class FollowServiceTest {
     @DisplayName("팔로잉 목록 조회 성공 - hasNext=true")
     void getFollowingList_success_hasNext() {
         // given
-        FollowListRequest request = new FollowListRequest(followerId, null, null, 1, null);
+        FollowingListRequest request = new FollowingListRequest(
+            followerId, null, null, 1, null
+        );
 
         given(profileRepository.existsByUserId(followerId)).willReturn(true);
-        given(followRepository.findByFollowIdWithCursor(eq(followerId), any(), any(), eq(1), any()))
+        given(followRepository.findByCursor(eq(followerId), any(), any(), eq(1), any(), eq(FollowDirection.FOLLOWING)))
             .willReturn(List.of(projection1, projection2));
         given(followMapper.toFollowDtoList(argThat(list -> list.size() == 1)))
             .willReturn(List.of(new FollowDto(projection1.id(), user3, user1)));
-        given(followRepository.countByFollowerIdAndNameLike(followerId, request.nameLike())).willReturn(2L);
+        given(followRepository.countByUserIdAndNameLike(followerId, request.nameLike(), FollowDirection.FOLLOWING))
+            .willReturn(2L);
 
         // when
         FollowListResponse response = followService.getFollowingList(request);
@@ -130,10 +138,68 @@ public class FollowServiceTest {
     }
 
     @Test
+    @DisplayName("팔로워 목록 조회 성공 - hasNext=false")
+    void getFollowerList_success_noHasNext() {
+        // given
+        FollowerListRequest request = new FollowerListRequest(
+            followerId, null, null, 10, null
+        );
+
+        given(profileRepository.existsByUserId(followerId)).willReturn(true);
+        given(followRepository.findByCursor(eq(followerId), any(), any(), eq(10), any(), eq(FollowDirection.FOLLOWER)))
+            .willReturn(List.of(projection1, projection2));
+        given(followMapper.toFollowDtoList(anyList()))
+            .willReturn(List.of(
+                new FollowDto(projection1.id(), user2, user1),
+                new FollowDto(projection2.id(), user3, user1)
+            ));
+        given(followRepository.countByUserIdAndNameLike(followerId, request.nameLike(), FollowDirection.FOLLOWER))
+            .willReturn(2L);
+
+        // when
+        FollowListResponse response = followService.getFollowerList(request);
+
+        // then
+        assertThat(response.data()).hasSize(2);
+        assertThat(response.hasNext()).isFalse();
+        assertThat(response.totalCount()).isEqualTo(2);
+        assertThat(response.sortBy()).isEqualTo("createdAt");
+        assertThat(response.sortDirection()).isEqualTo(SortDirection.DESCENDING);
+    }
+
+    @Test
+    @DisplayName("팔로워 목록 조회 성공 - hasNext=true")
+    void getFollowerList_success_hasNext() {
+        // given
+        FollowerListRequest request = new FollowerListRequest(
+            followerId, null, null, 1, null
+        );
+
+        given(profileRepository.existsByUserId(followerId)).willReturn(true);
+        given(followRepository.findByCursor(eq(followerId), any(), any(), eq(1), any(), eq(FollowDirection.FOLLOWER)))
+            .willReturn(List.of(projection1, projection2));
+        given(followMapper.toFollowDtoList(argThat(list -> list.size() == 1)))
+            .willReturn(List.of(new FollowDto(projection1.id(), user2, user1)));
+        given(followRepository.countByUserIdAndNameLike(followerId, request.nameLike(), FollowDirection.FOLLOWER))
+            .willReturn(2L);
+
+        // when
+        FollowListResponse response = followService.getFollowerList(request);
+
+        // then
+        assertThat(response.data()).hasSize(1);
+        assertThat(response.hasNext()).isTrue();
+        assertThat(response.nextCursor()).isNotNull();
+        assertThat(response.nextIdAfter()).isNotNull();
+    }
+
+    @Test
     @DisplayName("프로필이 존재하지 않으면 ProfileNotFoundException 발생")
     void getFollowingList_profileNotFound() {
         // given
-        FollowListRequest request = new FollowListRequest(followerId, null, null, 10, null);
+        FollowingListRequest request = new FollowingListRequest(
+            followerId, null, null, 10, null
+        );
 
         given(profileRepository.existsByUserId(followerId)).willReturn(false);
 

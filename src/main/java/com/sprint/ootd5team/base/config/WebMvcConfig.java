@@ -18,6 +18,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
         // LocalFileStorage에서 resolveUrl("/local-files/...")
         registry.addResourceHandler("/local-files/**")
             .addResourceLocations("file:" + Paths.get("uploads").toAbsolutePath() + "/");
+
+        // Profile 쪽은 이미지 불러오기할때 URL에 /local-files/가 들어가지 않기 때문에 따로 설정했습니다.
+        registry.addResourceHandler("/profiles/**")
+            .addResourceLocations("file:" + Paths.get("uploads/profiles").toAbsolutePath() + "/");
     }
 }
 
