@@ -1,24 +1,23 @@
-package com.sprint.ootd5team.domain.notification.event.type;
+package com.sprint.ootd5team.domain.notification.event.type.single;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.sprint.ootd5team.domain.comment.dto.data.CommentDto;
 import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
-import java.util.List;
+import com.sprint.ootd5team.domain.notification.event.type.base.SingleReceiverEvent;
 import java.util.UUID;
 
 /**
  * FEED_COMMENTED("%s님이 댓글을 달았어요.", "%s"),
- *  댓글 작성자 이름, 댓글 내용
- *
+ * 댓글 작성자 이름, 댓글 내용
+ * <p>
  * receiverId = 댓글이 달린 피드의 생성자 id
- * eventPublisher.publishEvent(new CommentCreateEvent(dto, receiverId));
+ * eventPublisher.publishEvent(new CommentCreatedEvent(dto, receiverId));
  */
+@JsonTypeName("comment-created")
+public class CommentCreatedEvent extends SingleReceiverEvent<CommentDto> {
 
-public class CommentCreateEvent extends DomainEvent<CommentDto> {
-    private final UUID receiverId;
-
-    public CommentCreateEvent(CommentDto data, UUID receiverId) {
-        super(data);
-        this.receiverId = receiverId;
+    public CommentCreatedEvent(CommentDto data, UUID receiverId) {
+        super(data, receiverId);
     }
 
     @Override
@@ -31,8 +30,4 @@ public class CommentCreateEvent extends DomainEvent<CommentDto> {
         return new Object[]{getData().author().name(), getData().content()};
     }
 
-    @Override
-    public List<UUID> getReceiverIds() {
-        return List.of(receiverId);
-    }
 }

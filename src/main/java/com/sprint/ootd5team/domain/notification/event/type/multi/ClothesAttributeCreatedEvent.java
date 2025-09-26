@@ -1,20 +1,22 @@
-package com.sprint.ootd5team.domain.notification.event.type;
+package com.sprint.ootd5team.domain.notification.event.type.multi;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefDto;
 import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
+import com.sprint.ootd5team.domain.notification.event.type.base.MultiReceiverEvent;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * CLOTHES_ATTRIBUTE_ADDED("새로운 의상 속성이 추가되었어요.", "내 의상에 [%s]속성을 추가해보세요."),
  * 속성 이름
- *
+ * <p>
  * receiverId = 모든 유저 id
  */
-public class ClothesAttributeCreateEvent extends DomainEvent<ClothesAttributeDefDto> {
+@JsonTypeName("attribute-created")
+public class ClothesAttributeCreatedEvent extends MultiReceiverEvent<ClothesAttributeDefDto> {
 
-    public ClothesAttributeCreateEvent(ClothesAttributeDefDto data) {
-        super(data);
+    public ClothesAttributeCreatedEvent(ClothesAttributeDefDto data) {
+        super(data, List.of());
     }
 
     @Override
@@ -27,8 +29,4 @@ public class ClothesAttributeCreateEvent extends DomainEvent<ClothesAttributeDef
         return new Object[]{getData().name()};
     }
 
-    @Override
-    public List<UUID> getReceiverIds() {
-        return List.of();
-    }
 }
