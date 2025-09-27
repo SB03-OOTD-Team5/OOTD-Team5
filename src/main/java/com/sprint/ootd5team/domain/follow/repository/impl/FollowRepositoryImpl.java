@@ -14,7 +14,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 public class FollowRepositoryImpl implements FollowRepositoryCustom {
 
@@ -104,6 +106,8 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
 
         BooleanBuilder where = new BooleanBuilder();
 
+        log.debug("[FollowRepositoryCustom] 팔로우 수 조회 대상 - Direction:{}", direction.name());
+
         if (direction == FollowDirection.FOLLOWING) {
             where.and(follow.followerId.eq(userId));
             if (nameLike != null && !nameLike.isBlank()) {
@@ -123,6 +127,8 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
             .join(followerProfile).on(follow.followerId.eq(followerProfile.user.id))
             .where(where)
             .fetchOne();
+        
+        log.debug("[FollowRepositoryCustom] 집계된 팔로우 수 - count:{}", count);
 
         return count != null ? count : 0L;
     }
@@ -143,7 +149,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
             .where(follow.followerId.eq(userId))
             .fetchOne();
 
-        boolean isFollowing = queryFactory
+        boolean isFollowedByMe = queryFactory
             .selectFrom(follow)
             .where(follow.followeeId.eq(userId)
                 .and(follow.followerId.eq(currentUserId)))
@@ -156,14 +162,18 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
                 .and(follow.followerId.eq(currentUserId)))
             .fetchOne();
 
-        boolean isFollowedBack = queryFactory
+        boolean isFollowingMe = queryFactory
             .selectFrom(follow)
             .where(follow.followeeId.eq(currentUserId)
                 .and(follow.followerId.eq(userId)))
             .fetchFirst() != null;
 
+        log.debug("[FollowRepositoryCustom] 요약된 팔로우 정보 - "
+                + "followerCount:{}, followingCount:{}, isFollowedByMe:{}, followId:{}, isFollowingMe:{}",
+            followerCount, followingCount, isFollowedByMe, followId, isFollowingMe);
+
         return new FollowSummaryDto(
-            userId, followerCount, followingCount, isFollowing, followId, isFollowedBack
+            userId, followerCount, followingCount, isFollowedByMe, followId, isFollowingMe
         );
     }
 
@@ -205,6 +215,8 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
         String nameLike,
         FollowDirection direction
     ) {
+        log.debug("[FollowRepositoryCustom] 페이지네이션 조회 대상 - Direction:{}", direction.name());
+
         BooleanBuilder where = new BooleanBuilder();
 
         if (direction == FollowDirection.FOLLOWING) {
