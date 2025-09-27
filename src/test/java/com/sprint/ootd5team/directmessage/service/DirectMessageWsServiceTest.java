@@ -119,8 +119,8 @@ class DirectMessageWsServiceTest {
         when(userRepository.findById(senderId)).thenReturn(Optional.of(sender));
         when(userRepository.findById(receiverId)).thenReturn(Optional.of(receiver));
 
-        Profile senderProfile = new Profile(senderId, "sender", null, null, "http://sender", null, null, null, null, null, null);
-        Profile receiverProfile = new Profile(receiverId, "receiver", null, null, "http://receiver", null, null, null, null, null, null);
+        Profile senderProfile = new Profile(sender, "sender", null, null, "http://sender", null, null);
+        Profile receiverProfile = new Profile(receiver, "receiver", null, null, "http://receiver",null, null);
         when(profileRepository.findByUserId(senderId)).thenReturn(Optional.of(senderProfile));
         when(profileRepository.findByUserId(receiverId)).thenReturn(Optional.of(receiverProfile));
 

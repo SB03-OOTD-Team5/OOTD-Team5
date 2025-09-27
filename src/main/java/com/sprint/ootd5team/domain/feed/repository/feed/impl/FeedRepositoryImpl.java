@@ -68,7 +68,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             .select(feedProjection(currentUserId))
             .from(feed)
             .join(user).on(feed.authorId.eq(user.id))
-            .leftJoin(profile).on(profile.userId.eq(user.id))
+            .leftJoin(profile).on(profile.user.id.eq(user.id))
             .join(weather).on(feed.weatherId.eq(weather.id))
             .where(
                 keywordLike(request.keywordLike()),
@@ -103,7 +103,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             .select(feedProjection(currentUserId))
             .from(feed)
             .join(user).on(feed.authorId.eq(user.id))
-            .leftJoin(profile).on(profile.userId.eq(user.id))
+            .leftJoin(profile).on(profile.user.id.eq(user.id))
             .join(weather).on(feed.weatherId.eq(weather.id))
             .where(feed.id.eq(feedId))
             .fetchOne();
