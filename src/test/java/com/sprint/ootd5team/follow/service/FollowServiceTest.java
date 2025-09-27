@@ -221,6 +221,9 @@ public class FollowServiceTest {
             userId, 10L, 5L, true, currentUserId, false
         );
 
+        given(profileRepository.existsByUserId(any(UUID.class)))
+            .willReturn(true);
+
         given(followRepository.getSummary(userId, currentUserId))
             .willReturn(expected);
 
@@ -238,5 +241,4 @@ public class FollowServiceTest {
 
         then(followRepository).should().getSummary(userId, currentUserId);
     }
-
 }
