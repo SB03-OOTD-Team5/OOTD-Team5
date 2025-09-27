@@ -9,6 +9,8 @@ import com.sprint.ootd5team.domain.follow.dto.enums.FollowDirection;
 import com.sprint.ootd5team.domain.follow.entity.Follow;
 import com.sprint.ootd5team.domain.follow.repository.impl.FollowRepositoryImpl;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
+import com.sprint.ootd5team.domain.user.entity.Role;
+import com.sprint.ootd5team.domain.user.entity.User;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,25 +40,40 @@ public class FollowRepositoryImplTest {
 
     @BeforeEach
     void setUp() throws InterruptedException {
-        followerId = UUID.randomUUID();
-        followee1Id = UUID.randomUUID();
-        followee2Id = UUID.randomUUID();
+
+        User follower = new User("follower","test1@test.com","password", Role.USER);
+        User user1 = new User("followee1","test2@test.com","password", Role.USER);
+        User user2 = new User("followee2","test3@test.com","password", Role.USER);
+
+        em.persist(follower);
+        em.persist(user1);
+        em.persist(user2);
+
+        followerId = follower.getId();
+        followee1Id = user1.getId();
+        followee2Id = user2.getId();
+
+
+        em.flush();
 
         Profile followerProfile = new Profile(
-            followerId, "follower", null, null, null,
-            null, null, null, null, null, 2
+            follower,
+            "follower",
+            null,
+            null,
+            null,
+            null,
+            2
         );
         em.persist(followerProfile);
 
         Profile followee1 = new Profile(
-            followee1Id, "user1", null, null, null,
-            null, null, null, null, null, 2
+            user1, "user1", null, null, null, null, 2
         );
         em.persist(followee1);
 
         Profile followee2 = new Profile(
-            followee2Id, "user2", null, null, null,
-            null, null, null, null, null, 2
+            user2, "user2", null, null, null, null, 2
         );
         em.persist(followee2);
 

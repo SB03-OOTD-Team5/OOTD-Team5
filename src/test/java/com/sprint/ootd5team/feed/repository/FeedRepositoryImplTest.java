@@ -321,8 +321,7 @@ public class FeedRepositoryImplTest {
     }
 
     private Profile createProfile(User user) {
-        Profile profile = new Profile(user.getId(), "닉네임", null, null,
-            null, null, null, null, null, null, 2);
+        Profile profile = new Profile(user, "닉네임", null,null, null, null, 2);
         em.persist(profile);
         return profile;
     }
@@ -332,13 +331,10 @@ public class FeedRepositoryImplTest {
             .forecastedAt(Instant.now())
             .forecastAt(Instant.now())
             .skyStatus(skyStatus)
-            .latitude(BigDecimal.ONE)
-            .longitude(BigDecimal.ONE)
             .precipitationType(type)
             .temperature(20.0)
             .temperatureMin(18.0)
             .temperatureMax(25.0)
-            .profile(profile)
             .build();
         em.persist(weather);
         return weather;

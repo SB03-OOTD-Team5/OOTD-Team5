@@ -38,11 +38,11 @@ public class WeatherServiceImpl implements WeatherService {
 
         // 파라미터로 위경도 넘어오지 않으면 프로필에 있는 위치값 사용, 프로필에 위치값 없으면 기본값 사용
         BigDecimal lat =
-            latitude == null ? profile.getLatitude() == null ? DEFAULT_LAT : profile.getLatitude()
+            latitude == null ? profile.getLocation().getLatitude() == null ? DEFAULT_LAT : profile.getLocation().getLatitude()
                 : latitude;
         BigDecimal lon =
-            longitude == null ? profile.getLongitude() == null ? DEFAULT_LON
-                : profile.getLongitude()
+            longitude == null ? profile.getLocation().getLongitude() == null ? DEFAULT_LON
+                : profile.getLocation().getLongitude()
                 : longitude;
         log.info("파라미터 위경도:{}, {} \n 최종 위경도:{}, {}", latitude, longitude, lat, lon);
         List<Weather> weathers = weatherFactory.findOrCreateWeathers(lat, lon);

@@ -4,6 +4,9 @@ import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
+import com.sprint.ootd5team.domain.location.entity.Location;
+import com.sprint.ootd5team.domain.location.exception.LocationNotFoundException;
+import com.sprint.ootd5team.domain.location.repository.LocationRepository;
 import com.sprint.ootd5team.domain.profile.dto.data.ProfileUpdateRequest;
 import com.sprint.ootd5team.domain.profile.dto.request.ProfileDto;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
@@ -17,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -27,6 +31,7 @@ public class ProfileServiceImpl implements ProfileService{
     private final ProfileRepository profileRepository;
     private final ProfileMapper profileMapper;
     private final FileStorage fileStorage;
+    private final LocationRepository locationRepository;
 
     @Value("${ootd.storage.s3.prefix.profiles}")
     private String profilesPrefix;
@@ -38,6 +43,7 @@ public class ProfileServiceImpl implements ProfileService{
      * @return 해당 유저의 프로필 Dto
      */
     @Override
+    @Transactional
     public ProfileDto getProfile(UUID userId) {
         Profile profile = profileRepository.findByUserId(userId)
             .orElseThrow(ProfileNotFoundException::new);
@@ -53,6 +59,7 @@ public class ProfileServiceImpl implements ProfileService{
      * @return 변경된 프로필 Dto
      */
     @Override
+    @Transactional
     public ProfileDto updateProfile(UUID userId, ProfileUpdateRequest request,
         Optional<MultipartFile> profileImage) {
 
@@ -70,6 +77,7 @@ public class ProfileServiceImpl implements ProfileService{
                 profile.updateProfileImageUrl(profileImageUrl);
                 log.debug("[Profile] 이미지 업로드 완료: url={}", profileImageUrl);
 
+                // DB 저장 성공 후 이전 파일 삭제
                 if (previousImageUrl != null) {
                     fileStorage.delete(previousImageUrl);
                 }
@@ -79,10 +87,14 @@ public class ProfileServiceImpl implements ProfileService{
             }
         });
 
-
+        Location location = profile.getLocation();
+        if(request.location()!=null) {
+            location = locationRepository.findByLatitudeAndLongitude(
+                    request.location().matchedLatitude(), request.location().matchedLongitude())
+                .orElseThrow(LocationNotFoundException::new);
+        }
         // 프로필 업데이트
-        profile.update(request.name(), request.gender(), request.birthDate(),request.location(),
-            request.temperatureSensitivity());
+        profile.update(request.name(), request.gender(), request.birthDate(),location, request.temperatureSensitivity());
 
         return profileMapper.toDto(profileRepository.save(profile));
 
