@@ -1,14 +1,19 @@
 package com.sprint.ootd5team.domain.profile.entity;
 
 import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
+import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
+import com.sprint.ootd5team.domain.location.entity.Location;
+import com.sprint.ootd5team.domain.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,8 +25,9 @@ import lombok.NoArgsConstructor;
 @Entity
 public class Profile extends BaseUpdatableEntity {
 
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(length = 50, nullable = false)
     private String name;
@@ -35,20 +41,9 @@ public class Profile extends BaseUpdatableEntity {
     @Column(name = "profile_image_url", columnDefinition = "TEXT")
     private String profileImageUrl;
 
-    @Column(name = "latitude", precision = 8, scale = 4)
-    private BigDecimal latitude;
-
-    @Column(name = "longitude", precision = 8, scale = 4)
-    private BigDecimal longitude;
-
-    @Column(name = "x_coord")
-    private Integer xCoord;
-
-    @Column(name = "y_coord")
-    private Integer yCoord;
-
-    @Column(name = "location_names", length = 100)
-    private String locationNames;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "location_id")
+    private Location location;
 
     @Column(name = "temperature_sensitivity")
     private Integer temperatureSensitivity;
@@ -60,17 +55,18 @@ public class Profile extends BaseUpdatableEntity {
         }
     }
 
-    public void relocate(BigDecimal latitude, BigDecimal longitude, String locationNames) {
-        if (!Objects.equals(this.latitude, latitude) && latitude != null) {
-            this.latitude = latitude;
-        }
+    public void updateProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
 
-        if (!Objects.equals(this.longitude, longitude) && longitude != null) {
-            this.longitude = longitude;
-        }
-
-        if (!Objects.equals(this.locationNames, locationNames) && locationNames != null) {
-            this.locationNames = locationNames;
-        }
+    public void update(String name, String gender, LocalDate birthDate, Location location, Integer temperatureSensitivity){
+        this.name = name;
+        this.gender = gender;
+        this.birthDate = birthDate;
+        this.temperatureSensitivity = temperatureSensitivity;
+        relocate(location);
+    }
+    public void relocate(Location location) {
+        this.location = location;
     }
 }

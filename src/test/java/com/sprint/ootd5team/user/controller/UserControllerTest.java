@@ -6,6 +6,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -14,19 +15,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.base.exception.user.UserAlreadyExistException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.security.service.AuthService;
+import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
+import com.sprint.ootd5team.domain.profile.dto.data.ProfileUpdateRequest;
 import com.sprint.ootd5team.domain.profile.dto.request.ProfileDto;
 import com.sprint.ootd5team.domain.profile.service.ProfileService;
 import com.sprint.ootd5team.domain.user.controller.UserController;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
+import com.sprint.ootd5team.domain.user.dto.request.UserLockUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import com.sprint.ootd5team.domain.user.service.UserService;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -39,6 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -449,6 +456,104 @@ null,
                 .content(objectMapper.writeValueAsString(new UserRoleUpdateRequest("ADMIN"))))
             .andDo(print())
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("프로필 업데이트 성공")
+    void updateProfile_Success() throws Exception {
+        BigDecimal latitude = BigDecimal.valueOf(37.52);
+        BigDecimal longitude = BigDecimal.valueOf(129.11);
+        String[] locationNames = {"서울특별시", "광진구", "능동", ""};
+        WeatherAPILocationDto weatherAPILocationDto = new WeatherAPILocationDto(
+            latitude, longitude, 96, 127, locationNames, latitude, longitude);
+
+        ProfileUpdateRequest profileUpdateRequest = new ProfileUpdateRequest(
+            "updatedName", "MALE", LocalDate.now(), weatherAPILocationDto, 4);
+
+        ProfileDto profileDto = new ProfileDto(
+            testUserId, "updatedName", "MALE", LocalDate.now(), weatherAPILocationDto, 4, null);
+
+        // given
+        given(profileService.updateProfile(eq(testUserId), any(ProfileUpdateRequest.class), any()))
+            .willReturn(profileDto);
+
+        // when & then
+        MockMultipartFile requestPart = new MockMultipartFile(
+            "request",    // 컨트롤러 파라미터 이름과 동일해야 함!
+            null,
+            MediaType.APPLICATION_JSON_VALUE,
+            objectMapper.writeValueAsBytes(profileUpdateRequest)
+        );
+
+        mockMvc.perform(multipart("/api/users/{userId}/profiles", testUserId)
+                .file(requestPart)
+                .with(req -> { req.setMethod("PATCH"); return req; }))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON)) // 응답 타입 확인
+            .andExpect(jsonPath("$.name").value("updatedName"))
+            .andExpect(jsonPath("$.birthDate").value(LocalDate.now().toString()))
+            .andExpect(jsonPath("$.gender").value("MALE"));
+    }
+
+    @Test
+    @DisplayName("프로필 업데이트 실패 - 사용자 없음")
+    void updateProfile_Fail_UserNotFound() throws Exception {
+        BigDecimal latitude = BigDecimal.valueOf(37.52);
+        BigDecimal longitude = BigDecimal.valueOf(129.11);
+        String[] locationNames = {"서울특별시", "광진구", "능동", ""};
+        WeatherAPILocationDto weatherAPILocationDto = new WeatherAPILocationDto(
+            latitude, longitude, 96, 127, locationNames, latitude, longitude);
+
+        ProfileUpdateRequest profileUpdateRequest = new ProfileUpdateRequest(
+            "updatedName", "MALE", LocalDate.now(), weatherAPILocationDto, 4);
+
+        ProfileDto profileDto = new ProfileDto(
+            testUserId, "updatedName", "MALE", LocalDate.now(), weatherAPILocationDto, 4, null);
+
+        // given
+        given(profileService.updateProfile(eq(testUserId), any(ProfileUpdateRequest.class), any()))
+            .willThrow(new ProfileNotFoundException());
+
+        // when & then
+        MockMultipartFile requestPart = new MockMultipartFile(
+            "request",    // 컨트롤러 파라미터 이름과 동일해야 함!
+            null,
+            MediaType.APPLICATION_JSON_VALUE,
+            objectMapper.writeValueAsBytes(profileUpdateRequest)
+        );
+
+        mockMvc.perform(multipart("/api/users/{userId}/profiles", testUserId)
+                .file(requestPart)
+                .with(req -> { req.setMethod("PATCH"); return req; }))
+            .andDo(print())
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("계정 잠금 상태 변경 성공")
+    void updateUserLock_Success_Admin() throws Exception {
+        // given
+        UserDto userDto = new UserDto(
+            testUserId,
+            Instant.now(),
+            "user@example.com",
+            "테스트유저",
+            Role.USER,
+            null,
+            true
+        );
+
+        given(userService.updateUserLock(eq(testUserId), any(UserLockUpdateRequest.class)))
+            .willReturn(userDto);
+
+        // when & then
+        mockMvc.perform(patch("/api/users/{userId}/lock", testUserId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new UserLockUpdateRequest(true))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(testUserId.toString()))
+            .andExpect(jsonPath("$.locked").value(true));
     }
 
 

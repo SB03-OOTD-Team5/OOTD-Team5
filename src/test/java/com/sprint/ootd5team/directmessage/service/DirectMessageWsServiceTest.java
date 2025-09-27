@@ -17,6 +17,7 @@ import com.sprint.ootd5team.domain.directmessage.entity.DirectMessageRoom;
 import com.sprint.ootd5team.domain.directmessage.repository.DirectMessageRepository;
 import com.sprint.ootd5team.domain.directmessage.repository.DirectMessageRoomRepository;
 import com.sprint.ootd5team.domain.directmessage.service.DirectMessageWsService;
+import com.sprint.ootd5team.domain.notification.event.type.single.DmCreatedEvent;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.entity.Role;
@@ -118,8 +119,8 @@ class DirectMessageWsServiceTest {
         when(userRepository.findById(senderId)).thenReturn(Optional.of(sender));
         when(userRepository.findById(receiverId)).thenReturn(Optional.of(receiver));
 
-        Profile senderProfile = new Profile(senderId, "sender", null, null, "http://sender", null, null, null, null, null, null);
-        Profile receiverProfile = new Profile(receiverId, "receiver", null, null, "http://receiver", null, null, null, null, null, null);
+        Profile senderProfile = new Profile(sender, "sender", null, null, "http://sender", null, null);
+        Profile receiverProfile = new Profile(receiver, "receiver", null, null, "http://receiver",null, null);
         when(profileRepository.findByUserId(senderId)).thenReturn(Optional.of(senderProfile));
         when(profileRepository.findByUserId(receiverId)).thenReturn(Optional.of(receiverProfile));
 
@@ -145,6 +146,9 @@ class DirectMessageWsServiceTest {
         assertThat(event.payload().sender().profileImageUrl()).isEqualTo("http://sender");
         assertThat(event.payload().receiver().userId()).isEqualTo(receiverId);
         assertThat(event.payload().receiver().profileImageUrl()).isEqualTo("http://receiver");
+
+        // 알림 이벤트 발행
+        verify(eventPublisher).publishEvent(any(DmCreatedEvent.class));
     }
 
     @Test

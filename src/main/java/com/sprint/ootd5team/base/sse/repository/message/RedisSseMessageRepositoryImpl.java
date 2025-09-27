@@ -34,7 +34,7 @@ import org.springframework.stereotype.Repository;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "spring.data.redis.repositories.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "ootd.sse.repository", havingValue = "redis")
 public class RedisSseMessageRepositoryImpl implements SseMessageRepository {
 
     // 정렬 관리용 ZSET(id만)

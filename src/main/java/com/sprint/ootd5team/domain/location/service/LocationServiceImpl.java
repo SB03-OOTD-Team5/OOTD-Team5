@@ -2,6 +2,7 @@ package com.sprint.ootd5team.domain.location.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.base.util.CoordinateUtils;
 import com.sprint.ootd5team.domain.location.dto.data.ClientCoords;
 import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
@@ -10,7 +11,6 @@ import com.sprint.ootd5team.domain.location.exception.LocationKakaoFetchExceptio
 import com.sprint.ootd5team.domain.location.mapper.LocationMapper;
 import com.sprint.ootd5team.domain.location.repository.LocationRepository;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
-import com.sprint.ootd5team.domain.profile.exception.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.weather.external.kakao.KakaoResponseDto;
 import java.math.BigDecimal;
@@ -52,8 +52,7 @@ public class LocationServiceImpl implements LocationService, LocationQueryServic
 
         Location location = findOrCreateLocation(latitude, longitude);
         // 프로필 위치 업데이트
-        profile.relocate(location.getLatitude(), location.getLongitude(),
-            location.getLocationNames());
+        profile.relocate(location);
 
         return locationMapper.toDto(location, new ClientCoords(latitude, longitude));
     }
@@ -67,7 +66,8 @@ public class LocationServiceImpl implements LocationService, LocationQueryServic
     }
 
 
-    private Location findOrCreateLocation(BigDecimal latitude, BigDecimal longitude) {
+    @Override
+    public Location findOrCreateLocation(BigDecimal latitude, BigDecimal longitude) {
         //0. 이미 존재하는 데이터면 가져와서 전달
         Location cached = getLocationIfExist(latitude, longitude);
         log.debug("[location] 해당 데이터 존재 유무: {}", cached != null);

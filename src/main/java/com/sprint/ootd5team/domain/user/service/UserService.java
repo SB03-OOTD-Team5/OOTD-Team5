@@ -7,17 +7,20 @@ import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
+import com.sprint.ootd5team.domain.user.dto.request.UserLockUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.mapper.UserMapper;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import com.sprint.ootd5team.domain.user.repository.UserRepositoryCustom;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +45,7 @@ public class UserService {
     @Transactional
     public UserDto create(UserCreateRequest request){
 
-        log.debug("유저 생성 시작");
+        log.info("[user]유저 생성 시작");
         if (userRepository.existsByEmail(request.email())) {
             throw new UserAlreadyExistException();
         }
@@ -51,9 +54,9 @@ public class UserService {
                 Role.USER));
 
         // 프로필 생성해서 저장
-        Profile profile = new Profile(user.getId(),user.getName(),null,null,null,null,null,null,null,null,null);
+        Profile profile = new Profile(user,user.getName(),null,null,null,null,null);
         profileRepository.save(profile);
-        log.info("유저 생성 완료");
+        log.debug("[user]유저 생성 완료");
 
         return userMapper.toDto(user);
     }
@@ -65,13 +68,25 @@ public class UserService {
      */
     @Transactional
     public void changePassword(UUID userId, ChangePasswordRequest request) {
-        log.debug("비밀번호 변경 시작");
+        log.info("[user]비밀번호 변경 시작");
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
         user.updatePassword(passwordEncoder.encode(request.password()));
         userRepository.save(user);
-        log.info("비밀번호 변경 완료 유저ID:{}",userId);
+        log.debug("[user]비밀번호 변경 완료 유저ID:{}",userId);
     }
 
+    /**
+     * (어드민전용) 커서 페이지네이션을 사용하여 사용자 정보를 가져오는 메서드
+     * @param cursor 참조할 커서 정보
+     * @param idAfter 다음 필드의 UUID
+     * @param limit 1페이지당 가져올 개수
+     * @param sortBy 정렬 기준
+     * @param sortDirection 정렬 방법
+     * @param emailLike 유사한 이메일 검색
+     * @param roleEqual 역할 (ADMIN, USER)
+     * @param locked 잠금여부
+     * @return UserDtoCursorResponse 커서 페이지네이션 결과
+     */
     @Transactional
     public UserDtoCursorResponse getUsers(
         String cursor,
@@ -83,7 +98,7 @@ public class UserService {
         String roleEqual,
         Boolean locked) {
 
-        log.debug("유저 검색 커서 기반 페이지네이션 시작");
+        log.info("[user]유저 검색 커서 기반 페이지네이션 시작");
         List<UserDto> allByCursor = userRepositoryCustom.findUsersWithCursor(cursor, idAfter, limit+1,
                 sortBy, sortDirection, emailLike, roleEqual, locked)
             .stream()
@@ -118,8 +133,26 @@ public class UserService {
         // 다음 페이지가 존재할 때만 limit+1을 검색했기때문에 마지막 인덱스 제거
         if(hasNext) allByCursor.remove(allByCursor.size() - 1);
 
-        log.info("유저 검색 커서 기반 페이지네이션 완료");
+        log.debug("[user]유저 검색 커서 기반 페이지네이션 완료");
         return new UserDtoCursorResponse(allByCursor, nextCursor, nextIdAfter, hasNext, totalCount, sortBy,
             sortDirection);
+    }
+
+    /**
+     * 계정 잠금여부 업데이트 메서드
+     * @param userId 업데이트할 UserId
+     * @param request 계정잠금 요청(false: 잠금해제, true: 잠금)
+     * @return 변경된 userDto
+     */
+    @Transactional
+    @PreAuthorize( "hasRole('ADMIN')")
+    public UserDto updateUserLock(UUID userId, @Valid UserLockUpdateRequest request){
+
+        log.info("[user]계정 잠금여부 업데이트 메서드 시작 userId:{}, request:{}", userId, request);
+        User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+        user.updateLock(request.locked());
+        log.debug("[user] 계정잠금 완료");
+        return userMapper.toDto(userRepository.save(user));
+
     }
 }

@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.sprint.ootd5team.base.config.QuerydslConfig;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
-import com.sprint.ootd5team.domain.clothes.repository.ClothesRepositoryImpl;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.List;
@@ -23,7 +22,7 @@ import org.springframework.test.context.jdbc.Sql;
 @DataJpaTest
 @Import(QuerydslConfig.class)
 @TestPropertySource(properties = "spring.sql.init.mode=never")
-@Sql(scripts = {"classpath:user-data.sql", "classpath:clothes-data.sql"})
+@Sql(scripts = {"classpath:testdata/user-data.sql", "classpath:testdata/clothes-data.sql"})
 @ActiveProfiles("test")
 @DisplayName("ClothesRepositoryImpl 슬라이스 테스트")
 class ClothesRepositoryImplTest {
