@@ -20,6 +20,7 @@ import com.sprint.ootd5team.domain.feed.entity.FeedClothes;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.feed.repository.feedClothes.FeedClothesRepository;
 import com.sprint.ootd5team.domain.feed.repository.feedClothes.impl.FeedClothesRepositoryImpl;
+import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import com.sprint.ootd5team.domain.user.entity.User;
@@ -321,12 +322,16 @@ public class FeedRepositoryImplTest {
     }
 
     private Profile createProfile(User user) {
-        Profile profile = new Profile(user, "닉네임", null,null, null, null, 2);
+        Location location = createLocation();
+        Profile profile = new Profile(
+            user, "닉네임", null, null, null, location, 2
+        );
         em.persist(profile);
         return profile;
     }
 
     private Weather createWeather(Profile profile, SkyStatus skyStatus, PrecipitationType type) {
+        Location location = profile.getLocation();
         Weather weather = Weather.builder()
             .forecastedAt(Instant.now())
             .forecastAt(Instant.now())
@@ -335,6 +340,7 @@ public class FeedRepositoryImplTest {
             .temperature(20.0)
             .temperatureMin(18.0)
             .temperatureMax(25.0)
+            .location(location)
             .build();
         em.persist(weather);
         return weather;
@@ -344,6 +350,19 @@ public class FeedRepositoryImplTest {
         Feed feed = new Feed(user.getId(), weather.getId(), content, 0, 0);
         em.persist(feed);
         return feed;
+    }
+
+    private Location createLocation() {
+        Location location = Location.builder()
+            .latitude(BigDecimal.valueOf(37.5665))
+            .longitude(BigDecimal.valueOf(126.9780))
+            .xCoord(60)
+            .yCoord(127)
+            .locationNames("서울특별시 중구")
+            .locationCode("11B10101")
+            .build();
+        em.persist(location);
+        return location;
     }
 
     private void persistAndClear(Object... entities) {
