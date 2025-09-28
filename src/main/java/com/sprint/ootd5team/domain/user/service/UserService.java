@@ -14,6 +14,7 @@ import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.mapper.UserMapper;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import com.sprint.ootd5team.domain.user.repository.UserRepositoryCustom;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -53,7 +54,7 @@ public class UserService {
                 Role.USER));
 
         // 프로필 생성해서 저장
-        Profile profile = new Profile(user.getId(),user.getName(),null,null,null,null,null,null,null,null,null);
+        Profile profile = new Profile(user,user.getName(),null,null,null,null,null);
         profileRepository.save(profile);
         log.debug("[user]유저 생성 완료");
 
@@ -145,7 +146,7 @@ public class UserService {
      */
     @Transactional
     @PreAuthorize( "hasRole('ADMIN')")
-    public UserDto updateUserLock(UUID userId, UserLockUpdateRequest request){
+    public UserDto updateUserLock(UUID userId, @Valid UserLockUpdateRequest request){
 
         log.info("[user]계정 잠금여부 업데이트 메서드 시작 userId:{}, request:{}", userId, request);
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
