@@ -11,7 +11,9 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
+import com.sprint.ootd5team.base.exception.follow.FollowNotFoundException;
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowDto;
@@ -311,5 +313,33 @@ public class FollowServiceTest {
         then(profileRepository).should(never()).findByUserId(followerId);
         then(followRepository).shouldHaveNoInteractions();
         then(profileMapper).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("팔로우 취소 성공")
+    void unFollow_shouldDeleteFollow() {
+        // given
+        given(followRepository.existsById(followId)).willReturn(true);
+
+        // when
+        followService.unFollow(followId);
+
+        // then
+        verify(followRepository).existsById(followId);
+        verify(followRepository).deleteById(followId);
+    }
+
+    @Test
+    @DisplayName("팔로우 취소 중 존재하지 않는 followId일 경우 예외 발생")
+    void unFollow_shouldThrowException_whenNotExists() {
+        // given
+        given(followRepository.existsById(followId)).willReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> followService.unFollow(followId))
+            .isInstanceOf(FollowNotFoundException.class);
+
+        verify(followRepository).existsById(followId);
+        verify(followRepository, never()).deleteById(any());
     }
 }
