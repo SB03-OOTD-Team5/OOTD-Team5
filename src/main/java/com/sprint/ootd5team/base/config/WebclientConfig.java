@@ -65,4 +65,17 @@ public class WebclientConfig {
             .build();
     }
 
+    @Bean("ollamaWebClient")
+    public WebClient ollamaWebClient(
+        @Value("${spring.ai.ollama.api.url}") String baseUrl
+    ) {
+        return WebClient.builder()
+            .baseUrl(baseUrl)
+            .filter((request, next) -> {
+                log.debug("[Ollama API 리퀘스트] {} {}", request.method(), request.url());
+                return next.exchange(request);
+            })
+            .build();
+    }
+
 }
