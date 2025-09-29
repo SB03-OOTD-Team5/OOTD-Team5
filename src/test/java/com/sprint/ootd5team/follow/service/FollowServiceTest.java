@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -318,14 +320,10 @@ public class FollowServiceTest {
     @Test
     @DisplayName("팔로우 취소 성공")
     void unFollow_shouldDeleteFollow() {
-        // given
-        given(followRepository.existsById(followId)).willReturn(true);
-
         // when
         followService.unFollow(followId);
 
         // then
-        verify(followRepository).existsById(followId);
         verify(followRepository).deleteById(followId);
     }
 
@@ -333,13 +331,13 @@ public class FollowServiceTest {
     @DisplayName("팔로우 취소 중 존재하지 않는 followId일 경우 예외 발생")
     void unFollow_shouldThrowException_whenNotExists() {
         // given
-        given(followRepository.existsById(followId)).willReturn(false);
+        doThrow(new EmptyResultDataAccessException(1))
+            .when(followRepository).deleteById(followId);
 
         // when & then
         assertThatThrownBy(() -> followService.unFollow(followId))
             .isInstanceOf(FollowNotFoundException.class);
 
-        verify(followRepository).existsById(followId);
-        verify(followRepository, never()).deleteById(any());
+        verify(followRepository).deleteById(followId);
     }
 }
