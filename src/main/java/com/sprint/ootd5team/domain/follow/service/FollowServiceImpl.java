@@ -10,8 +10,11 @@ import com.sprint.ootd5team.domain.follow.dto.request.FollowListBaseRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowingListRequest;
 import com.sprint.ootd5team.domain.follow.dto.response.FollowListResponse;
+import com.sprint.ootd5team.domain.follow.entity.Follow;
 import com.sprint.ootd5team.domain.follow.mapper.FollowMapper;
 import com.sprint.ootd5team.domain.follow.repository.FollowRepository;
+import com.sprint.ootd5team.domain.profile.entity.Profile;
+import com.sprint.ootd5team.domain.profile.mapper.ProfileMapper;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import java.time.Instant;
 import java.util.List;
@@ -20,8 +23,10 @@ import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
 public class FollowServiceImpl implements FollowService {
@@ -29,6 +34,26 @@ public class FollowServiceImpl implements FollowService {
     private final FollowRepository followRepository;
     private final ProfileRepository profileRepository;
     private final FollowMapper followMapper;
+    private final ProfileMapper profileMapper;
+
+    @Override
+    @Transactional
+    public FollowDto follow(UUID followerId, UUID followeeId) {
+        log.info("[FollowService] 팔로우 등록 요청 시작");
+
+        Profile followeeProfile = getProfileOrThrow(followeeId, "followeeId");
+        Profile followerProfile = getProfileOrThrow(followerId, "followerId");
+
+        Follow saved = followRepository.save(new Follow(followeeId, followerId));
+
+        log.debug("[FollowService] 등록된 Follow 데이터 - {}", saved);
+
+        return new FollowDto(
+            saved.getId(),
+            profileMapper.toAuthorDto(followeeProfile),
+            profileMapper.toAuthorDto(followerProfile)
+        );
+    }
 
     @Override
     public FollowListResponse getFollowingList(FollowingListRequest followingListRequest) {
@@ -114,5 +139,13 @@ public class FollowServiceImpl implements FollowService {
             log.warn("[FollowService] 프로필이 존재하지 않습니다. userId: {}", userId);
             throw ProfileNotFoundException.withUserId(userId);
         }
+    }
+
+    private Profile getProfileOrThrow(UUID userId, String role) {
+        return profileRepository.findByUserId(userId)
+            .orElseThrow(() -> {
+                log.warn("[FollowService] 프로필이 조회되지 않습니다. {}: {}", role, userId);
+                return ProfileNotFoundException.withUserId(userId);
+            });
     }
 }

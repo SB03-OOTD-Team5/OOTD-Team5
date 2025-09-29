@@ -1,7 +1,9 @@
 package com.sprint.ootd5team.domain.follow.controller.api;
 
 import com.sprint.ootd5team.base.exception.ErrorResponse;
+import com.sprint.ootd5team.domain.follow.dto.data.FollowDto;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowSummaryDto;
+import com.sprint.ootd5team.domain.follow.dto.request.FollowCreateRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowingListRequest;
 import com.sprint.ootd5team.domain.follow.dto.response.FollowListResponse;
@@ -18,6 +20,19 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
 
 public interface FollowApi {
+
+    @Operation(summary = "팔로우 생성")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201", description = "팔로우 생성 성공",
+            content = @Content(schema = @Schema(implementation = FollowDto.class))
+        ),
+        @ApiResponse (
+            responseCode = "400", description = "팔로우 생성 실패",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    ResponseEntity<FollowDto> follow(@RequestBody FollowCreateRequest followCreateRequest);
 
     @Operation(summary = "팔로잉 목록 조회")
     @ApiResponses({
