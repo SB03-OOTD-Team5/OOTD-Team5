@@ -35,3 +35,20 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
     depends_on:
       - kafka
+
+  ollama:
+#    environment:
+#      - OLLAMA_API_URL=http://ollama:11434
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama  # 모델 캐시
+    restart: unless-stopped
+
+volumes:
+  ollama_models:
+
+#    컨테이너 안에서 Ollama 모델 설치
+#  docker exec -it ollama ollama pull gemma3:4b

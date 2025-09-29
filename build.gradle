@@ -22,8 +22,14 @@ configurations {
     }
 }
 
+ext {
+    set('springAiVersion', "1.1.0-M1")//밑에서 사용할 버전 변수
+}
+
 repositories {
     mavenCentral()
+    maven { url "https://repo.spring.io/milestone" }
+    maven { url = uri("https://repo.spring.io/snapshot") }
 }
 
 dependencies {
@@ -86,6 +92,11 @@ dependencies {
     // 웹 스크래핑
     implementation 'org.jsoup:jsoup:1.18.1'
 
+    // spring Ai(Ollama)
+    implementation 'org.springframework.ai:spring-ai-openai'
+    implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT")
+    implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
+
 }
 
 tasks.named('test') {
@@ -119,5 +130,11 @@ jacocoTestReport {
     reports {
         xml.required = true
         html.required = true
+    }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
     }
 }
