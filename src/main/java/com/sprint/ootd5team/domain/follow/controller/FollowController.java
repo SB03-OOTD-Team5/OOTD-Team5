@@ -67,7 +67,7 @@ public class FollowController implements FollowApi {
     @Override
     @DeleteMapping("/{followId}")
     public ResponseEntity<Void> unFollow(UUID followId) {
-//        followService.unFollow(followId);
+        followService.unFollow(followId);
 
         return ResponseEntity.noContent().build();
     }
