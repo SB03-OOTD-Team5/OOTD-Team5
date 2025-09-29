@@ -30,7 +30,8 @@ weather:
     base-url: https://dapi.kakao.com/v2/local/geo/coord2regioncode.json
     client-secret: ${KAKAO_CLIENT_SECRET}
   kma: #기상청
-    base-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst
+    base-url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getVilageFcst
+    #base-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst
     client-secret: ${KMA_CLIENT_SECRET}
 
 # Swagger UI
