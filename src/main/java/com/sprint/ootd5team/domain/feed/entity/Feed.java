@@ -8,7 +8,9 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
+@ToString
 @Table(name = "tbl_feeds")
 @AllArgsConstructor
 @NoArgsConstructor
@@ -30,6 +32,18 @@ public class Feed extends BaseUpdatableEntity {
 
     @Column(name = "like_count", nullable = false)
     private long likeCount = 0;
+
+    private Feed(UUID authorId, UUID weatherId, String content) {
+        this.authorId = authorId;
+        this.weatherId = weatherId;
+        this.content = content;
+        this.commentCount = 0;
+        this.likeCount = 0;
+    }
+
+    public static Feed of(UUID authorId, UUID weatherId, String content) {
+        return new Feed(authorId, weatherId, content);
+    }
 
     public void updateContent(String content) {
         this.content = content;

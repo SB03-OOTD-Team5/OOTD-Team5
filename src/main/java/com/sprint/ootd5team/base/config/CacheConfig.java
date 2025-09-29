@@ -4,7 +4,12 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.sprint.ootd5team.domain.directmessage.entity.DirectMessageRoom;
 import java.time.Duration;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,4 +54,30 @@ public class CacheConfig {
             // null 값은 캐싱하지 않도록 설정
             .disableCachingNullValues();
     }
+
+    // ========== DirectMessage Chache ==========
+    @Bean
+    public Cache<UUID, String> dmUserNameCache() {
+        return Caffeine.newBuilder()
+            .maximumSize(1_000)
+            .expireAfterWrite(Duration.ofMinutes(10))
+            .build();
+    }
+
+    @Bean
+    public Cache<UUID, Optional<String>> dmProfileUrlCache() {
+        return Caffeine.newBuilder()
+            .maximumSize(1_000)
+            .expireAfterWrite(Duration.ofMinutes(10))
+            .build();
+    }
+
+    @Bean
+    public Cache<String, DirectMessageRoom> dmRoomCache() {
+        return Caffeine.newBuilder()
+            .maximumSize(1_000)
+            .expireAfterWrite(Duration.ofMinutes(30))
+            .build();
+    }
+
 }

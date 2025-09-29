@@ -11,15 +11,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.util.Map;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.unit.DataSize;
@@ -34,10 +33,24 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "ootd.storage.type", havingValue = "s3")
-public class S3FileStorage implements FileStorage{
+public class S3FileStorage implements FileStorage {
+
+    private static final Map<String, String> EXTENSION_TO_MIME = Map.ofEntries(
+        Map.entry("png", "image/png"),
+        Map.entry("jpg", "image/jpeg"),
+        Map.entry("jpeg", "image/jpeg"),
+        Map.entry("gif", "image/gif"),
+        Map.entry("webp", "image/webp"),
+        Map.entry("svg", "image/svg+xml"),
+        Map.entry("bmp", "image/bmp"),
+        Map.entry("tif", "image/tiff"),
+        Map.entry("tiff", "image/tiff")
+    );
 
     private final S3Client s3Client;
+
     private final S3Presigner s3Presigner;
+
     private final long maxUploadSize;
 
     @Value("${ootd.storage.s3.bucket}")
@@ -60,13 +73,16 @@ public class S3FileStorage implements FileStorage{
      * 파일 업로드 (랜덤 UUID prefix 붙여서 key 충돌 방지)
      */
     @Override
-    public String upload(String filename, InputStream inputStream, String contentType) {
+    public String upload(String filename, InputStream inputStream, String contentType, String prefix) {
         String extension = "";
         if (filename != null && filename.contains(".")) {
             extension = filename.substring(filename.lastIndexOf('.'));
         }
 
-        String key = "clothes/" + UUID.randomUUID() + extension;
+        contentType = resolveContentType(filename, extension, contentType);
+
+        String key = prefix + UUID.randomUUID() + extension;
+
         Path tempFile = null;
 
         try {
@@ -119,7 +135,8 @@ public class S3FileStorage implements FileStorage{
             if (tempFile != null) {
                 try {
                     Files.deleteIfExists(tempFile);
-                } catch (IOException ignore) {}
+                } catch (IOException ignore) {
+                }
             }
         }
     }
@@ -180,16 +197,33 @@ public class S3FileStorage implements FileStorage{
         return path != null ? download(path) : null;
     }
 
-    /**
-     * 업로드 재시도 실패 시 복구 처리
-     */
-    @Recover
-    public String recover(Exception e, String filename, InputStream inputStream, String contentType) {
-        String requestId = MDC.get("requestId");
-        log.error("[S3] 업로드 모든 재시도 실패 - filename={}, requestId={}, cause={}",
-            filename, requestId, e.toString(), e);
+    private String resolveContentType(String filename, String extension, String contentType) {
+        // 1. 지정된 contentType이 있고 기본값이 아니라면 그대로 사용
+        if (contentType != null && !"application/octet-stream".equalsIgnoreCase(contentType)) {
+            return contentType;
+        }
 
-        throw FilePermanentSaveFailedException.withFileName(filename);
+        // 2. 파일명 기반 추론 (filename null 보강 처리)
+        if (filename != null && !filename.isBlank()) {
+            try {
+                String probed = Files.probeContentType(Path.of(filename));
+                if (probed != null) {
+                    return probed;
+                }
+            } catch (Exception ignore) {
+            }
+        }
+
+        // 3. 확장자 기반 fallback
+        if (extension != null && !extension.isBlank()) {
+            String ext = extension.startsWith(".") ? extension.substring(1) : extension;
+            String mime = EXTENSION_TO_MIME.get(ext.toLowerCase());
+            if (mime != null) {
+                return mime;
+            }
+        }
+
+        // 4. 최종 fallback
+        return "application/octet-stream";
     }
-
 }

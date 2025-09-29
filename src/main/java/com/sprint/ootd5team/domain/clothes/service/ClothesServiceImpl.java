@@ -8,7 +8,6 @@ import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundExc
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeValueNotAllowedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
-import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
@@ -34,6 +33,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -55,7 +56,9 @@ public class ClothesServiceImpl implements ClothesService {
     private final FileStorage fileStorage;
     private final UserRepository userRepository;
     private final ClothesAttributeRepository attributeRepository;
-    private final AuthService authService;
+
+    @Value("${ootd.storage.s3.prefix.clothes}")
+    private String clothesPrefix;
 
     /**
      * 특정 사용자의 의상 목록을 조회한다.
@@ -72,17 +75,17 @@ public class ClothesServiceImpl implements ClothesService {
     public ClothesDtoCursorResponse getClothes(
         UUID ownerId,
         ClothesType type,
-        String cursor,
+        Instant cursor,
         UUID idAfter,
-        int limit
+        int limit,
+        Sort.Direction direction
     ) {
         log.info("[ClothesService] 옷 목록 조회 시작: ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
             ownerId, type, cursor, idAfter, limit);
 
-        Instant cursorInstant = cursor != null ? Instant.parse(cursor) : null;
         // 다음 페이지 여부 확인
-        List<Clothes> result = clothesRepository.findClothes(
-            ownerId, type, cursorInstant, idAfter, limit + 1
+        List<Clothes> result = clothesRepository.findByOwnerWithCursor(
+            ownerId, type, cursor, idAfter, limit + 1, direction
         );
 
         boolean hasNext = result.size() > limit;
@@ -104,14 +107,16 @@ public class ClothesServiceImpl implements ClothesService {
                 nextCursor, nextIdAfter);
         }
 
+        long totalCount = clothesRepository.countByOwner_Id(ownerId);
+
         ClothesDtoCursorResponse response = new ClothesDtoCursorResponse(
             dtoList,
             nextCursor,
             nextIdAfter,
             hasNext,
-            (long) dtoList.size(),
+            totalCount,
             "createdAt",
-            "DESC"
+            direction.name()
         );
 
         log.info("[ClothesService] 옷 목록 조회 완료: 반환 개수={}, hasNext={}",
@@ -171,7 +176,7 @@ public class ClothesServiceImpl implements ClothesService {
             return clothesMapper.toDto(clothes);
         } catch (RuntimeException e) {
             deleteFileSafely(imageUrl, "의상 저장 실패 롤백");
-            throw ClothesSaveFailedException.withId(clothes.getId());
+            throw ClothesSaveFailedException.withoutId(e);
         }
     }
 
@@ -195,7 +200,8 @@ public class ClothesServiceImpl implements ClothesService {
             return fileStorage.upload(
                 image.getOriginalFilename(),
                 in,
-                image.getContentType()
+                image.getContentType(),
+                clothesPrefix
             );
         } catch (IOException e) {
             log.warn("[clothes] 이미지 업로드 실패 {}", e.getMessage());
@@ -272,7 +278,7 @@ public class ClothesServiceImpl implements ClothesService {
             .collect(Collectors.toSet());
 
         for (ClothesAttributeDto dto : newAttributes) {
-            ClothesAttributeValue newCav = toClothesAttributeValue(dto); // <-- 공통 메서드 활용
+            ClothesAttributeValue newCav = toClothesAttributeValue(dto);
             ClothesAttributeValue existing = currentMap.get(dto.definitionId());
 
             if (existing == null) {
@@ -311,33 +317,51 @@ public class ClothesServiceImpl implements ClothesService {
             .collect(Collectors.toList());
     }
 
+    /**
+     * 파일 스토리지에서 안전하게 파일을 삭제한다.
+     * <p>
+     * 처리 정책:
+     * <ul>
+     *   <li>파일이 null이면 아무 작업도 하지 않는다.</li>
+     *   <li>삭제 시도 중 예외가 발생해도 예외를 다시 던지지 않고 경고 로그만 남긴다.</li>
+     *   <li>따라서 DB 트랜잭션은 영향을 받지 않으며,
+     *       삭제 실패 시 고아 파일이 남을 수 있다.</li>
+     *   <li>필요 시 배치 작업이나 로그 기반 모니터링으로 후처리 가능하다.</li>
+     * </ul>
+     *
+     * @param key    삭제할 파일의 key (null 허용)
+     * @param reason 삭제 사유 (로그 용도)
+     */
     private void deleteFileSafely(String key, String reason) {
-        if (key == null) return;
+        if (!hasText(key)) return;
         try {
             fileStorage.delete(key);
             log.info("[clothes] 파일 삭제 성공 - key={}, reason={}", key, reason);
         } catch (Exception e) {
-            log.warn("[clothes] 파일 삭제 실패 - key={}, reason={}, cause={}", key, reason, e.toString());
+            log.warn("[clothes] 파일 삭제 실패 - key={}, reason={}", key, reason, e);
         }
     }
 
+    /**
+     * 의상 삭제
+     * 이미지 파일 삭제는 {@link #deleteFileSafely(String, String)}에서 처리
+     */
     @Transactional
     @Override
-    public void delete(UUID clothesId) {
-        UUID currentUserId = authService.getCurrentUserId();
-
+    public void delete(UUID ownerId, UUID clothesId) {
         Clothes clothes = clothesRepository.findById(clothesId)
             .orElseThrow(() -> {
                 log.warn("[clothes] 삭제 실패 - 존재하지 않는 clothesId: {}", clothesId);
                 throw ClothesNotFoundException.withId(clothesId);
             });
 
-        if (!clothes.getOwner().getId().equals(currentUserId)) {
+        if (!clothes.getOwner().getId().equals(ownerId)) {
             throw new SecurityException();
         }
 
+        deleteFileSafely(clothes.getImageUrl(), "의상 삭제");
         clothesRepository.deleteById(clothesId);
-        log.info("[clothes] 삭제 완료 - ownerId={}", currentUserId);
+        log.info("[clothes] 삭제 완료 - ownerId={}", ownerId);
     }
 
 }

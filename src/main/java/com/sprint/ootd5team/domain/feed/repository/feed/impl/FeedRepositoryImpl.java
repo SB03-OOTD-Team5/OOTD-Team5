@@ -13,7 +13,7 @@ import com.sprint.ootd5team.domain.feed.dto.data.SortSpecDto;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
 import com.sprint.ootd5team.domain.feed.entity.QFeed;
-import com.sprint.ootd5team.domain.feed.exception.InvalidSortOptionException;
+import com.sprint.ootd5team.base.exception.feed.InvalidSortOptionException;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepositoryCustom;
 import com.sprint.ootd5team.domain.like.entity.QFeedLike;
 import com.sprint.ootd5team.domain.profile.entity.QProfile;
@@ -68,7 +68,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             .select(feedProjection(currentUserId))
             .from(feed)
             .join(user).on(feed.authorId.eq(user.id))
-            .leftJoin(profile).on(profile.userId.eq(user.id))
+            .leftJoin(profile).on(profile.user.id.eq(user.id))
             .join(weather).on(feed.weatherId.eq(weather.id))
             .where(
                 keywordLike(request.keywordLike()),
@@ -103,7 +103,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             .select(feedProjection(currentUserId))
             .from(feed)
             .join(user).on(feed.authorId.eq(user.id))
-            .leftJoin(profile).on(profile.userId.eq(user.id))
+            .leftJoin(profile).on(profile.user.id.eq(user.id))
             .join(weather).on(feed.weatherId.eq(weather.id))
             .where(feed.id.eq(feedId))
             .fetchOne();
@@ -220,7 +220,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             case "createdAt" -> {
                 List<OrderSpecifier<?>> orders = List.of(
                     new OrderSpecifier<>(asc ? Order.ASC : Order.DESC, feed.createdAt),
-                    new OrderSpecifier<>(asc ? Order.ASC : Order.DESC, feed.id)
+                    new OrderSpecifier<>(Order.ASC, feed.id)
                 );
                 BooleanExpression cursorCondition = (cursor != null && idAfter != null)
                     ? (asc
@@ -234,7 +234,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             case "likeCount" -> {
                 List<OrderSpecifier<?>> orders = List.of(
                     new OrderSpecifier<>(asc ? Order.ASC : Order.DESC, feed.likeCount),
-                    new OrderSpecifier<>(asc ? Order.ASC : Order.DESC, feed.id)
+                    new OrderSpecifier<>(Order.ASC, feed.id)
                 );
                 BooleanExpression cursorCondition = (cursor != null && idAfter != null)
                     ? (asc
@@ -245,7 +245,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                     : null;
                 yield new SortSpecDto(orders, cursorCondition);
             }
-            default -> throw new InvalidSortOptionException(request.sortBy());
+            default -> throw InvalidSortOptionException.withSortBy(request.sortBy());
         };
     }
 }
