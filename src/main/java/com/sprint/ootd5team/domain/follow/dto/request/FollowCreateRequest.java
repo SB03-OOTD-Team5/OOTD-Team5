@@ -1,8 +1,9 @@
 package com.sprint.ootd5team.domain.follow.dto.request;
 
+import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record FollowCreateRequest(
-    UUID followeeId,
-    UUID followerId
+    @NotNull UUID followeeId,
+    @NotNull UUID followerId
 ) { }
