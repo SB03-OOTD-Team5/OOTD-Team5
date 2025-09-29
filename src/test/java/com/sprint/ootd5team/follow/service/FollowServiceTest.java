@@ -8,6 +8,9 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
@@ -18,13 +21,17 @@ import com.sprint.ootd5team.domain.follow.dto.enums.FollowDirection;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowingListRequest;
 import com.sprint.ootd5team.domain.follow.dto.response.FollowListResponse;
+import com.sprint.ootd5team.domain.follow.entity.Follow;
 import com.sprint.ootd5team.domain.follow.mapper.FollowMapper;
 import com.sprint.ootd5team.domain.follow.repository.FollowRepository;
 import com.sprint.ootd5team.domain.follow.service.FollowServiceImpl;
+import com.sprint.ootd5team.domain.profile.entity.Profile;
+import com.sprint.ootd5team.domain.profile.mapper.ProfileMapper;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.dto.AuthorDto;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,6 +41,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("FollowService 슬라이스 테스트")
@@ -49,10 +57,15 @@ public class FollowServiceTest {
     @Mock
     private FollowMapper followMapper;
 
+    @Mock
+    private ProfileMapper profileMapper;
+
     @InjectMocks
     private FollowServiceImpl followService;
 
+    private UUID followId;
     private UUID followerId;
+    private UUID followeeId;
     private FollowProjectionDto projection1;
     private FollowProjectionDto projection2;
     private AuthorDto user1;
@@ -62,7 +75,9 @@ public class FollowServiceTest {
 
     @BeforeEach
     void setUp() {
+        followId = UUID.randomUUID();
         followerId = UUID.randomUUID();
+        followeeId = UUID.randomUUID();
 
         user1 = new AuthorDto(UUID.randomUUID(), "user1", "https://example.com/profile1.png");
         user2 = new AuthorDto(UUID.randomUUID(), "user2", "https://example.com/profile2.png");
@@ -211,7 +226,7 @@ public class FollowServiceTest {
     }
 
     @Test
-    @DisplayName("팔로우 요약 정보 조회 - 정상 반환")
+    @DisplayName("팔로우 요약 정보 조회 성공")
     void getSummary_shouldReturnDto() {
         // given
         UUID userId = UUID.randomUUID();
@@ -240,5 +255,61 @@ public class FollowServiceTest {
         assertThat(actual.followingMe()).isFalse();
 
         then(followRepository).should().getSummary(userId, currentUserId);
+    }
+
+    @Test
+    @DisplayName("팔로우 등록 성공")
+    void createFollow_success() {
+        // given
+        Profile followeeProfile = mock(Profile.class);
+        Profile followerProfile = mock(Profile.class);
+
+        given(profileRepository.findByUserId(eq(followeeId)))
+            .willReturn(Optional.of(followeeProfile));
+        given(profileRepository.findByUserId(eq(followerId)))
+            .willReturn(Optional.of(followerProfile));
+
+        Follow follow = new Follow(followeeId, followerId);
+        ReflectionTestUtils.setField(follow, "id", followId);
+        given(followRepository.save(any(Follow.class))).willReturn(follow);
+
+        AuthorDto followeeDto = mock(AuthorDto.class);
+        AuthorDto followerDto = mock(AuthorDto.class);
+
+        given(profileMapper.toAuthorDto(followeeProfile)).willReturn(followeeDto);
+        given(profileMapper.toAuthorDto(followerProfile)).willReturn(followerDto);
+
+        // when
+        FollowDto result = followService.follow(followerId, followeeId);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(followId);
+        assertThat(result.followee()).isSameAs(followeeDto);
+        assertThat(result.follower()).isSameAs(followerDto);
+
+        then(profileRepository).should().findByUserId(followeeId);
+        then(profileRepository).should().findByUserId(followerId);
+        then(followRepository).should().save(any(Follow.class));
+        then(profileMapper).should().toAuthorDto(followeeProfile);
+        then(profileMapper).should().toAuthorDto(followerProfile);
+    }
+
+    @Test
+    @DisplayName("팔로우 등록 실패 - followee 프로필 없음")
+    void createFollow_fail_followeeNotFound() {
+        // given
+        given(profileRepository.findByUserId(eq(followeeId)))
+            .willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> followService.follow(followerId, followeeId))
+            .isInstanceOf(ProfileNotFoundException.class)
+            .hasMessage("존재하지 않는 프로필 입니다.");
+
+        then(profileRepository).should(times(1)).findByUserId(followeeId);
+        then(profileRepository).should(never()).findByUserId(followerId);
+        then(followRepository).shouldHaveNoInteractions();
+        then(profileMapper).shouldHaveNoInteractions();
     }
 }

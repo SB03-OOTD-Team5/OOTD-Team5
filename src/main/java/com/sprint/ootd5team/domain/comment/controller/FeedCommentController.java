@@ -31,9 +31,7 @@ public class FeedCommentController implements FeedCommentApi {
         ) {
         CommentDtoCursorResponse response = feedCommentService.getComments(feedId, commentListRequest);
 
-        return ResponseEntity
-            .status(HttpStatus.OK)
-            .body(response);
+        return ResponseEntity.ok(response);
     }
 
     //ToDo: 추후에 AuthorId를 Dto가 아닌 AuthService에서 받아오도록 수정할 수 있음.

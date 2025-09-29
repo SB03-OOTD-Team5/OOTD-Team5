@@ -5,9 +5,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.config.SecurityConfig;
 import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
 import com.sprint.ootd5team.base.security.service.AuthService;
@@ -15,6 +17,7 @@ import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.follow.controller.FollowController;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowDto;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowSummaryDto;
+import com.sprint.ootd5team.domain.follow.dto.request.FollowCreateRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowingListRequest;
 import com.sprint.ootd5team.domain.follow.dto.response.FollowListResponse;
@@ -161,5 +164,32 @@ public class FollowControllerTest {
 
         then(authService).should().getCurrentUserId();
         then(followService).should().getSummary(eq(userId), eq(currentUserId));
+    }
+
+    @Test
+    @DisplayName("팔로우 등록 성공")
+    void createFollow_shouldReturnCreatedFollow() throws Exception {
+        // given
+        UUID followeeId = UUID.randomUUID();
+        UUID followId = UUID.randomUUID();
+
+        AuthorDto follower = new AuthorDto(followerId, "follower", "https://example.com/follower.png");
+        AuthorDto followee = new AuthorDto(followeeId, "followee", "https://example.com/followee.png");
+        FollowDto followDto = new FollowDto(followId, followee, follower);
+
+        given(followService.follow(any(UUID.class), any(UUID.class)))
+            .willReturn(followDto);
+
+        FollowCreateRequest request = new FollowCreateRequest(followerId, followeeId);
+        String requestJson = new ObjectMapper().writeValueAsString(request);
+
+        // when & then
+        mockMvc.perform(post("/api/follows")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestJson))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value(followId.toString()))
+            .andExpect(jsonPath("$.follower.name").value("follower"))
+            .andExpect(jsonPath("$.followee.name").value("followee"));
     }
 }
