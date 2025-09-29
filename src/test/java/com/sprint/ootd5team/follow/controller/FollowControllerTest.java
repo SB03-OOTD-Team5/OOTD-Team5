@@ -4,6 +4,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -191,5 +193,21 @@ public class FollowControllerTest {
             .andExpect(jsonPath("$.id").value(followId.toString()))
             .andExpect(jsonPath("$.follower.name").value("follower"))
             .andExpect(jsonPath("$.followee.name").value("followee"));
+    }
+
+    @Test
+    @DisplayName("팔로우 취소 성공")
+    void unFollow_shouldReturnNoContent() throws Exception {
+        // given
+        UUID followId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+
+        given(authService.getCurrentUserId()).willReturn(currentUserId);
+
+        // when & then
+        mockMvc.perform(delete("/api/follows/{followId}", followId))
+            .andExpect(status().isNoContent());
+
+        verify(followService).unFollow(followId, currentUserId);
     }
 }

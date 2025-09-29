@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum ErrorCode {
 
-    // Security 관련 에러 코드
+    // Security 관련 에러코드
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "권한이 없는 사용자입니다."),
     INVALID_USER_CREDENTIALS(HttpStatus.UNAUTHORIZED, "잘못된 사용자 인증 정보입니다."),
     UNSUPPORTED_PRINCIPAL(HttpStatus.UNAUTHORIZED, "지원하지 않는 사용자 인증 타입입니다."),
@@ -20,7 +20,7 @@ public enum ErrorCode {
     // Profile 관련 에러코드
     PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 프로필 입니다."),
 
-    // Feed 관련 에러 코드
+    // Feed 관련 에러코드
     FEED_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 피드입니다."),
     INVALID_SORT_OPTION(HttpStatus.BAD_REQUEST, "유효하지 않은 정렬 옵션입니다."),
     ALREADY_LIKED_EXCEPTION(HttpStatus.BAD_REQUEST, "이미 좋아요 처리된 피드입니다."),
@@ -64,7 +64,10 @@ public enum ErrorCode {
     // Notification 관련 에러코드
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알람입니다."),
 
-    ;
+    // Follow 관련 에러코드
+    FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 팔로우입니다."),
+    FOLLOW_ALREADY_DELETED(HttpStatus.NOT_FOUND, "이미 삭제된 팔로우입니다.");
+
     private final HttpStatus status;
     private final String message;
 

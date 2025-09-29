@@ -8,10 +8,14 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
+import com.sprint.ootd5team.base.exception.follow.FollowAlreadyDeletedException;
+import com.sprint.ootd5team.base.exception.follow.FollowNotFoundException;
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowDto;
@@ -40,6 +44,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -63,6 +69,7 @@ public class FollowServiceTest {
     @InjectMocks
     private FollowServiceImpl followService;
 
+    private UUID currentUserId = UUID.randomUUID();
     private UUID followId;
     private UUID followerId;
     private UUID followeeId;
@@ -75,6 +82,7 @@ public class FollowServiceTest {
 
     @BeforeEach
     void setUp() {
+        currentUserId = UUID.randomUUID();
         followId = UUID.randomUUID();
         followerId = UUID.randomUUID();
         followeeId = UUID.randomUUID();
@@ -311,5 +319,67 @@ public class FollowServiceTest {
         then(profileRepository).should(never()).findByUserId(followerId);
         then(followRepository).shouldHaveNoInteractions();
         then(profileMapper).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("팔로우 취소 성공")
+    void unFollow_shouldDeleteFollow() {
+        // given
+        Follow follow = mock(Follow.class);
+        given(followRepository.findById(followId)).willReturn(Optional.of(follow));
+        given(follow.getFollowerId()).willReturn(currentUserId);
+
+        // when
+        followService.unFollow(followId, currentUserId);
+
+        // then
+        verify(followRepository).deleteById(followId);
+    }
+
+    @Test
+    @DisplayName("팔로우 취소 실패 - 존재하지 않는 followId일 경우 예외 발생")
+    void unFollow_shouldThrowException_whenNotExists() {
+        // given
+        given(followRepository.findById(followId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> followService.unFollow(followId, currentUserId))
+            .isInstanceOf(FollowNotFoundException.class);
+
+        verify(followRepository, never()).deleteById(any());
+    }
+
+    @Test
+    @DisplayName("팔로우 취소 실패 - 다른 사용자가 요청한 경우 예외 발생")
+    void unFollow_shouldThrowException_whenNotOwner() {
+        // given
+        Follow follow = mock(Follow.class);
+        given(followRepository.findById(followId)).willReturn(Optional.of(follow));
+        given(follow.getFollowerId()).willReturn(UUID.randomUUID());
+
+        // when & then
+        assertThatThrownBy(() -> followService.unFollow(followId, currentUserId))
+            .isInstanceOf(AccessDeniedException.class)
+            .hasMessageContaining("본인의 팔로우만 취소할 수 있습니다.");
+
+        verify(followRepository, never()).deleteById(any());
+    }
+
+    @Test
+    @DisplayName("팔로우 취소 실패 - 이미 삭제된 경우 예외 발생 (동시성 제어)")
+    void unFollow_shouldThrowException_whenAlreadyDeleted() {
+        // given
+        Follow follow = mock(Follow.class);
+        given(followRepository.findById(followId)).willReturn(Optional.of(follow));
+        given(follow.getFollowerId()).willReturn(currentUserId);
+
+        doThrow(new EmptyResultDataAccessException(1))
+            .when(followRepository).deleteById(followId);
+
+        // when & then
+        assertThatThrownBy(() -> followService.unFollow(followId, currentUserId))
+            .isInstanceOf(FollowAlreadyDeletedException.class);
+
+        verify(followRepository).deleteById(followId);
     }
 }
