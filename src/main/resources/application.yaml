@@ -41,6 +41,15 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
+  ai:
+    ollama:
+      api:
+        url: ${OLLAMA_API_URL:http://localhost:11434}
+      chat:
+        options:
+         model: gemma3:4b
+         temperature: 0.7
+
 # SecurityConfig 비활성화/활성화 on off
 app:
   security:
@@ -102,7 +111,7 @@ ootd:
         profiles: "profiles/"
 
   jsoup:
-    timeout: 5000
+    timeout: 10000
     user-agent: "OOTD-Extractor/1.0"
 
   sse:
