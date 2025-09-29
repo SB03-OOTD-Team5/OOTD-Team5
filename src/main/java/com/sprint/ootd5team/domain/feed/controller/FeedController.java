@@ -16,11 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -51,9 +49,7 @@ public class FeedController implements FeedApi {
         UUID userId = authService.getCurrentUserId();
         FeedDtoCursorResponse feeds = feedService.getFeeds(feedListRequest, userId);
 
-        return ResponseEntity
-            .status(HttpStatus.OK)
-            .body(feeds);
+        return ResponseEntity.ok(feeds);
     }
 
     @GetMapping("/{feedId}")
@@ -62,9 +58,7 @@ public class FeedController implements FeedApi {
         @RequestParam(required = false) UUID currentUserId
     ) {
         FeedDto feed = feedService.getFeed(feedId, currentUserId);
-        return ResponseEntity
-            .status(HttpStatus.OK)
-            .body(feed);
+        return ResponseEntity.ok(feed);
     }
 
     @Override
@@ -76,9 +70,7 @@ public class FeedController implements FeedApi {
         UUID userId = authService.getCurrentUserId();
         FeedDto updatedFeedDto = feedService.update(feedId, feedUpdateRequest, userId);
 
-        return ResponseEntity
-            .status(HttpStatus.OK)
-            .body(updatedFeedDto);
+        return ResponseEntity.ok(updatedFeedDto);
     }
 
     //TODO: 사용자 접근 권한 추가

@@ -1,16 +1,22 @@
 package com.sprint.ootd5team.domain.follow.service;
 
+import com.sprint.ootd5team.base.exception.follow.FollowAlreadyDeletedException;
+import com.sprint.ootd5team.base.exception.follow.FollowNotFoundException;
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowDto;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowProjectionDto;
+import com.sprint.ootd5team.domain.follow.dto.data.FollowSummaryDto;
 import com.sprint.ootd5team.domain.follow.dto.enums.FollowDirection;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowListBaseRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowingListRequest;
 import com.sprint.ootd5team.domain.follow.dto.response.FollowListResponse;
+import com.sprint.ootd5team.domain.follow.entity.Follow;
 import com.sprint.ootd5team.domain.follow.mapper.FollowMapper;
 import com.sprint.ootd5team.domain.follow.repository.FollowRepository;
+import com.sprint.ootd5team.domain.profile.entity.Profile;
+import com.sprint.ootd5team.domain.profile.mapper.ProfileMapper;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import java.time.Instant;
 import java.util.List;
@@ -18,9 +24,13 @@ import java.util.UUID;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
 public class FollowServiceImpl implements FollowService {
@@ -28,6 +38,26 @@ public class FollowServiceImpl implements FollowService {
     private final FollowRepository followRepository;
     private final ProfileRepository profileRepository;
     private final FollowMapper followMapper;
+    private final ProfileMapper profileMapper;
+
+    @Override
+    @Transactional
+    public FollowDto follow(UUID followerId, UUID followeeId) {
+        log.info("[FollowService] 팔로우 등록 요청 시작");
+
+        Profile followeeProfile = getProfileOrThrow(followeeId, "followeeId");
+        Profile followerProfile = getProfileOrThrow(followerId, "followerId");
+
+        Follow saved = followRepository.save(new Follow(followeeId, followerId));
+
+        log.debug("[FollowService] 등록된 Follow 데이터 - {}", saved);
+
+        return new FollowDto(
+            saved.getId(),
+            profileMapper.toAuthorDto(followeeProfile),
+            profileMapper.toAuthorDto(followerProfile)
+        );
+    }
 
     @Override
     public FollowListResponse getFollowingList(FollowingListRequest followingListRequest) {
@@ -51,6 +81,39 @@ public class FollowServiceImpl implements FollowService {
         );
     }
 
+    @Override
+    public FollowSummaryDto getSummary(UUID userId, UUID currentUserId) {
+        log.info("[FollowService] 팔로우 요약 정보 조회 요청 시작");
+
+        validateProfile(userId);
+        validateProfile(currentUserId);
+
+        return followRepository.getSummary(userId, currentUserId);
+    }
+
+    @Override
+    @Transactional
+    public void unFollow(UUID followId, UUID currentUserId) {
+        log.info("[FollowService] 팔로우 취소 요청 시작");
+
+        Follow follow = followRepository.findById(followId)
+            .orElseThrow(() -> {
+                log.warn("[FollowService] 팔로우가 존재하지 않습니다. followId: {}", followId);
+                return FollowNotFoundException.withId(followId);
+            });
+
+        if (!follow.getFollowerId().equals(currentUserId)) {
+            throw new AccessDeniedException("본인의 팔로우만 취소할 수 있습니다.");
+        }
+
+        try {
+            followRepository.deleteById(followId);
+        } catch (EmptyResultDataAccessException ex) {
+            log.warn("[FollowService] 이미 제거된 팔로우입니다. followId: {}", followId);
+            throw FollowAlreadyDeletedException.withId(followId);
+        }
+    }
+
     private <T extends FollowListBaseRequest> FollowListResponse getFollowListCommon(
         T request,
         Function<T, UUID> idExtractor,
@@ -59,14 +122,14 @@ public class FollowServiceImpl implements FollowService {
         UUID userId = idExtractor.apply(request);
         int limit = request.limit();
         String nameLike = request.nameLike();
+        UUID idCursor = request.idAfter();
 
-        if (!profileRepository.existsByUserId(userId)) {
-            log.warn("[FollowService] 프로필이 존재하지 않습니다. userId: {}", userId);
-            throw ProfileNotFoundException.withUserId(userId);
-        }
+        validateProfile(userId);
+
+        log.debug("[FollowService] 목록 조회 요청 파라미터 - followeeId:{}, cursor:{}, idAfter:{}, limit:{}, nameLike:{}",
+            userId, request.cursor(), idCursor, limit, nameLike);
 
         Instant createdCursor = request.cursor() != null ? Instant.parse(request.cursor()) : null;
-        UUID idCursor = request.idAfter();
 
         List<FollowProjectionDto> follows = followRepository.findByCursor(
             userId,
@@ -96,5 +159,20 @@ public class FollowServiceImpl implements FollowService {
             "createdAt",
             SortDirection.DESCENDING
         );
+    }
+
+    private void validateProfile(UUID userId) {
+        if (!profileRepository.existsByUserId(userId)) {
+            log.warn("[FollowService] 프로필이 존재하지 않습니다. userId: {}", userId);
+            throw ProfileNotFoundException.withUserId(userId);
+        }
+    }
+
+    private Profile getProfileOrThrow(UUID userId, String role) {
+        return profileRepository.findByUserId(userId)
+            .orElseThrow(() -> {
+                log.warn("[FollowService] 프로필이 조회되지 않습니다. {}: {}", role, userId);
+                return ProfileNotFoundException.withUserId(userId);
+            });
     }
 }
