@@ -1,9 +1,9 @@
-package com.sprint.ootd5team.domain.clothattribute.controller;
+package com.sprint.ootd5team.domain.clothesattribute.controller;
 
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefCreateRequest;
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefDto;
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefUpdateRequest;
-import com.sprint.ootd5team.domain.clothattribute.service.ClothesAttributeService;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDefCreateRequest;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDefDto;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDefUpdateRequest;
+import com.sprint.ootd5team.domain.clothesattribute.service.ClothesAttributeService;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

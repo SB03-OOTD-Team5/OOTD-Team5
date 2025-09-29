@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.domain.clothattribute.entity;
+package com.sprint.ootd5team.domain.clothesattribute.entity;
 
 import com.sprint.ootd5team.base.entity.BaseEntity;
 import jakarta.persistence.CascadeType;

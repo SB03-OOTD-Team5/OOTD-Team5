@@ -1,6 +1,6 @@
-package com.sprint.ootd5team.domain.clothattribute.repository;
+package com.sprint.ootd5team.domain.clothesattribute.repository;
 
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeValue;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeValue;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
