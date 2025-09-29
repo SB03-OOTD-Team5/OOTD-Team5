@@ -23,6 +23,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -91,14 +92,14 @@ public class FollowServiceImpl implements FollowService {
     @Override
     @Transactional
     public void unFollow(UUID followId) {
-        log.info("[FollowService] 팔로우 취소 요청 시작 - followId: {}", followId);
+        log.info("[FollowService] 팔로우 취소 요청 시작");
 
-        if (!followRepository.existsById(followId)) {
+        try {
+            followRepository.deleteById(followId);
+        } catch (EmptyResultDataAccessException ex) {
             log.warn("[FollowService] 팔로우가 존재하지 않습니다. followId: {}", followId);
             throw FollowNotFoundException.withId(followId);
         }
-
-        followRepository.deleteById(followId);
     }
 
     private <T extends FollowListBaseRequest> FollowListResponse getFollowListCommon(
