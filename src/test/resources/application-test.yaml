@@ -42,6 +42,8 @@ ootd:
     username: ${OOTD_ADMIN_USERNAME:admin}
     password: ${OOTD_ADMIN_PASSWORD:qwe123}
     email: ${OOTD_ADMIN_EMAIL:admin@test.com}
+  email:
+    sender: ${OOTD_EMAIL_SENDER:test@example.com}
 
   # Access Token 및 Refresh Token 비밀키, 만료시간 설정
   jwt:
@@ -52,3 +54,19 @@ ootd:
     refresh-token:
       expiration-ms: 604800000 # 7일
       secret: ${JWT_REFRESH_TOKEN_SECRET:test-refresh-secret-32-bytes-minimum-abcdef1234567890}
+
+  storage:
+    type: ${STORAGE_TYPE:local}
+    s3:
+      access-key: ${AWS_ACCESS_KEY_ID:dummy-access-key}
+      secret-key: ${AWS_SECRET_ACCESS_KEY:dummy-secret-key}
+      region: ${AWS_REGION:ap-northeast-2}
+      bucket: ${AWS_S3_BUCKET:zzootd-s3}
+      presigned-url-expiration: ${AWS_S3_PRESIGNED_URL_EXPIRATION:600}
+      max-upload-size: 20MB   # 실제 정책상 허용할 크기
+      prefix:
+        clothes: "clothes/"
+        profiles: "profiles/"
+
+  sse:
+    repository: ${OOTD_SSE_REPOSITORY:memory}

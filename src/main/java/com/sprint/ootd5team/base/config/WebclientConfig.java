@@ -13,13 +13,15 @@ import org.springframework.web.util.DefaultUriBuilderFactory;
 public class WebclientConfig {
 
 
-    @Bean("kmaApiClient")
-    public WebClient kmaApiClient(
+    @Bean("kmaWebClient")
+    public WebClient kmaWebClient(
         @Value("${weather.kma.base-url}") String baseUrl,
         @Value("${weather.kma.client-secret}") String secretKey
     ) {
 
-        String fixedBase = baseUrl + "?ServiceKey=" + secretKey + "&dataType=JSON";
+        // 공공데이터 키 이용시 ServiceKey, 기상청KMA 직접 이용시 authKey로 헤더이름이 다름.
+        //  String fixedBase = baseUrl + "?ServiceKey=" + secretKey + "&dataType=JSON";
+        String fixedBase = baseUrl + "?authKey=" + secretKey + "&dataType=JSON";
 
         DefaultUriBuilderFactory ubf = new DefaultUriBuilderFactory(fixedBase);
         ubf.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.VALUES_ONLY);
@@ -28,7 +30,8 @@ public class WebclientConfig {
             .uriBuilderFactory(ubf)
             .filter((request, next) -> {
                 String url = request.url().toString()
-                    .replaceAll("(?i)(serviceKey=)[^&]+", "$1****");
+                //    .replaceAll("(?i)(serviceKey=)[^&]+", "$1****");
+                    .replaceAll("(?i)(authKey=)[^&]+", "$1****");
                 log.debug("[기상청 API 리퀘스트] {} {}", request.method(), url);
                 return next.exchange(request);
             })
@@ -37,8 +40,8 @@ public class WebclientConfig {
     }
 
 
-    @Bean("kakaoApiClient")
-    public WebClient kakaoApiClient(
+    @Bean("kakaoWebClient")
+    public WebClient kakaoWebClient(
         @Value("${weather.kakao.base-url}") String baseUrl,
         @Value("${weather.kakao.client-secret}") String secretKey
     ) {
@@ -54,4 +57,12 @@ public class WebclientConfig {
             })
             .build();
     }
+
+    @Bean
+    public WebClient openMeteoWebClient() {
+        return WebClient.builder()
+            .baseUrl("https://api.open-meteo.com/v1")
+            .build();
+    }
+
 }

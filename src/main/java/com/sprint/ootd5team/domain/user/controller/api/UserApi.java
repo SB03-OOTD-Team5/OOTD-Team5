@@ -1,10 +1,13 @@
 package com.sprint.ootd5team.domain.user.controller.api;
 
 import com.sprint.ootd5team.base.exception.ErrorResponse;
+import com.sprint.ootd5team.domain.profile.dto.data.ProfileUpdateRequest;
 import com.sprint.ootd5team.domain.profile.dto.request.ProfileDto;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;
+import com.sprint.ootd5team.domain.user.dto.request.UserLockUpdateRequest;
+import com.sprint.ootd5team.domain.user.dto.request.UserRoleUpdateRequest;
 import com.sprint.ootd5team.domain.user.dto.response.UserDtoCursorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,13 +16,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "User", description = "사용자 계정 관련 API")
 public interface UserApi {
+
     @Operation(
         summary = "계정 목록 조회",
         description = "cursor, idAfter, limit, sortBy, sortDirection, emailLike, roleEqual, locked 등의 파라미터를 이용해 계정 목록을 조회합니다."
@@ -39,33 +42,25 @@ public interface UserApi {
         )
     })
     ResponseEntity<UserDtoCursorResponse> getUsers(
-        @Parameter(description = "커서 기반 페이지네이션을 위한 cursor")
-        @RequestParam(required = false) String cursor,
+        @Parameter(description = "커서 기반 페이지네이션을 위한 cursor") String cursor,
 
-        @Parameter(description = "idAfter 값 (UUID)")
-        @RequestParam(required = false) UUID idAfter,
+        @Parameter(description = "idAfter 값 (UUID)") UUID idAfter,
 
-        @Parameter(description = "조회 개수 (기본값: 20)")
-        @RequestParam(required = true) Integer limit,
+        @Parameter(description = "조회 개수 (기본값: 20)") Integer limit,
 
         @Parameter(description = "정렬 기준", example = "email",
-            schema = @Schema(allowableValues = {"email", "createdAt"}))
-        @RequestParam(required = true) String sortBy,
+            schema = @Schema(allowableValues = {"email", "createdAt"})) String sortBy,
 
         @Parameter(description = "정렬 방향", example = "ASCENDING",
-            schema = @Schema(allowableValues = {"ASCENDING", "DESCENDING"}))
-        @RequestParam(required = true) String sortDirection,
+            schema = @Schema(allowableValues = {"ASCENDING", "DESCENDING"})) String sortDirection,
 
-        @Parameter(description = "이메일 LIKE 검색")
-        @RequestParam(required = false) String emailLike,
+        @Parameter(description = "이메일 LIKE 검색") String emailLike,
 
-        @Parameter(description = "역할 필터링", schema = @Schema(allowableValues = {"USER", "ADMIN"}))
-        @RequestParam(required = false) String roleEqual,
+        @Parameter(description = "역할 필터링", schema = @Schema(allowableValues = {"USER",
+            "ADMIN"})) String roleEqual,
 
-        @Parameter(description = "계정 잠금 여부")
-        @RequestParam(required = false) Boolean locked
+        @Parameter(description = "계정 잠금 여부") Boolean locked
     );
-
 
 
     @Operation(
@@ -92,13 +87,13 @@ public interface UserApi {
     })
     ResponseEntity<UserDto> createUser(
         @io.swagger.v3.oas.annotations.parameters.RequestBody(
-        description = "회원가입 요청 바디",
-        required = true,
-        content = @Content(
-            schema = @Schema(implementation = UserCreateRequest.class)
+            description = "회원가입 요청 바디",
+            required = true,
+            content = @Content(
+                schema = @Schema(implementation = UserCreateRequest.class)
+            )
         )
-    )
-    UserCreateRequest request);
+        UserCreateRequest request);
 
 
     @Operation(
@@ -131,7 +126,6 @@ public interface UserApi {
         )
         UUID userId
     );
-
 
 
     @Operation(
@@ -176,4 +170,116 @@ public interface UserApi {
             )
         )
         ChangePasswordRequest request);
+
+
+    @Operation(
+        summary = "사용자 권한 수정",
+        description = "특정 사용자의 권한을 수정합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "권한 수정 성공",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = UserDto.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "권한 수정 실패 (사용자 없음)",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    ResponseEntity<UserDto> updateUserRole(
+        @Parameter(
+            description = "권한을 수정할 사용자 ID (UUID)",
+            required = true,
+            example = "550e8400-e29b-41d4-a716-446655440000"
+        )
+        UUID userId,
+
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "수정할 권한 요청 바디",
+            required = true,
+            content = @Content(
+                schema = @Schema(implementation = UserRoleUpdateRequest.class)
+            )
+        )
+        UserRoleUpdateRequest request
+    );
+
+    @Operation(
+        summary = "프로필 업데이트",
+        description = "프로필 업데이트 API"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "프로필 업데이트 성공",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ProfileDto.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "프로필 업데이트 실패",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )}
+    )
+    ResponseEntity<ProfileDto> updateUserProfile(
+        UUID userId,
+        ProfileUpdateRequest request,
+        MultipartFile image
+    );
+
+    @Operation(
+        summary = "계정 잠금 상태 변경",
+        description = "[어드민 기능] 특정 사용자의 계정 잠금 상태를 변경합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "계정 잠금 상태 변경 성공",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = UserDto.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "계정 잠금 상태 변경 실패 (사용자 없음)",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "권한 부족 (ADMIN이 아닌 경우)",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    ResponseEntity<UserDto> updateUserLock(
+        @Parameter(description = "잠금 상태를 변경할 사용자 ID", required = true, example = "8aa83147-a43e-413f-b56e-f3f619a0f5a4")
+        UUID userId,
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "계정 잠금 상태 요청",
+            required = true,
+            content = @Content(
+                schema = @Schema(implementation = UserLockUpdateRequest.class)
+            )
+        )
+        UserLockUpdateRequest request
+    );
 }

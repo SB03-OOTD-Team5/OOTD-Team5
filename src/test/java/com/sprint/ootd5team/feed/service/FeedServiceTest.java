@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -30,6 +31,8 @@ import com.sprint.ootd5team.domain.feed.entity.Feed;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.feed.repository.feedClothes.FeedClothesRepository;
 import com.sprint.ootd5team.domain.feed.service.FeedServiceImpl;
+import com.sprint.ootd5team.domain.follow.repository.FollowRepository;
+import com.sprint.ootd5team.domain.notification.event.type.multi.FeedCreatedEvent;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.dto.AuthorDto;
 import com.sprint.ootd5team.domain.user.entity.User;
@@ -52,6 +55,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -74,6 +78,12 @@ public class FeedServiceTest {
 
     @Mock
     private ClothesRepository clothesRepository;
+
+    @Mock
+    private FollowRepository followRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private FeedServiceImpl feedService;
@@ -194,6 +204,41 @@ public class FeedServiceTest {
     }
 
     @Test
+    @DisplayName("피드 단건 조회 성공")
+    void getFeed_success() {
+        // given
+        UUID feedId = UUID.randomUUID();
+        FeedDto mockDto = new FeedDto(
+            feedId, Instant.now(), Instant.now(), testAuthor, testWeather,
+            List.of(), "테스트 피드", 10, 2, false
+        );
+
+        given(feedRepository.findFeedDtoById(feedId, userId)).willReturn(mockDto);
+
+        // when
+        FeedDto result = feedService.getFeed(feedId, userId);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(feedId);
+        assertThat(result.content()).isEqualTo("테스트 피드");
+        verify(feedRepository).findFeedDtoById(feedId, userId);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 피드 조회 시 예외 발생")
+    void getFeed_notFound() {
+        // given
+        UUID feedId = UUID.randomUUID();
+        given(feedRepository.findFeedDtoById(feedId, userId)).willReturn(null);
+
+        // when & then
+        assertThatThrownBy(() -> feedService.getFeed(feedId, userId))
+            .isInstanceOf(FeedNotFoundException.class);
+        verify(feedRepository).findFeedDtoById(feedId, userId);
+    }
+
+    @Test
     @DisplayName("피드 삭제 성공")
     void deleteFeed_success() {
         // given
@@ -302,7 +347,7 @@ public class FeedServiceTest {
     }
 
     @Test
-    @DisplayName("피드 생성 성공")
+    @DisplayName("피드 생성 성공(알림 이벤트 발행 포함)")
     void createFeed_success() {
         // given
         UUID authorId = UUID.randomUUID();
@@ -367,7 +412,7 @@ public class FeedServiceTest {
         when(feedClothesRepository.findOotdsByFeedIds(List.of(feed.getId())))
             .thenReturn(Map.of(feed.getId(), List.of(ootd1, ootd2)));
 
-        // when
+         // when
         FeedDto result = feedService.create(request, authorId);
 
         // then
@@ -376,6 +421,8 @@ public class FeedServiceTest {
 
         verify(feedRepository).save(any(Feed.class));
         verify(feedClothesRepository).saveAll(anyList());
+        // 알림 이벤트 발행 검증
+        verify(eventPublisher).publishEvent(any(FeedCreatedEvent.class));
     }
 
     @Test
