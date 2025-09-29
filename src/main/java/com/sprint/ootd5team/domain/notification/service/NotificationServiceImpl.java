@@ -140,7 +140,7 @@ public class NotificationServiceImpl implements NotificationService {
     public void createWeatherNotification(UUID profileId, String content) {
         Profile profile = profileRepository.findById(profileId).orElseThrow(
             ProfileNotFoundException::new);
-        User user = userRepository.findById(profile.getUserId()).orElseThrow(
+        User user = userRepository.findById(profile.getUser().getId()).orElseThrow(
             UserNotFoundException::new);
         log.info("[NotificationService] 알림 생성. profileId:{}, userId:{}", profileId, user.getId());
 
