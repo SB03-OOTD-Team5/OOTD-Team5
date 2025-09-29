@@ -1,16 +1,25 @@
 package com.sprint.ootd5team.follow.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.config.SecurityConfig;
 import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
+import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.follow.controller.FollowController;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowDto;
+import com.sprint.ootd5team.domain.follow.dto.data.FollowSummaryDto;
+import com.sprint.ootd5team.domain.follow.dto.request.FollowCreateRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowingListRequest;
 import com.sprint.ootd5team.domain.follow.dto.response.FollowListResponse;
@@ -28,6 +37,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -51,6 +61,9 @@ public class FollowControllerTest {
 
     @MockitoBean
     private FollowService followService;
+
+    @MockitoBean
+    private AuthService authService;
 
     private UUID followerId;
     private FollowListResponse listResponse;
@@ -122,5 +135,79 @@ public class FollowControllerTest {
                 .param("followeeId", "")
                 .param("limit", "-1"))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("팔로우 요약 조회 성공")
+    void getSummary_shouldReturnSummaryDto() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+
+        FollowSummaryDto summaryDto = new FollowSummaryDto(
+            userId, 10L, 5L, true, currentUserId, false
+        );
+
+        given(authService.getCurrentUserId()).willReturn(currentUserId);
+        given(followService.getSummary(eq(userId), eq(currentUserId)))
+            .willReturn(summaryDto);
+
+        // when & then
+        mockMvc.perform(get("/api/follows/summary")
+                .param("userId", userId.toString())
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.followeeId").value(userId.toString()))
+            .andExpect(jsonPath("$.followerCount").value(10))
+            .andExpect(jsonPath("$.followingCount").value(5))
+            .andExpect(jsonPath("$.followedByMe").value(true))
+            .andExpect(jsonPath("$.followedByMeId").value(currentUserId.toString()))
+            .andExpect(jsonPath("$.followingMe").value(false));
+
+        then(authService).should().getCurrentUserId();
+        then(followService).should().getSummary(eq(userId), eq(currentUserId));
+    }
+
+    @Test
+    @DisplayName("팔로우 등록 성공")
+    void createFollow_shouldReturnCreatedFollow() throws Exception {
+        // given
+        UUID followeeId = UUID.randomUUID();
+        UUID followId = UUID.randomUUID();
+
+        AuthorDto follower = new AuthorDto(followerId, "follower", "https://example.com/follower.png");
+        AuthorDto followee = new AuthorDto(followeeId, "followee", "https://example.com/followee.png");
+        FollowDto followDto = new FollowDto(followId, followee, follower);
+
+        given(followService.follow(any(UUID.class), any(UUID.class)))
+            .willReturn(followDto);
+
+        FollowCreateRequest request = new FollowCreateRequest(followerId, followeeId);
+        String requestJson = new ObjectMapper().writeValueAsString(request);
+
+        // when & then
+        mockMvc.perform(post("/api/follows")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestJson))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value(followId.toString()))
+            .andExpect(jsonPath("$.follower.name").value("follower"))
+            .andExpect(jsonPath("$.followee.name").value("followee"));
+    }
+
+    @Test
+    @DisplayName("팔로우 취소 성공")
+    void unFollow_shouldReturnNoContent() throws Exception {
+        // given
+        UUID followId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+
+        given(authService.getCurrentUserId()).willReturn(currentUserId);
+
+        // when & then
+        mockMvc.perform(delete("/api/follows/{followId}", followId))
+            .andExpect(status().isNoContent());
+
+        verify(followService).unFollow(followId, currentUserId);
     }
 }

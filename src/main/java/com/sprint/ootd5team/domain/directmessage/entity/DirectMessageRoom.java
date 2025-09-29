@@ -33,10 +33,4 @@ public class DirectMessageRoom extends BaseEntity {
 	@OrderBy("createdAt ASC, id ASC")
 	@Builder.Default
 	private List<DirectMessage> messages = new ArrayList<>();
-
-	// 연관관계 편의 메서드
-	public void addMessage(DirectMessage message) {
-		messages.add(message);
-		message.setDirectMessageRoom(this);
-	}
 }
