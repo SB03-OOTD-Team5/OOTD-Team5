@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.follow.service;
 
+import com.sprint.ootd5team.base.exception.follow.FollowAlreadyDeletedException;
 import com.sprint.ootd5team.base.exception.follow.FollowNotFoundException;
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
@@ -24,6 +25,7 @@ import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -91,14 +93,24 @@ public class FollowServiceImpl implements FollowService {
 
     @Override
     @Transactional
-    public void unFollow(UUID followId) {
+    public void unFollow(UUID followId, UUID currentUserId) {
         log.info("[FollowService] 팔로우 취소 요청 시작");
+
+        Follow follow = followRepository.findById(followId)
+            .orElseThrow(() -> {
+                log.warn("[FollowService] 팔로우가 존재하지 않습니다. followId: {}", followId);
+                return FollowNotFoundException.withId(followId);
+            });
+
+        if (!follow.getFollowerId().equals(currentUserId)) {
+            throw new AccessDeniedException("본인의 팔로우만 취소할 수 있습니다.");
+        }
 
         try {
             followRepository.deleteById(followId);
         } catch (EmptyResultDataAccessException ex) {
-            log.warn("[FollowService] 팔로우가 존재하지 않습니다. followId: {}", followId);
-            throw FollowNotFoundException.withId(followId);
+            log.warn("[FollowService] 이미 제거된 팔로우입니다. followId: {}", followId);
+            throw FollowAlreadyDeletedException.withId(followId);
         }
     }
 
