@@ -4,6 +4,7 @@ import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowDto;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowProjectionDto;
+import com.sprint.ootd5team.domain.follow.dto.data.FollowSummaryDto;
 import com.sprint.ootd5team.domain.follow.dto.enums.FollowDirection;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowListBaseRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
@@ -51,6 +52,16 @@ public class FollowServiceImpl implements FollowService {
         );
     }
 
+    @Override
+    public FollowSummaryDto getSummary(UUID userId, UUID currentUserId) {
+        log.info("[FollowService] 팔로우 요약 정보 조회 요청 시작");
+
+        validateProfile(userId);
+        validateProfile(currentUserId);
+
+        return followRepository.getSummary(userId, currentUserId);
+    }
+
     private <T extends FollowListBaseRequest> FollowListResponse getFollowListCommon(
         T request,
         Function<T, UUID> idExtractor,
@@ -59,14 +70,14 @@ public class FollowServiceImpl implements FollowService {
         UUID userId = idExtractor.apply(request);
         int limit = request.limit();
         String nameLike = request.nameLike();
+        UUID idCursor = request.idAfter();
 
-        if (!profileRepository.existsByUserId(userId)) {
-            log.warn("[FollowService] 프로필이 존재하지 않습니다. userId: {}", userId);
-            throw ProfileNotFoundException.withUserId(userId);
-        }
+        validateProfile(userId);
+
+        log.debug("[FollowService] 목록 조회 요청 파라미터 - followeeId:{}, cursor:{}, idAfter:{}, limit:{}, nameLike:{}",
+            userId, request.cursor(), idCursor, limit, nameLike);
 
         Instant createdCursor = request.cursor() != null ? Instant.parse(request.cursor()) : null;
-        UUID idCursor = request.idAfter();
 
         List<FollowProjectionDto> follows = followRepository.findByCursor(
             userId,
@@ -96,5 +107,12 @@ public class FollowServiceImpl implements FollowService {
             "createdAt",
             SortDirection.DESCENDING
         );
+    }
+
+    private void validateProfile(UUID userId) {
+        if (!profileRepository.existsByUserId(userId)) {
+            log.warn("[FollowService] 프로필이 존재하지 않습니다. userId: {}", userId);
+            throw ProfileNotFoundException.withUserId(userId);
+        }
     }
 }

@@ -7,11 +7,13 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowDto;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowProjectionDto;
+import com.sprint.ootd5team.domain.follow.dto.data.FollowSummaryDto;
 import com.sprint.ootd5team.domain.follow.dto.enums.FollowDirection;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowerListRequest;
 import com.sprint.ootd5team.domain.follow.dto.request.FollowingListRequest;
@@ -206,5 +208,37 @@ public class FollowServiceTest {
         // when & then
         assertThatThrownBy(() -> followService.getFollowingList(request))
             .isInstanceOf(ProfileNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("팔로우 요약 정보 조회 - 정상 반환")
+    void getSummary_shouldReturnDto() {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+
+        FollowSummaryDto expected = new FollowSummaryDto(
+            userId, 10L, 5L, true, currentUserId, false
+        );
+
+        given(profileRepository.existsByUserId(any(UUID.class)))
+            .willReturn(true);
+
+        given(followRepository.getSummary(userId, currentUserId))
+            .willReturn(expected);
+
+        // when
+        FollowSummaryDto actual = followService.getSummary(userId, currentUserId);
+
+        // then
+        assertThat(actual).isNotNull();
+        assertThat(actual.followeeId()).isEqualTo(userId);
+        assertThat(actual.followerCount()).isEqualTo(10L);
+        assertThat(actual.followingCount()).isEqualTo(5L);
+        assertThat(actual.followedByMe()).isTrue();
+        assertThat(actual.followedByMeId()).isEqualTo(currentUserId);
+        assertThat(actual.followingMe()).isFalse();
+
+        then(followRepository).should().getSummary(userId, currentUserId);
     }
 }

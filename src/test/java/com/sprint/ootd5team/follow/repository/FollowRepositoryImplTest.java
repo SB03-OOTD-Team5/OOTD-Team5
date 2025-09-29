@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.sprint.ootd5team.base.config.JpaAuditingConfig;
 import com.sprint.ootd5team.base.config.QuerydslConfig;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowProjectionDto;
+import com.sprint.ootd5team.domain.follow.dto.data.FollowSummaryDto;
 import com.sprint.ootd5team.domain.follow.dto.enums.FollowDirection;
 import com.sprint.ootd5team.domain.follow.entity.Follow;
 import com.sprint.ootd5team.domain.follow.repository.impl.FollowRepositoryImpl;
@@ -279,5 +280,27 @@ public class FollowRepositoryImplTest {
         );
 
         assertThat(count).isZero();
+    }
+
+    @Test
+    @DisplayName("팔로우 요약 정보 조회 - follower/following/상호관계 검증")
+    void getSummary_shouldReturnCorrectSummary() {
+        // given
+        Follow testFollow = new Follow(followerId, followee1Id);
+        em.persist(testFollow);
+        em.flush();
+        em.clear();
+
+        // when
+        FollowSummaryDto summary = followRepositoryImpl.getSummary(followee1Id, followerId);
+
+        // then
+        assertThat(summary).isNotNull();
+        assertThat(summary.followeeId()).isEqualTo(followee1Id);
+        assertThat(summary.followerCount()).isEqualTo(1L);
+        assertThat(summary.followingCount()).isEqualTo(1L);
+        assertThat(summary.followedByMe()).isTrue();
+        assertThat(summary.followedByMeId()).isNotNull();
+        assertThat(summary.followingMe()).isTrue();
     }
 }
