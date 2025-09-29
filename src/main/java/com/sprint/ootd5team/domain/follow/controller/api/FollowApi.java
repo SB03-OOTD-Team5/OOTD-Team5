@@ -13,12 +13,16 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+@Tag(name = "팔로우 관리", description = "팔로우 관련 API")
 public interface FollowApi {
 
     @Operation(summary = "팔로우 생성")
@@ -75,4 +79,16 @@ public interface FollowApi {
     ResponseEntity<FollowSummaryDto> getSummary(
         @Parameter(description = "userId", required = true) @RequestParam UUID userId
     );
+
+    @Operation(summary = "팔로우 취소")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "204", description = "팔로우 취소 성공"
+        ),
+        @ApiResponse(
+            responseCode = "400", description = "팔로우 취소 실패",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    ResponseEntity<Void> unFollow(@PathVariable UUID followId);
 }
