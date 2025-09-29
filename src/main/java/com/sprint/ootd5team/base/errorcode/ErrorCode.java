@@ -65,7 +65,8 @@ public enum ErrorCode {
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알람입니다."),
 
     // Follow 관련 에러코드
-    FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 팔로우입니다.");
+    FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 팔로우입니다."),
+    FOLLOW_ALREADY_DELETED(HttpStatus.NOT_FOUND, "이미 삭제된 팔로우입니다.");
 
     private final HttpStatus status;
     private final String message;
