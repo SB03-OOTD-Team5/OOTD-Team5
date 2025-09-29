@@ -200,11 +200,14 @@ public class FollowControllerTest {
     void unFollow_shouldReturnNoContent() throws Exception {
         // given
         UUID followId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+
+        given(authService.getCurrentUserId()).willReturn(currentUserId);
 
         // when & then
         mockMvc.perform(delete("/api/follows/{followId}", followId))
             .andExpect(status().isNoContent());
 
-        verify(followService).unFollow(followId);
+        verify(followService).unFollow(followId, currentUserId);
     }
 }
