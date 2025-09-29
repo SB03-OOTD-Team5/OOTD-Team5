@@ -16,4 +16,6 @@ public interface FollowService {
     FollowListResponse getFollowerList(FollowerListRequest followerListRequest);
 
     FollowSummaryDto getSummary(UUID userId, UUID currentUserId);
+
+    void unFollow(UUID followId);
 }

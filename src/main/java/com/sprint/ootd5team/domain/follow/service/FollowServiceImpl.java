@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.follow.service;
 
+import com.sprint.ootd5team.base.exception.follow.FollowNotFoundException;
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.follow.dto.data.FollowDto;
@@ -85,6 +86,19 @@ public class FollowServiceImpl implements FollowService {
         validateProfile(currentUserId);
 
         return followRepository.getSummary(userId, currentUserId);
+    }
+
+    @Override
+    @Transactional
+    public void unFollow(UUID followId) {
+        log.info("[FollowService] 팔로우 취소 요청 시작 - followId: {}", followId);
+
+        if (!followRepository.existsById(followId)) {
+            log.warn("[FollowService] 팔로우가 존재하지 않습니다. followId: {}", followId);
+            throw FollowNotFoundException.withId(followId);
+        }
+
+        followRepository.deleteById(followId);
     }
 
     private <T extends FollowListBaseRequest> FollowListResponse getFollowListCommon(
