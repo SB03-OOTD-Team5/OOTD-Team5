@@ -12,11 +12,13 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
+@ConditionalOnProperty(prefix = "weather.api-client", name = "provider", havingValue = "kma", matchIfMissing = true)
 @RequiredArgsConstructor
 public class WeatherServiceImpl implements WeatherService {
 

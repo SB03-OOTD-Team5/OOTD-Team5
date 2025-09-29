@@ -23,4 +23,7 @@ public interface WeatherRepository extends JpaRepository<Weather, UUID> {
 
     List<Weather> findAllByLocationIdAndForecastedAt(UUID locationId, Instant forecastedAt);
 
+    Optional<Weather> findFirstByLocationIdOrderByCreatedAtDesc(UUID locationId);
+
+    List<Weather> findAllByLocationIdAndCreatedAt(UUID locationId, Instant createdAt);
 }
