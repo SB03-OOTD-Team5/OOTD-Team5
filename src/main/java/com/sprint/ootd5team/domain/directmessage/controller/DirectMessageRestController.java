@@ -13,18 +13,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/direct-messages")
 @RequiredArgsConstructor
-public class DirectMessageRestController {
+public class DirectMessageRestController implements DirectMessageRestApi {
 
-	private final DirectMessageRestService restService;
+    private final DirectMessageRestService restService;
 
-	@GetMapping
-	public DirectMessageDtoCursorResponse list(        // 히스토리 페이지네이션 응답
-		@RequestParam UUID userId,                 // 상대방 UUID (receiverId로 사용)
-		@RequestParam(required = false) String cursor,   // 마지막 createdAt(ISO-8601 or epochMillis)
-		@RequestParam(required = false) UUID idAfter,    // 마지막 메시지 id
-		@RequestParam(defaultValue = "20") int limit     // 페이지 크기
-	) {
-		log.debug("[REST DM Service] DM 메세지 페이지 조회 요청: RecieverId={}",userId);
-		return restService.listByPartner(userId, cursor, idAfter, limit);
-	}
+    @GetMapping
+    @Override
+    public DirectMessageDtoCursorResponse list(
+        @RequestParam UUID userId,
+        @RequestParam(required = false) String cursor,
+        @RequestParam(required = false) UUID idAfter,
+        @RequestParam(defaultValue = "20") int limit
+    ) {
+        log.debug("[REST DM Service] DM 메세지 페이지 조회 요청: RecieverId={}", userId);
+        return restService.listByPartner(userId, cursor, idAfter, limit);
+    }
 }

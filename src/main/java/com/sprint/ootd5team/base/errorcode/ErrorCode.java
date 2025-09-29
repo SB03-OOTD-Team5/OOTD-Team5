@@ -58,6 +58,11 @@ public enum ErrorCode {
     CLOTHES_ATTRIBUTE_VALUE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "허용되지 않은 속성값입니다."),
     INVALID_ATTRIBUTE(HttpStatus.BAD_REQUEST, "유효하지 않은 속성입니다."),
 
+    // DirectMessage 관련 에러코드
+    DIRECT_MESSAGE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "DM 대화방 참여자가 아닙니다."),
+    DIRECT_MESSAGE_AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "DM 요청 사용자 인증에 실패했습니다."),
+    DIRECT_MESSAGE_ROOM_CREATION_FAILED(HttpStatus.CONFLICT, "DM 방 생성 중 충돌이 발생했습니다."),
+
     // 웹 크롤링 관련 에러코드
     SCRAPING_FAILED(HttpStatus.BAD_GATEWAY, "웹 스크래핑 실패"),
 

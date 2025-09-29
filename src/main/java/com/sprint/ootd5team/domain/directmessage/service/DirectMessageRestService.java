@@ -11,6 +11,8 @@ import com.sprint.ootd5team.domain.directmessage.repository.DirectMessageRoomRep
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
+import com.sprint.ootd5team.base.exception.directmessage.DirectMessageAccessDeniedException;
+import com.sprint.ootd5team.base.exception.directmessage.DirectMessageAuthenticationException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -75,7 +76,7 @@ public class DirectMessageRestService {
 
 		// 대화 참여자 검증
 		if (!Objects.equals(room.getUser1Id(), senderId) && !Objects.equals(room.getUser2Id(), senderId)) {
-			throw new AccessDeniedException("잘못된 사용자입니다.");
+			throw DirectMessageAccessDeniedException.notParticipant(room.getId(), senderId);
 		}
 
 		// 커서 파싱(등록시간역순으로 MAX_LIMIT까지)
@@ -192,40 +193,41 @@ public class DirectMessageRestService {
 	private UUID currentUserId() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		if (auth == null || !auth.isAuthenticated()) {
-			throw new IllegalStateException("로그인 사용자를 확인할 수 없습니다.");
+			throw DirectMessageAuthenticationException.missingAuthentication();
 		}
 
 		Object principal = auth.getPrincipal();
 
 		// 1) principal 문자열 UUID
 		if (principal instanceof String s) {
-			UUID u = tryParseUuid(s);
-			if (u != null) return u;
+			UUID parsed = tryParseUuid(s);
+			if (parsed != null) return parsed;
 		}
 
 		// 2) 커스텀 UserDetails
-		if (principal instanceof OotdUserDetails ud) {
-			return ud.getUserId();
+		if (principal instanceof OotdUserDetails userDetails) {
+			return userDetails.getUserId();
 		}
 
 		// 4) JWT 토큰에서 userId 또는 sub(UUID) 사용
 		if (auth instanceof JwtAuthenticationToken jwt) {
 			String claimUserId = jwt.getToken().getClaimAsString("userId");
 			if (claimUserId != null) {
-				UUID u = tryParseUuid(claimUserId);
-				if (u != null) return u;
+				UUID parsed = tryParseUuid(claimUserId);
+				if (parsed != null) return parsed;
 			}
-			String sub = jwt.getToken().getSubject();
-			UUID u = tryParseUuid(sub);
-			if (u != null) return u;
-			throw new IllegalStateException("JWT에 userId/sub(UUID)가 없습니다.");
+			String subject = jwt.getToken().getSubject();
+			UUID parsed = tryParseUuid(subject);
+			if (parsed != null) return parsed;
+
+			throw DirectMessageAuthenticationException.jwtWithoutIdentifiers();
 		}
 
 		// 5) 마지막 폴백: auth.getName()이 UUID일 때만
-		UUID u = tryParseUuid(auth.getName());
-		if (u != null) return u;
+		UUID parsed = tryParseUuid(auth.getName());
+		if (parsed != null) return parsed;
 
-		throw new IllegalStateException("인증 주체에서 UUID를 찾을 수 없습니다.");
+		throw DirectMessageAuthenticationException.unresolvablePrincipal(principal, auth.getName());
 	}
 
 	private UUID tryParseUuid(String s) {
