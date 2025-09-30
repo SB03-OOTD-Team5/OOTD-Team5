@@ -15,15 +15,14 @@ public interface WeatherRepository extends JpaRepository<Weather, UUID> {
 
 
     Optional<Weather> findFirstByLocationIdAndForecastAtBetweenOrderByForecastAtDesc(
-        UUID locationId, Instant startOfDay, Instant
-            endOfDay);
+        UUID locationId, Instant startOfDay, Instant endOfDay);
 
     List<Weather> findAllByPrecipitationTypeEqualsOrSkyStatusEquals(
         PrecipitationType precipitationType, SkyStatus skyStatus);
 
     List<Weather> findAllByLocationIdAndForecastedAt(UUID locationId, Instant forecastedAt);
 
-    Optional<Weather> findFirstByLocationIdOrderByCreatedAtDesc(UUID locationId);
+    long deleteByLocationIdAndForecastAt(UUID locationId, Instant forecastAt);
 
-    List<Weather> findAllByLocationIdAndCreatedAt(UUID locationId, Instant createdAt);
+    Optional<Weather> findFirstByLocationIdOrderByForecastedAtDesc(UUID locationId);
 }

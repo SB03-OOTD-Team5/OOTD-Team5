@@ -27,8 +27,10 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +40,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Open-Meteo를 백업 데이터 소스로 활용하는 날씨 서비스입니다.
+ * Open-Meteo API를 이용해 일간 예보를 저장하고 제공하는 서비스 구현체입니다.
+ * 기상청(KMA) 채널이 동작하지 않을 때를 대비한 백업 경로로 사용됩니다.
  */
 @Slf4j
 @Service
@@ -49,6 +52,7 @@ public class WeatherServiceOpenMeteo implements WeatherService {
     private static final BigDecimal DEFAULT_LAT = BigDecimal.valueOf(37.5665); // 위도 파라미터가 없을 때 사용할 서울시청 좌표
     private static final BigDecimal DEFAULT_LON = BigDecimal.valueOf(126.9780); // 경도 파라미터가 없을 때 사용할 서울시청 좌표
     private static final Integer REFRESH_TIME_RATE = 3*60;                      // 날씨정보 재조회시 강제 업데이트 기준시간(분 단위)
+    private static final int MINIMUM_FORECAST_COUNT = 5; // 캐시 유효 판정을 위한 최소 예보 개수
 
     private final ProfileRepository profileRepository;
     private final LocationService locationService;
@@ -57,7 +61,8 @@ public class WeatherServiceOpenMeteo implements WeatherService {
     private final WeatherRepository weatherRepository;
 
     /**
-     * 사용자 좌표(또는 프로필 기본 좌표)를 기준으로 Open-Meteo 일간 예보를 조회해 WeatherDto 목록으로 반환한다.
+     * 사용자 좌표(없으면 프로필 좌표)를 기준으로 일간 예보를 조회한다.
+     * 유효한 캐시가 있으면 저장된 데이터를, 없으면 Open-Meteo 응답을 반환한다.
      */
     @Override
     @Transactional
@@ -76,22 +81,27 @@ public class WeatherServiceOpenMeteo implements WeatherService {
 
         Instant now = Instant.now();
         Optional<Weather> latestOptional =
-            weatherRepository.findFirstByLocationIdOrderByCreatedAtDesc(location.getId());
+            weatherRepository.findFirstByLocationIdOrderByForecastedAtDesc(location.getId());
         if (latestOptional.isPresent()) {
             Weather latest = latestOptional.get();
-            Instant createdAt = latest.getCreatedAt();
-            if (createdAt != null && createdAt.plus(REFRESH_TIME_RATE, ChronoUnit.MINUTES).isAfter(now)) {
-                List<Weather> cached = weatherRepository.findAllByLocationIdAndCreatedAt(
-                    location.getId(), createdAt);
+            Instant forecastedAt = latest.getForecastedAt();
+            if (forecastedAt != null && forecastedAt.plus(REFRESH_TIME_RATE, ChronoUnit.MINUTES).isAfter(now)) {
+                List<Weather> cached = weatherRepository.findAllByLocationIdAndForecastedAt(
+                    location.getId(), forecastedAt);
                 if (!cached.isEmpty()) {
-                    log.info("[OpenMeteo] 캐시 사용 - createdAt:{} ({}건)", createdAt, cached.size());
-                    return cached.stream()
-                        .map(weather -> weatherMapper.toDto(weather, clientCoords))
-                        .toList();
+                    boolean containsTodayForecast = containsForecastForToday(cached);
+                    if (cached.size() >= MINIMUM_FORECAST_COUNT && containsTodayForecast) {
+                        log.info("[OpenMeteo] 캐시 사용 - forecastedAt:{} ({}건)", forecastedAt, cached.size());
+                        return cached.stream()
+                            .map(weather -> weatherMapper.toDto(weather, clientCoords))
+                            .toList();
+                    }
+                    log.info("[OpenMeteo] 캐시 무효 - forecastedAt:{}, size:{}, containsToday:{}", forecastedAt, cached.size(), containsTodayForecast);
+                } else {
+                    log.debug("[OpenMeteo] forecastedAt:{} 캐시 목록이 비어 있어 API 호출로 진행", forecastedAt);
                 }
-                log.debug("[OpenMeteo] createdAt:{} 캐시 목록이 비어 있어 API 호출로 진행", createdAt);
-            } else if (createdAt != null) {
-                log.info("[OpenMeteo] 캐시 만료 - createdAt:{}", createdAt);
+            } else if (forecastedAt != null) {
+                log.info("[OpenMeteo] 캐시 만료 - forecastedAt:{}", forecastedAt);
             }
         }
 
@@ -108,7 +118,8 @@ public class WeatherServiceOpenMeteo implements WeatherService {
     }
 
     /**
-     * Open-Meteo 일간 응답을 Weather 엔티티 목록으로 변환하고 DB에 저장한다.
+     * Open-Meteo 일간 응답을 Weather 엔티티로 변환한다.
+     * 같은 날짜의 기존 예보는 먼저 지우고 최신 데이터로 갱신.
      */
     private List<Weather> buildWeathers(OpenMeteoResponse response, Location location) {
         Daily daily = response.daily();
@@ -125,6 +136,7 @@ public class WeatherServiceOpenMeteo implements WeatherService {
             dailySummaries);
 
         List<Weather> result = new ArrayList<>();
+        Set<Instant> forecastSlots = new HashSet<>();
         log.debug("[OpenMeteo] 일간 데이터 {}건 수신", daily.time().size());
         List<String> dates = daily.time();
         for (int idx = 0; idx < dates.size(); idx++) {
@@ -156,6 +168,7 @@ public class WeatherServiceOpenMeteo implements WeatherService {
             }
 
             Instant forecastAt = forecastDate.atTime(LocalTime.NOON).atZone(zoneId).toInstant();
+            forecastSlots.add(forecastAt);
 
             Weather weather = Weather.builder()
                 .forecastedAt(fetchedAt)
@@ -178,14 +191,23 @@ public class WeatherServiceOpenMeteo implements WeatherService {
             result.add(weather);
         }
 
+        if (!result.isEmpty()) {
+            for (Instant forecastSlot : forecastSlots) {
+                long deletedCount = weatherRepository.deleteByLocationIdAndForecastAt(location.getId(), forecastSlot);
+                if (deletedCount > 0) {
+                    log.debug("[OpenMeteo] 기존 예보 {}건 삭제 - forecastAt:{}", deletedCount, forecastSlot);
+                }
+            }
+        }
+
         List<Weather> saved = weatherRepository.saveAll(result);
-        Instant newCreatedAt = saved.isEmpty() ? null : saved.get(0).getCreatedAt();
-        log.info("[OpenMeteo] 일간 예보 {}건 저장 완료 (createdAt:{})", saved.size(), newCreatedAt);
+        Instant latestForecastedAt = saved.isEmpty() ? null : saved.get(0).getForecastedAt();
+        log.info("[OpenMeteo] 일간 예보 {}건 저장 완료 (forecastedAt:{})", saved.size(), latestForecastedAt);
         return saved;
     }
 
     /**
-     * 일간 데이터를 사용해 날짜별 요약 정보를 생성한다.
+     * Open-Meteo가 내려주는 일간 배열을 날짜별 요약 값으로 정리한다.
      */
     private Map<LocalDate, DaySummary> calculateDailySummaries(Daily daily) {
         List<String> times = daily.time();
@@ -222,7 +244,7 @@ public class WeatherServiceOpenMeteo implements WeatherService {
     }
 
     /**
-     * 전일 대비 계산에 활용할 기준값(평균 기온, 평균 습도)을 준비한다.
+     * 전일 대비 계산에 사용할 기준 온도와 습도를 준비한다.
      */
     private Map<LocalDate, DayBaseline> prepareBaselines(Location location, ZoneId zoneId,
         Map<LocalDate, DaySummary> dailySummaries) {
@@ -248,6 +270,9 @@ public class WeatherServiceOpenMeteo implements WeatherService {
         return baselines;
     }
 
+    /**
+     * 특정 날짜 하루 범위를 대상으로 가장 최근 예보를 조회한다.
+     */
     private Weather findWeatherForDate(Location location, LocalDate date, ZoneId zoneId) {
         Instant startOfDay = date.atStartOfDay(zoneId).toInstant();
         Instant endOfDay = date.atTime(LocalTime.MAX).atZone(zoneId).toInstant();
@@ -257,6 +282,9 @@ public class WeatherServiceOpenMeteo implements WeatherService {
             .orElse(null);
     }
 
+    /**
+     * 위도 값이 비어 있으면 프로필이나 기본 좌표를 사용한다.
+     */
     private BigDecimal resolveLatitude(BigDecimal latitude, Profile profile) {
         if (latitude != null) {
             return latitude;
@@ -267,6 +295,9 @@ public class WeatherServiceOpenMeteo implements WeatherService {
         return DEFAULT_LAT;
     }
 
+    /**
+     * 경도 값이 없을 때 프로필 좌표나 기본값으로 대체한다.
+     */
     private BigDecimal resolveLongitude(BigDecimal longitude, Profile profile) {
         if (longitude != null) {
             return longitude;
@@ -277,6 +308,9 @@ public class WeatherServiceOpenMeteo implements WeatherService {
         return DEFAULT_LON;
     }
 
+    /**
+     * Open-Meteo가 내려준 타임존 문자열을 ZoneId로 변환한다.
+     */
     private ZoneId resolveZoneId(String timezone) {
         if (timezone == null || timezone.isBlank()) {
             return ZoneId.of("UTC");
@@ -289,6 +323,9 @@ public class WeatherServiceOpenMeteo implements WeatherService {
         }
     }
 
+    /**
+     * yyyy-MM-dd 형식의 문자열을 LocalDate로 바꾼다.
+     */
     private LocalDate parseDate(String dateString) {
         if (dateString == null || dateString.isBlank()) {
             return null;
@@ -301,6 +338,9 @@ public class WeatherServiceOpenMeteo implements WeatherService {
         }
     }
 
+    /**
+     * 리스트 범위를 확인한 뒤 안전하게 Double 값을 꺼낸다.
+     */
     private Double safeGetDouble(List<Double> values, int index) {
         if (values == null || index < 0 || index >= values.size()) {
             return null;
@@ -308,6 +348,9 @@ public class WeatherServiceOpenMeteo implements WeatherService {
         return values.get(index);
     }
 
+    /**
+     * 리스트 범위를 확인한 뒤 날씨 코드 값을 꺼낸다.
+     */
     private Integer safeGetCode(List<Integer> codes, int index) {
         if (codes == null || index < 0 || index >= codes.size()) {
             return null;
@@ -315,6 +358,9 @@ public class WeatherServiceOpenMeteo implements WeatherService {
         return codes.get(index);
     }
 
+    /**
+     * Open-Meteo 날씨 코드를 SkyStatus로 매핑한다.
+     */
     private SkyStatus toSkyStatus(Integer weatherCode) {
         if (weatherCode == null) {
             return SkyStatus.CLEAR;
@@ -326,6 +372,9 @@ public class WeatherServiceOpenMeteo implements WeatherService {
         };
     }
 
+    /**
+     * 날씨 코드와 강수량을 기반으로 강수 유형을 판별한다.
+     */
     private PrecipitationType toPrecipitationType(Integer weatherCode, Double precipitation) {
         if ((precipitation == null || precipitation <= 0d) && weatherCode == null) {
             return PrecipitationType.NONE;
@@ -341,6 +390,9 @@ public class WeatherServiceOpenMeteo implements WeatherService {
         };
     }
 
+    /**
+     * 풍속 값을 구간별로 나눠 바람 세기를 계산한다.
+     */
     private WindspeedLevel toWindSpeedLevel(Double windspeed) {
         if (windspeed == null || windspeed < 4d) {
             return WindspeedLevel.WEAK;
@@ -350,6 +402,25 @@ public class WeatherServiceOpenMeteo implements WeatherService {
         }
         return WindspeedLevel.STRONG;
     }
+
+    /**
+     * 서버 현재 시간 기준으로 오늘 예보가 포함돼 있는지 확인한다.
+     */
+    private boolean containsForecastForToday(List<Weather> weathers) {
+        ZoneId systemZone = ZoneId.systemDefault();
+        LocalDate today = LocalDate.now(systemZone);
+        for (Weather weather : weathers) {
+            Instant forecastAt = weather.getForecastAt();
+            if (forecastAt != null) {
+                LocalDate forecastDate = forecastAt.atZone(systemZone).toLocalDate();
+                if (forecastDate.equals(today)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 
     private record DaySummary(double minTemperature, double maxTemperature, double avgTemperature,
         Double avgHumidity) {
