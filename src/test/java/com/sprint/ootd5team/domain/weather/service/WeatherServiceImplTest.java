@@ -18,6 +18,9 @@ import com.sprint.ootd5team.domain.weather.mapper.WeatherMapper;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -86,7 +89,8 @@ class WeatherServiceImplTest {
             .build();
 
         when(profileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
-        when(weatherFactory.findOrCreateWeathers(requestLat, requestLon)).thenReturn(List.of(weather));
+        when(weatherFactory.findOrCreateWeathers(requestLat, requestLon)).thenReturn(
+            List.of(weather));
         when(weatherMapper.toDto(eq(weather), any())).thenReturn(dto);
 
         List<WeatherDto> result = weatherService.fetchWeatherByLocation(requestLat, requestLon,
@@ -96,7 +100,8 @@ class WeatherServiceImplTest {
         assertSame(dto, result.get(0));
 
         ArgumentCaptor<com.sprint.ootd5team.domain.location.dto.data.ClientCoords> captor =
-            ArgumentCaptor.forClass(com.sprint.ootd5team.domain.location.dto.data.ClientCoords.class);
+            ArgumentCaptor.forClass(
+                com.sprint.ootd5team.domain.location.dto.data.ClientCoords.class);
         verify(weatherMapper).toDto(eq(weather), captor.capture());
         assertEquals(requestLat, captor.getValue().clientLatitude());
         assertEquals(requestLon, captor.getValue().clientLongitude());
@@ -119,7 +124,8 @@ class WeatherServiceImplTest {
             .build();
 
         when(profileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
-        when(weatherFactory.findOrCreateWeathers(profileLat, profileLon)).thenReturn(List.of(weather));
+        when(weatherFactory.findOrCreateWeathers(profileLat, profileLon)).thenReturn(
+            List.of(weather));
         when(weatherMapper.toDto(eq(weather), any())).thenReturn(dto);
 
         List<WeatherDto> result = weatherService.fetchWeatherByLocation(null, null, userId);
@@ -128,25 +134,42 @@ class WeatherServiceImplTest {
         verify(weatherFactory).findOrCreateWeathers(profileLat, profileLon);
 
         ArgumentCaptor<com.sprint.ootd5team.domain.location.dto.data.ClientCoords> captor =
-            ArgumentCaptor.forClass(com.sprint.ootd5team.domain.location.dto.data.ClientCoords.class);
+            ArgumentCaptor.forClass(
+                com.sprint.ootd5team.domain.location.dto.data.ClientCoords.class);
         verify(weatherMapper).toDto(eq(weather), captor.capture());
         assertEquals(null, captor.getValue().clientLatitude());
         assertEquals(null, captor.getValue().clientLongitude());
     }
 
     @Test
-    @DisplayName("getLastestPerLocationId - 리포지토리 위임")
-    void 최신날씨_조회는_리포지토리에_위임한다() {
+    @DisplayName("getLastestPerLocationIdAndForecastAt - forecastAt 파라미터를 전달한다")
+    void 특정_예보시간에_해당하는_최신날씨를_조회한다() {
         UUID locationId = UUID.randomUUID();
+        LocalDate targetDate = LocalDate.now();
         Weather expected = Weather.builder()
             .location(location)
             .forecastAt(Instant.now())
             .forecastedAt(Instant.now())
             .build();
-        when(weatherRepository.findTopByLocationIdOrderByForecastedAtDescForecastAtDescCreatedAtDesc(locationId))
-            .thenReturn(expected);
 
-        Weather result = weatherService.getLastestPerLocationId(locationId);
+        when(weatherRepository.findTopByLocationIdAndForecastDateOrderByLatest(
+            eq(locationId), any(), any())).thenReturn(expected);
+
+        Weather result = weatherService.getLatestWeatherForLocationAndDate(locationId, targetDate);
+
+        ArgumentCaptor<Instant> startCaptor = ArgumentCaptor.forClass(Instant.class);
+        ArgumentCaptor<Instant> endCaptor = ArgumentCaptor.forClass(Instant.class);
+        verify(weatherRepository).findTopByLocationIdAndForecastDateOrderByLatest(eq(locationId),
+            startCaptor.capture(), endCaptor.capture());
+
+        LocalDate startDate = LocalDateTime.ofInstant(startCaptor.getValue(),
+                ZoneId.of("Asia/Seoul"))
+            .toLocalDate();
+        LocalDate endDate = LocalDateTime.ofInstant(endCaptor.getValue(), ZoneId.of("Asia/Seoul"))
+            .toLocalDate();
+
+        assertEquals(targetDate, startDate);
+        assertEquals(targetDate.plusDays(1), endDate);
         assertSame(expected, result);
     }
 }

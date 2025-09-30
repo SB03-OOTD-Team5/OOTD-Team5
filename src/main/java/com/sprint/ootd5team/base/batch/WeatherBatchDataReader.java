@@ -2,7 +2,6 @@ package com.sprint.ootd5team.base.batch;
 
 import com.sprint.ootd5team.domain.location.dto.data.LocationWithProfileIds;
 import com.sprint.ootd5team.domain.location.service.LocationService;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaApiAdapter;
 import com.sprint.ootd5team.domain.weather.service.WeatherFactory;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -30,10 +29,9 @@ public class WeatherBatchDataReader implements ItemStreamReader<LocationWithProf
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final ZoneId SEOUL_ZONE_ID = ZoneId.of("Asia/Seoul");
     private final LocationService locationService;
-    private final KmaApiAdapter kmaApiAdapter;
     private final WeatherFactory weatherFactory;
     //    private final String BASE_TIME = "2300";
-    private final String BASE_TIME = "2000"; // 테스트용
+    private final String BASE_TIME = "0800"; // 테스트용
     private Iterator<LocationWithProfileIds> iterator;
 
     /**
@@ -49,13 +47,11 @@ public class WeatherBatchDataReader implements ItemStreamReader<LocationWithProf
         LocationWithProfileIds withProfileIds = iterator.next();
 
         String baseDate = LocalDate.now(SEOUL_ZONE_ID).format(DATE_FORMATTER);
-        // 기상청 API BaseTime
-
         log.info("[WeatherBatchDataReader-read] 위도:{}, 경도:{}, 사용자 Id:{}",
             withProfileIds.latitude(), withProfileIds.longitude(),
             withProfileIds.profileIds().toString());
 
-        // 날씨 찾기
+        // 사용자의 해당 하는 날씨 데이터가 이미 있으면 fetch 보낼 리스트에서 제외
         boolean exists = weatherFactory.existsWeatherFor(baseDate, BASE_TIME,
             withProfileIds.locationId());
         if (exists) {
@@ -64,7 +60,7 @@ public class WeatherBatchDataReader implements ItemStreamReader<LocationWithProf
             return null;
         }
 
-        log.info("[WeatherBatchDataReader] 신규 처리 대상 locationId={}, profileCount={}",
+        log.info("[WeatherBatchDataReader] 신규 fetch 대상 locationId={}, profileCount={}",
             withProfileIds.locationId(), withProfileIds.profileIds().size());
 
         return withProfileIds;

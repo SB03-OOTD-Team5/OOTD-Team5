@@ -5,7 +5,6 @@ import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.location.repository.LocationRepository;
 import com.sprint.ootd5team.domain.notification.service.NotificationService;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
-import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaApiAdapter;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
@@ -37,7 +36,7 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
     private final WeatherRepository weatherRepository;
     private final LocationRepository locationRepository;
     //    private final String BASE_TIME = "2300";
-    private final String BASE_TIME = "2000"; // 테스트용
+    private final String BASE_TIME = "0800"; // 테스트용
 
 
     @Override
@@ -48,6 +47,7 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
             log.info("[WeatherBatchWriter] write start chunkSize={} baseDate={} baseTime={}",
                 chunk.size(), baseDate, baseTime);
 
+            // chunk에 있는 데이터를 fetch함
             for (LocationWithProfileIds item : chunk) {
                 List<UUID> profileIds = item.profileIds();
 
@@ -63,20 +63,26 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
                     continue;
                 }
 
-                Weather latestWeather = weatherService.getLastestPerLocationId(location.getId());
+                // 새롭게 fetch된 내일 날씨정보와 마지막으로 저장된 오늘 날씨정보를 비교 -> 차이가 크면 알림 보냄
+                Weather latestTodayWeather = weatherService.getLatestWeatherForLocationAndDate(
+                    location.getId(), LocalDate.now(SEOUL_ZONE_ID));
 
-                log.info("[WeatherBatchWriter] 외부 API 호출 locationId={} lat={} lon={}",
-                    location.getId(), item.latitude(), item.longitude());
                 KmaResponseDto kmaResponseDto = kmaApiAdapter.getKmaWeather(baseDate, BASE_TIME,
                     item.latitude(), item.longitude(), 300);
+
+                log.info("[WeatherBatchWriter] 외부 API 호출 완료 locationId={} lat={} lon={}",
+                    location.getId(), item.latitude(), item.longitude());
 
                 List<Weather> newWeathers = weatherFactory.createWeathers(kmaResponseDto, baseDate,
                     location);
 
-                weatherRepository.saveAll(newWeathers);
-                log.info("[WeatherBatchWriter] 새 예보 저장 locationId={} savedCount={}",
-                    location.getId(), newWeathers.size());
+                log.info("[WeatherBatchWriter] weather {}건 생성완료", newWeathers.size());
 
+                weatherRepository.saveAll(newWeathers);
+                log.info("[WeatherBatchWriter] 새 weather {}건 저장 locationId={}}", newWeathers.size(),
+                    location.getId());
+
+                // 새로 생성된 weather 중 다음날 날씨만 가져와서 오늘 날씨와 비교
                 LocalDate targetDate = LocalDate.parse(baseDate, DATE_FORMATTER).plusDays(1);
                 Weather tomorrowWeather = newWeathers.stream()
                     .filter(
@@ -90,7 +96,7 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
                     continue;
                 }
 
-                boolean shouldNotify = isShouldNotify(latestWeather, tomorrowWeather);
+                boolean shouldNotify = isShouldNotify(latestTodayWeather, tomorrowWeather);
 
                 if (!shouldNotify) {
                     log.info("[WeatherBatchWriter] 알림 조건 미충족 locationId={}", location.getId());
@@ -112,27 +118,32 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
         }
     }
 
-    private boolean isShouldNotify(Weather latestWeather, Weather tomorrowWeather) {
-        if (latestWeather == null) {
-            log.info("[WeatherBatchWriter] 기존 예보 없음 -> 신규 데이터로 알림 전송 예정");
+    private boolean isShouldNotify(Weather latestTodayWeather, Weather tomorrowWeather) {
+        if (latestTodayWeather == null) {
+            log.info("[WeatherBatchWriter] 기존 예보 없음");
             return true;
         }
 
-        boolean changedToRain = latestWeather.getPrecipitationType() == PrecipitationType.NONE
-            && tomorrowWeather.getPrecipitationType() != PrecipitationType.NONE;
+        log.info("[WeatherBatchWriter] 기존 예보 있음 -> latestWeatherId={}, locationId={}",
+            latestTodayWeather.getId(), latestTodayWeather.getLocation().getId());
 
-        Double latestMinTemp = latestWeather.getTemperatureMin();
+        // 알림 조건 1. 강수타입이 달라짐
+        boolean changedToPrecipitation =
+            latestTodayWeather.getPrecipitationType() != tomorrowWeather.getPrecipitationType();
+        Double latestMinTemp = latestTodayWeather.getTemperatureMin();
         Double tomorrowMinTemp = tomorrowWeather.getTemperatureMin();
+
+        // 알림 조건 2. 온도가 3도이상 차이남
         boolean temperatureChanged = latestMinTemp != null && tomorrowMinTemp != null
             && Math.abs(tomorrowMinTemp - latestMinTemp) >= 3;
 
         log.info("[WeatherBatchWriter] 비교 결과 precipChange={} tempDiff={} changedTemp={}",
-            changedToRain,
+            changedToPrecipitation,
             (latestMinTemp != null && tomorrowMinTemp != null)
                 ? Math.abs(tomorrowMinTemp - latestMinTemp)
                 : null,
             temperatureChanged);
 
-        return changedToRain || temperatureChanged;
+        return changedToPrecipitation || temperatureChanged;
     }
 }
