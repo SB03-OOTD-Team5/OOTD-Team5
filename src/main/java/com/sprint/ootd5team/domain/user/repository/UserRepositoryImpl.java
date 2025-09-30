@@ -47,6 +47,7 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
         Boolean locked) {
 
         log.debug("findUsersWithCursor 시작");
+        OrderSpecifier<?> tieBreakerOrder = user.id.asc(); // 항상 id.asc() tie-breaker
         Order order = sortDirection.equals("ASCENDING") ? Order.ASC : Order.DESC;
         List<User> fetch = jpaQueryFactory.selectFrom(user)
             .where(
@@ -55,7 +56,7 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
                 lockedCondition(locked),
                 roleCondition(roleEqual)
             )
-            .orderBy(buildOrderSpecifier(sortBy, order))
+            .orderBy(buildOrderSpecifier(sortBy, order),tieBreakerOrder)
             .limit(limit)
             .fetch();
 
