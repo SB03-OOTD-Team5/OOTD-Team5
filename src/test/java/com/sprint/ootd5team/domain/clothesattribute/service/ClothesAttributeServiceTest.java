@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.domain.clothesAttribute.service;
+package com.sprint.ootd5team.domain.clothesattribute.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -19,7 +19,6 @@ import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeDef;
 import com.sprint.ootd5team.domain.clothesattribute.mapper.ClothesAttributeMapper;
 import com.sprint.ootd5team.domain.clothesattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.clothesattribute.repository.ClothesAttributeValueRepository;
-import com.sprint.ootd5team.domain.clothesattribute.service.BasicClothesAttributeService;
 import com.sprint.ootd5team.domain.notification.event.type.multi.ClothesAttributeCreatedEvent;
 import com.sprint.ootd5team.domain.notification.event.type.multi.ClothesAttributeUpdatedEvent;
 import jakarta.persistence.EntityManager;

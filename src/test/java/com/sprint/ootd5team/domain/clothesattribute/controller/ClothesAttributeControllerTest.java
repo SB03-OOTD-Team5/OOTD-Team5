@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.domain.clothesAttribute.controller;
+package com.sprint.ootd5team.domain.clothesattribute.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -19,7 +19,6 @@ import com.sprint.ootd5team.base.exception.GlobalExceptionHandler;
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeAlreadyExistException;
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundException;
 import com.sprint.ootd5team.base.exception.clothesattribute.InvalidAttributeException;
-import com.sprint.ootd5team.domain.clothesattribute.controller.ClothesAttributeController;
 import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDefCreateRequest;
 import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDefDto;
 import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDefUpdateRequest;
