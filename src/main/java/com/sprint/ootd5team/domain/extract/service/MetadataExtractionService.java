@@ -92,6 +92,11 @@ public class MetadataExtractionService {
             return cleanNoise(descEl.text());
         }
 
+        // body 태그 전체 텍스트
+        if (doc.body() != null && !doc.body().text().isBlank()) {
+            return cleanNoise(doc.body().text());
+        }
+
         // 2. title + meta
         String title = doc.title();
         String desc = doc.select("meta[name=description], meta[property=og:description]")

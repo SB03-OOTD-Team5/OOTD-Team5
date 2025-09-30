@@ -104,7 +104,7 @@ public class LlmExtractionService {
             [출력 형식]
             {
               "name": "제품명",
-              "typeRaw": "카테고리",
+              "typeRaw": "상의",
               "attributes": {
                 "계절": "봄 | 여름 | 가을 | 겨울 | 봄/가을 | 사계절 | 기타",
                 "색상": "",

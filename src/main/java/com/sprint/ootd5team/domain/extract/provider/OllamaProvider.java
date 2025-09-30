@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 /**
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @Slf4j
+@ConditionalOnProperty(name = "spring.ai.provider", havingValue = "ollama")
 public class OllamaProvider implements LlmProvider {
     private final OllamaChatModel ollamaChatModel;
 

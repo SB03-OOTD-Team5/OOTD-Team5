@@ -39,4 +39,12 @@ public class ClothesExtractionFailedException extends ClothesException {
         exception.initCause(cause);
         return exception;
     }
+
+
+    public static ClothesExtractionFailedException geminiCallFailed(Throwable cause) {
+        ClothesExtractionFailedException exception = new ClothesExtractionFailedException();
+        exception.addDetail("reason", "Gemini LLM 호출 실패");
+        exception.initCause(cause);
+        return exception;
+    }
 }
