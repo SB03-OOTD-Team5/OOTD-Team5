@@ -32,4 +32,11 @@ public class ClothesExtractionFailedException extends ClothesException {
         exception.initCause(cause);
         return exception;
     }
+
+    public static ClothesExtractionFailedException ollamaCallFailed(Throwable cause) {
+        ClothesExtractionFailedException exception = new ClothesExtractionFailedException();
+        exception.addDetail("reason", "Ollama LLM 호출 실패");
+        exception.initCause(cause);
+        return exception;
+    }
 }

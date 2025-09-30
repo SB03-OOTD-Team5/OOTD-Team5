@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.extract.provider;
 
+import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -27,22 +28,20 @@ public class OllamaProvider implements LlmProvider {
      */
     @Override
     public String chatCompletion(Prompt prompt) {
+        log.debug("[OllamaProvider] 프롬프트 요청: {}", prompt.getContents());
         try {
-            log.debug("[OllamaProvider] 프롬프트 요청: {}", prompt.getContents());
-
             ChatResponse response = ollamaChatModel.call(prompt);
-
-            if (response != null && response.getResult() != null) {
+            if (response != null && response.getResult() != null && response.getResult().getOutput() != null) {
                 String text = response.getResult().getOutput().getText();
                 log.debug("[OllamaProvider] 응답 수신 완료: {}", text);
-                return text;
+                return text != null ? text : "";
             } else {
                 log.warn("[OllamaProvider] 빈 응답 수신 (prompt={})", prompt.getContents());
                 return "";
             }
         } catch (Exception e) {
             log.error("[OllamaProvider] LLM 호출 실패", e);
-            return "";
+            throw ClothesExtractionFailedException.ollamaCallFailed(e);
         }
     }
 }

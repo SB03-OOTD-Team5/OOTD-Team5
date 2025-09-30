@@ -62,7 +62,7 @@ class WebClothesExtractorTest {
     void url을_통해_의상_정보를_정상적으로_추출한다() {
         // given
         String url = "https://dummy.com/product/1";
-        BasicClothesInfo basic = new BasicClothesInfo("https://dummy.com/img.png", "본문 텍스트", "이름", url);
+        BasicClothesInfo basic = new BasicClothesInfo("https://dummy.com/img.png", "본문 텍스트", "이름");
         ClothesExtraInfo extra = new ClothesExtraInfo("테스트 자켓", "아우터", Map.of("색상", "화이트"));
         given(metadataExtractionService.extract(url)).willReturn(basic);
         given(llmExtractionService.extractExtra(basic)).willReturn(extra);
@@ -107,7 +107,7 @@ class WebClothesExtractorTest {
     void llm결과에_매핑할_수_없는_속성은_무시된다() {
         // given
         String url = "https://dummy.com/product/2";
-        BasicClothesInfo basic = new BasicClothesInfo("https://dummy.com/img.png", "본문 텍스트", "이름", url);
+        BasicClothesInfo basic = new BasicClothesInfo("https://dummy.com/img.png", "본문 텍스트", "이름");
         ClothesExtraInfo extra = new ClothesExtraInfo("테스트 바지", "하의", Map.of("없는속성", "값"));
         given(metadataExtractionService.extract(url)).willReturn(basic);
         given(llmExtractionService.extractExtra(basic)).willReturn(extra);
@@ -123,7 +123,7 @@ class WebClothesExtractorTest {
     void 색상_정규화가_적용된다() {
         // given
         String url = "https://dummy.com/product/3";
-        BasicClothesInfo basic = new BasicClothesInfo("https://dummy.com/img.png", "본문 텍스트", "이름", url);
+        BasicClothesInfo basic = new BasicClothesInfo("https://dummy.com/img.png", "본문 텍스트", "이름");
         // LLM이 "라이트 그레이" 반환
         ClothesExtraInfo extra = new ClothesExtraInfo("테스트 후드티", "상의", Map.of("색상", "라이트 그레이"));
         given(metadataExtractionService.extract(url)).willReturn(basic);
@@ -151,7 +151,7 @@ class WebClothesExtractorTest {
     void 매칭되지않는값은_기타로_정규화된다() {
         // given
         String url = "https://dummy.com/product/4";
-        BasicClothesInfo basic = new BasicClothesInfo("https://dummy.com/img.png", "본문 텍스트", "이름", url);
+        BasicClothesInfo basic = new BasicClothesInfo("https://dummy.com/img.png", "본문 텍스트", "이름");
 
         // LLM이 매칭 안 되는 색상 반환
         ClothesExtraInfo extra = new ClothesExtraInfo("테스트 셔츠", "상의", Map.of("색상", "라이트 블루"));

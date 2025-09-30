@@ -47,7 +47,7 @@ spring:
         url: ${OLLAMA_API_URL:http://localhost:11434}
       chat:
         options:
-         model: gemma3:4b
+         model: gemma:2b
          temperature: 0.7
 
 # SecurityConfig 비활성화/활성화 on off

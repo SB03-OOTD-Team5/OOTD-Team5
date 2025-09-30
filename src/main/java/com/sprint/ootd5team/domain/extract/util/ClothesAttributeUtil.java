@@ -58,11 +58,22 @@ public final class ClothesAttributeUtil {
      * - "기타" 항목도 없으면 ""(빈 문자열) 반환
      */
     public static String normalize(String rawValue, List<ClothesAttributeDef> defs) {
+        String trimmed = rawValue.trim();
+
+        // 1. 정확히 일치하는 값 우선 검색
         for (ClothesAttributeDef def : defs) {
-            if (rawValue.contains(def.getAttDef())) {
-                return def.getAttDef(); // "라이트 그레이" -> "그레이"
+            if (trimmed.equals(def.getAttDef())) {
+                return def.getAttDef();
             }
         }
+
+        // 2. 부분 매칭 (contains)
+        for (ClothesAttributeDef def : defs) {
+            if (trimmed.contains(def.getAttDef())) {
+                return def.getAttDef();
+            }
+        }
+
         // 매칭 실패 → 허용된 값 중 "기타"가 있으면 그걸로 대체
         return defs.stream()
             .map(ClothesAttributeDef::getAttDef)

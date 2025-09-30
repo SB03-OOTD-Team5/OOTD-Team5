@@ -3,8 +3,7 @@ package com.sprint.ootd5team.domain.extract.dto;
 public record BasicClothesInfo(
     String imageUrl,
     String bodyText,
-    String name,
-    String url
+    String name
 ) {
 
     public boolean isEmpty() {

@@ -94,7 +94,9 @@ public class WebClothesExtractor implements ClothesExtractor {
 
         } catch (Exception e) {
             log.error("[WebClothesExtractor] 웹스크래핑 실패: {}", url, e);
-            throw ClothesExtractionFailedException.withUrl(url);
+            ClothesExtractionFailedException exception = ClothesExtractionFailedException.withUrl(url);
+            exception.initCause(e);
+            throw exception;
         }
     }
 }

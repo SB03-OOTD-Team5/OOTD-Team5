@@ -2,8 +2,12 @@ package com.sprint.ootd5team.domain.extract.service;
 
 import com.sprint.ootd5team.domain.extract.client.JsoupClient;
 import com.sprint.ootd5team.domain.extract.dto.BasicClothesInfo;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Service;
 
 /**
@@ -55,25 +59,10 @@ public class MetadataExtractionService {
             name = doc.title();
         }
 
-        // 브랜드 (사이트별 selector 다를 수 있음 → 무신사 기준 예시) (없을 수 있음)
-        String brand = doc.select(".product_title .brand, meta[property=product:brand]").text();
-
-        // 카테고리 (없을 수 있음)
-        String category = doc.select(".breadcrumb a").text();
-
         // 본문 텍스트
-        String bodyText = doc.body() != null ? doc.body().text() : "";
-        if (bodyText.isBlank()) {
-            String title = doc.title();
-            String desc = doc.select("meta[name=description], meta[property=og:description]")
-                .attr("content");
-            bodyText = (title != null ? title : "") + " " + (desc != null ? desc : "");
-        }
-        if (bodyText.isBlank()) {
-            bodyText = "상품 정보 없음";
-        }
+        String bodyText = extractBodyText(doc);
 
-        return new BasicClothesInfo(imageUrl, bodyText, name, url);
+        return new BasicClothesInfo(imageUrl, bodyText, name);
     }
 
     /**
@@ -93,4 +82,37 @@ public class MetadataExtractionService {
         }
     }
 
+    /**
+     * bodyText 전처리
+     */
+    private String extractBodyText(Document doc) {
+        // 1. 상세 설명 영역 우선
+        Element descEl = doc.selectFirst(".product-detail, #goods_description, .prd-detail, .detail-info");
+        if (descEl != null && !descEl.text().isBlank()) {
+            return cleanNoise(descEl.text());
+        }
+
+        // 2. title + meta
+        String title = doc.title();
+        String desc = doc.select("meta[name=description], meta[property=og:description]")
+            .attr("content");
+        String combined = (title != null ? title : "") + " " + (desc != null ? desc : "");
+        if (!combined.isBlank()) {
+            return cleanNoise(combined);
+        }
+
+        // 3. fallback: 상품명만
+        return "상품 정보 없음";
+    }
+
+    private String cleanNoise(String text) {
+        List<String> noiseKeywords = List.of(
+            "쿠폰", "배송", "무료배송", "혜택", "안전거래", "에스크로",
+            "고객센터", "문의", "추천 상품", "리뷰", "구매하기", "지그재그"
+        );
+        return Arrays.stream(text.split("[.\\n]"))
+            .map(String::trim)
+            .filter(s -> noiseKeywords.stream().noneMatch(s::contains))
+            .collect(Collectors.joining(". "));
+    }
 }
