@@ -68,4 +68,13 @@ public class ClothesFixture {
         ReflectionTestUtils.setField(attribute, "id", id);
         return attribute;
     }
+
+    public static ClothesAttribute createColorAttribute(UUID id) {
+        ClothesAttribute attribute = new ClothesAttribute("색상");
+        attribute.getDefs().add(new ClothesAttributeDef(attribute, "그레이"));
+        attribute.getDefs().add(new ClothesAttributeDef(attribute, "기타"));
+        attribute.getDefs().add(new ClothesAttributeDef(attribute, "화이트"));
+        ReflectionTestUtils.setField(attribute, "id", id);
+        return attribute;
+    }
 }

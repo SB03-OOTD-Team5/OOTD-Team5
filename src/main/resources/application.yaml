@@ -115,4 +115,4 @@ ootd:
     user-agent: "OOTD-Extractor/1.0"
 
   sse:
-    repository: ${OOTD_SSE_REPOSITORY:redis}  #momory
+    repository: ${OOTD_SSE_REPOSITORY:redis}  #memory

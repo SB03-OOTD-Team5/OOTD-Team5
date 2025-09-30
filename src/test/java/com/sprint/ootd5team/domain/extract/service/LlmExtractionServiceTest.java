@@ -1,21 +1,22 @@
 package com.sprint.ootd5team.domain.extract.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
+import com.sprint.ootd5team.domain.extract.dto.BasicClothesInfo;
 import com.sprint.ootd5team.domain.extract.dto.ClothesExtraInfo;
 import com.sprint.ootd5team.domain.extract.provider.LlmProvider;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.prompt.Prompt;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class LlmExtractionServiceTest {
@@ -48,7 +49,7 @@ class LlmExtractionServiceTest {
             .willReturn(validJson);
 
         // when
-        ClothesExtraInfo result = service.extractExtra("테스트 텍스트");
+        ClothesExtraInfo result = service.extractExtra(mock(BasicClothesInfo.class));
 
         // then
         assertThat(result).isNotNull();
@@ -64,7 +65,7 @@ class LlmExtractionServiceTest {
             .willReturn("   ");
 
         // when & then
-        assertThatThrownBy(() -> service.extractExtra("본문"))
+        assertThatThrownBy(() -> service.extractExtra(mock(BasicClothesInfo.class)))
             .isInstanceOf(ClothesExtractionFailedException.class);
     }
 
@@ -75,7 +76,7 @@ class LlmExtractionServiceTest {
             .willReturn("이건 그냥 텍스트");
 
         // when & then
-        assertThatThrownBy(() -> service.extractExtra("본문"))
+        assertThatThrownBy(() -> service.extractExtra(mock(BasicClothesInfo.class)))
             .isInstanceOf(ClothesExtractionFailedException.class);
     }
 
@@ -96,7 +97,7 @@ class LlmExtractionServiceTest {
             .willReturn(wrappedJson);
 
         // when
-        ClothesExtraInfo result = service.extractExtra("본문");
+        ClothesExtraInfo result = service.extractExtra(mock(BasicClothesInfo.class));
 
         // then
         assertThat(result.name()).isEqualTo("코드블록 상품");
@@ -117,7 +118,7 @@ class LlmExtractionServiceTest {
             .willReturn(invalidJson);
 
         // when & then
-        assertThatThrownBy(() -> service.extractExtra("본문"))
+        assertThatThrownBy(() -> service.extractExtra(mock(BasicClothesInfo.class)))
             .isInstanceOf(ClothesExtractionFailedException.class);
     }
 }

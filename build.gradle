@@ -100,7 +100,7 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
-    ignoreFailures = true  // 실패해도 다음 task 진행
+//    ignoreFailures = true  // 실패해도 다음 task 진행
     systemProperty "file.encoding", "UTF-8"
     finalizedBy jacocoTestReport
     String jnaPath = System.getenv("JNA_PATH")
