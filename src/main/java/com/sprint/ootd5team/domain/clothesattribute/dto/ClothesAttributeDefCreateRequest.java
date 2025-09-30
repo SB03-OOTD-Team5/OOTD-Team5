@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.domain.clothattribute.dto;
+package com.sprint.ootd5team.domain.clothesattribute.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
