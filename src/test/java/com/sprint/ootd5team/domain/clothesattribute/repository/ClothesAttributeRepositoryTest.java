@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.clothAttribute.repository;
+package com.sprint.ootd5team.domain.clothesattribute.repository;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -7,9 +7,8 @@ import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER
 
 import com.sprint.ootd5team.base.config.JpaAuditingConfig;
 import com.sprint.ootd5team.base.config.QuerydslConfig;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
-import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeDef;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import org.junit.jupiter.api.ClassOrderer;

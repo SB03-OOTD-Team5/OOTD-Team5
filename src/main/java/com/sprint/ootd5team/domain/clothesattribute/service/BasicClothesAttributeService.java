@@ -1,17 +1,17 @@
-package com.sprint.ootd5team.domain.clothattribute.service;
+package com.sprint.ootd5team.domain.clothesattribute.service;
 
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeAlreadyExistException;
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundException;
 import com.sprint.ootd5team.base.exception.clothesattribute.InvalidAttributeException;
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefCreateRequest;
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefDto;
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefUpdateRequest;
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDto;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
-import com.sprint.ootd5team.domain.clothattribute.mapper.ClothesAttributeMapper;
-import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
-import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeValueRepository;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDefCreateRequest;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDefDto;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDefUpdateRequest;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDto;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeDef;
+import com.sprint.ootd5team.domain.clothesattribute.mapper.ClothesAttributeMapper;
+import com.sprint.ootd5team.domain.clothesattribute.repository.ClothesAttributeRepository;
+import com.sprint.ootd5team.domain.clothesattribute.repository.ClothesAttributeValueRepository;
 import com.sprint.ootd5team.domain.notification.event.type.multi.ClothesAttributeCreatedEvent;
 import com.sprint.ootd5team.domain.notification.event.type.multi.ClothesAttributeUpdatedEvent;
 import jakarta.persistence.EntityManager;

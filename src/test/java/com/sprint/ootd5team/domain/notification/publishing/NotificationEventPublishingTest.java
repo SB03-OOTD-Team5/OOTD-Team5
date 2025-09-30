@@ -3,7 +3,7 @@ package com.sprint.ootd5team.domain.notification.publishing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefDto;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDefDto;
 import com.sprint.ootd5team.domain.comment.dto.data.CommentDto;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageDto;
 import com.sprint.ootd5team.domain.directmessage.dto.ParticipantDto;

@@ -1,7 +1,7 @@
 package com.sprint.ootd5team.domain.notification.event.type.multi;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeDefDto;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDefDto;
 import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
 import com.sprint.ootd5team.domain.notification.event.type.base.MultiReceiverEvent;
 import java.util.List;

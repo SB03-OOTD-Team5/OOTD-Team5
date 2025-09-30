@@ -1,7 +1,7 @@
 package com.sprint.ootd5team.domain.clothes.mapper;
 
 import com.sprint.ootd5team.base.storage.FileStorage;
-import com.sprint.ootd5team.domain.clothattribute.mapper.ClothesAttributeMapper;
+import com.sprint.ootd5team.domain.clothesattribute.mapper.ClothesAttributeMapper;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import org.mapstruct.Mapper;

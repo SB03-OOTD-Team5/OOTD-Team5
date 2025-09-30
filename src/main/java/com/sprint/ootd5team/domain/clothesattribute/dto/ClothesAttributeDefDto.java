@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.domain.clothattribute.dto;
+package com.sprint.ootd5team.domain.clothesattribute.dto;
 
 import java.time.Instant;
 import java.util.List;
