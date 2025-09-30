@@ -49,6 +49,18 @@ public class MetadataExtractionService {
             imageUrl = (firstImg != null) ? firstImg.absUrl("src") : null;
         }
 
+        // 이름
+        String name = doc.select("meta[property=og:title], meta[name=title]").attr("content");
+        if (name == null || name.isBlank()) {
+            name = doc.title();
+        }
+
+        // 브랜드 (사이트별 selector 다를 수 있음 → 무신사 기준 예시) (없을 수 있음)
+        String brand = doc.select(".product_title .brand, meta[property=product:brand]").text();
+
+        // 카테고리 (없을 수 있음)
+        String category = doc.select(".breadcrumb a").text();
+
         // 본문 텍스트
         String bodyText = doc.body() != null ? doc.body().text() : "";
         if (bodyText.isBlank()) {
@@ -61,7 +73,7 @@ public class MetadataExtractionService {
             bodyText = "상품 정보 없음";
         }
 
-        return new BasicClothesInfo(imageUrl, bodyText);
+        return new BasicClothesInfo(imageUrl, bodyText, name, url);
     }
 
     /**

@@ -3,16 +3,16 @@ package com.sprint.ootd5team.domain.extract.extractor;
 import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
 import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeValue;
 import com.sprint.ootd5team.domain.clothattribute.mapper.ClothesAttributeMapper;
 import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
+import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.extract.dto.BasicClothesInfo;
 import com.sprint.ootd5team.domain.extract.dto.ClothesExtraInfo;
 import com.sprint.ootd5team.domain.extract.service.LlmExtractionService;
 import com.sprint.ootd5team.domain.extract.service.MetadataExtractionService;
+import com.sprint.ootd5team.domain.extract.util.ClothesAttributeUtil;
 import jakarta.annotation.PostConstruct;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,6 +45,13 @@ public class WebClothesExtractor implements ClothesExtractor {
     // 캐싱용 맵 (attributeName -> ClothesAttribute)
     private Map<String, ClothesAttribute> attributeCache;
 
+//  후에 ClothesAttributeService에서 캐시 추상화 사용 가능
+//    @Cacheable("clothesAttributes")
+//    public Map<String, ClothesAttribute> getAttributeCache() {
+//        return clothesAttributeRepository.findAllWithDefs().stream()
+//            .collect(Collectors.toMap(ClothesAttribute::getName, a -> a));
+//    }
+
     /**
      * 서버 시작 시 속성 정의(attribute + defs)를 모두 로드하여 캐시에 저장.
      * N+1 쿼리 방지 및 빠른 매핑을 위함.
@@ -63,48 +70,31 @@ public class WebClothesExtractor implements ClothesExtractor {
             log.info("[WebClothesExtractor] URL 추출 시작: {}", url);
 
             // 1. 메타데이터 추출
-            BasicClothesInfo basic = metadataExtractionService.extract(url);
+            BasicClothesInfo basicInfo = metadataExtractionService.extract(url);
 
             // 2. LLM 보강
-            ClothesExtraInfo extra = llmExtractionService.extractExtra(basic.bodyText());
+            ClothesExtraInfo extraInfo = llmExtractionService.extractExtra(basicInfo);
 
             // 3. 속성 매핑
-            List<ClothesAttributeWithDefDto> attributes = buildAttributes(extra);
-            log.info("[ExtractResult] name={}, type={}, attributes={}",
-                extra.name(), extra.toClothesType(), attributes);
-
+            List<ClothesAttributeWithDefDto> attributes =
+                ClothesAttributeUtil.buildAttributes(extraInfo, attributeCache,
+                    clothesAttributeMapper);
             log.info("[WebClothesExtractor] 추출 결과 - name={}, type={}, attributes={}",
-                extra.name(), extra.toClothesType(), attributes);
+                extraInfo.name(), extraInfo.typeRaw(), attributes);
+
+            // 4. 타입 변환
+            ClothesType type = ClothesType.fromString(extraInfo.typeRaw());
 
             return ClothesDto.builder()
-                .name(extra.name())
-                .imageUrl(basic.imageUrl())
-                .type(extra.toClothesType())
+                .name(extraInfo.name())
+                .imageUrl(basicInfo.imageUrl())
+                .type(type)
                 .attributes(attributes)
                 .build();
 
         } catch (Exception e) {
-            log.error("웹스크래핑 실패: {}", url, e);
+            log.error("[WebClothesExtractor] 웹스크래핑 실패: {}", url, e);
             throw ClothesExtractionFailedException.withUrl(url);
         }
-    }
-
-    /**
-     * LLM에서 추출된 속성 정보를 캐시된 정의값과 매핑하여 DTO로 변환
-     */
-    private List<ClothesAttributeWithDefDto> buildAttributes(ClothesExtraInfo extra) {
-        List<ClothesAttributeWithDefDto> list = new ArrayList<>();
-
-        if (extra.attributes() != null) {
-            extra.attributes().forEach((attrName, value) -> {
-                if (value != null && !value.isBlank()) {
-                    ClothesAttribute attr = attributeCache.get(attrName);
-                    if (attr != null) {
-                        list.add(clothesAttributeMapper.toDto(new ClothesAttributeValue(attr, value)));
-                    }
-                }
-            });
-        }
-        return list;
     }
 }
