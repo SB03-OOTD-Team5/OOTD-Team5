@@ -30,8 +30,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,8 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Open-Meteo API를 이용해 일간 예보를 저장하고 제공하는 서비스 구현체입니다.
- * 기상청(KMA) 채널이 동작하지 않을 때를 대비한 백업 경로로 사용됩니다.
+ * Open-Meteo API를 이용해 일간 예보를 저장하고 제공하는 서비스 구현체입니다. 기상청(KMA) 채널이 동작하지 않을 때를 대비한 백업 경로로 사용됩니다.
  */
 @Slf4j
 @Service
@@ -49,9 +48,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class WeatherServiceOpenMeteo implements WeatherService {
 
-    private static final BigDecimal DEFAULT_LAT = BigDecimal.valueOf(37.5665); // 위도 파라미터가 없을 때 사용할 서울시청 좌표
-    private static final BigDecimal DEFAULT_LON = BigDecimal.valueOf(126.9780); // 경도 파라미터가 없을 때 사용할 서울시청 좌표
-    private static final Integer REFRESH_TIME_RATE = 3*60;                      // 날씨정보 재조회시 강제 업데이트 기준시간(분 단위)
+    private static final BigDecimal DEFAULT_LAT = BigDecimal.valueOf(
+        37.5665); // 위도 파라미터가 없을 때 사용할 서울시청 좌표
+    private static final BigDecimal DEFAULT_LON = BigDecimal.valueOf(
+        126.9780); // 경도 파라미터가 없을 때 사용할 서울시청 좌표
+    private static final Integer REFRESH_TIME_RATE =
+        3 * 60;                      // 날씨정보 재조회시 강제 업데이트 기준시간(분 단위)
     private static final int MINIMUM_FORECAST_COUNT = 5; // 캐시 유효 판정을 위한 최소 예보 개수
 
     private final ProfileRepository profileRepository;
@@ -61,8 +63,7 @@ public class WeatherServiceOpenMeteo implements WeatherService {
     private final WeatherRepository weatherRepository;
 
     /**
-     * 사용자 좌표(없으면 프로필 좌표)를 기준으로 일간 예보를 조회한다.
-     * 유효한 캐시가 있으면 저장된 데이터를, 없으면 Open-Meteo 응답을 반환한다.
+     * 사용자 좌표(없으면 프로필 좌표)를 기준으로 일간 예보를 조회한다. 유효한 캐시가 있으면 저장된 데이터를, 없으면 Open-Meteo 응답을 반환한다.
      */
     @Override
     @Transactional
@@ -85,18 +86,21 @@ public class WeatherServiceOpenMeteo implements WeatherService {
         if (latestOptional.isPresent()) {
             Weather latest = latestOptional.get();
             Instant forecastedAt = latest.getForecastedAt();
-            if (forecastedAt != null && forecastedAt.plus(REFRESH_TIME_RATE, ChronoUnit.MINUTES).isAfter(now)) {
+            if (forecastedAt != null && forecastedAt.plus(REFRESH_TIME_RATE, ChronoUnit.MINUTES)
+                .isAfter(now)) {
                 List<Weather> cached = weatherRepository.findAllByLocationIdAndForecastedAt(
                     location.getId(), forecastedAt);
                 if (!cached.isEmpty()) {
                     boolean containsTodayForecast = containsForecastForToday(cached);
                     if (cached.size() >= MINIMUM_FORECAST_COUNT && containsTodayForecast) {
-                        log.info("[OpenMeteo] 캐시 사용 - forecastedAt:{} ({}건)", forecastedAt, cached.size());
+                        log.info("[OpenMeteo] 캐시 사용 - forecastedAt:{} ({}건)", forecastedAt,
+                            cached.size());
                         return cached.stream()
                             .map(weather -> weatherMapper.toDto(weather, clientCoords))
                             .toList();
                     }
-                    log.info("[OpenMeteo] 캐시 무효 - forecastedAt:{}, size:{}, containsToday:{}", forecastedAt, cached.size(), containsTodayForecast);
+                    log.info("[OpenMeteo] 캐시 무효 - forecastedAt:{}, size:{}, containsToday:{}",
+                        forecastedAt, cached.size(), containsTodayForecast);
                 } else {
                     log.debug("[OpenMeteo] forecastedAt:{} 캐시 목록이 비어 있어 API 호출로 진행", forecastedAt);
                 }
@@ -117,9 +121,14 @@ public class WeatherServiceOpenMeteo implements WeatherService {
             .toList();
     }
 
+
+    @Override
+    public Weather getLatestWeatherForLocationAndDate(UUID locationId, LocalDate targetDate) {
+        return null;
+    }
+
     /**
-     * Open-Meteo 일간 응답을 Weather 엔티티로 변환한다.
-     * 같은 날짜의 기존 예보는 먼저 지우고 최신 데이터로 갱신.
+     * Open-Meteo 일간 응답을 Weather 엔티티로 변환한다. 같은 날짜의 기존 예보는 먼저 지우고 최신 데이터로 갱신.
      */
     private List<Weather> buildWeathers(OpenMeteoResponse response, Location location) {
         Daily daily = response.daily();
@@ -152,7 +161,8 @@ public class WeatherServiceOpenMeteo implements WeatherService {
 
             Integer weatherCode = safeGetCode(daily.weatherCode(), idx);
             Double precipitation = safeGetDouble(daily.precipitationSum(), idx);
-            Double precipitationProbability = safeGetDouble(daily.precipitationProbabilityMax(), idx);
+            Double precipitationProbability = safeGetDouble(daily.precipitationProbabilityMax(),
+                idx);
             Double windSpeed = safeGetDouble(daily.windSpeed10mMax(), idx);
             Double humidity = summary.avgHumidity();
             double averageTemperature = summary.avgTemperature();
@@ -193,9 +203,11 @@ public class WeatherServiceOpenMeteo implements WeatherService {
 
         if (!result.isEmpty()) {
             for (Instant forecastSlot : forecastSlots) {
-                long deletedCount = weatherRepository.deleteByLocationIdAndForecastAt(location.getId(), forecastSlot);
+                long deletedCount = weatherRepository.deleteByLocationIdAndForecastAt(
+                    location.getId(), forecastSlot);
                 if (deletedCount > 0) {
-                    log.debug("[OpenMeteo] 기존 예보 {}건 삭제 - forecastAt:{}", deletedCount, forecastSlot);
+                    log.debug("[OpenMeteo] 기존 예보 {}건 삭제 - forecastAt:{}", deletedCount,
+                        forecastSlot);
                 }
             }
         }
@@ -380,13 +392,15 @@ public class WeatherServiceOpenMeteo implements WeatherService {
             return PrecipitationType.NONE;
         }
         if (weatherCode == null) {
-            return precipitation != null && precipitation > 0d ? PrecipitationType.RAIN : PrecipitationType.NONE;
+            return precipitation != null && precipitation > 0d ? PrecipitationType.RAIN
+                : PrecipitationType.NONE;
         }
         return switch (weatherCode) {
             case 66, 67 -> PrecipitationType.RAIN_SNOW;
             case 71, 73, 75, 77, 85, 86 -> PrecipitationType.SNOW;
             case 95, 96, 99, 80, 81, 82 -> PrecipitationType.SHOWER;
-            default -> precipitation != null && precipitation > 0d ? PrecipitationType.RAIN : PrecipitationType.NONE;
+            default -> precipitation != null && precipitation > 0d ? PrecipitationType.RAIN
+                : PrecipitationType.NONE;
         };
     }
 
@@ -423,9 +437,11 @@ public class WeatherServiceOpenMeteo implements WeatherService {
 
 
     private record DaySummary(double minTemperature, double maxTemperature, double avgTemperature,
-        Double avgHumidity) {
+                              Double avgHumidity) {
+
     }
 
     private record DayBaseline(Double temperature, Double humidity) {
+
     }
 }
