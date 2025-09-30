@@ -51,6 +51,8 @@ app:
 
 #외부 API key 설정
 weather:
+  api-client:
+    provider: ${WEATHER_API_CLIENT:kma} # 기본값=kma, 2순위API='meteo'
   kakao:
     base-url: https://dapi.kakao.com/v2/local/geo/coord2regioncode.json
     client-secret: ${KAKAO_CLIENT_SECRET}
