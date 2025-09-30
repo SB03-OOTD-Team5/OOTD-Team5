@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -26,6 +27,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ActiveProfiles("test")
 @Import({QuerydslConfig.class})
 @DisplayName("User Repository 단위 테스트")
+@EnableJpaAuditing(setDates = false) // Auditing 날짜 설정 비활성화
 class UserRepositoryTest {
 
     @Autowired
@@ -43,6 +45,8 @@ class UserRepositoryTest {
 
     @BeforeEach
     void setUp() {
+        entityManager.getEntityManager().createQuery("DELETE FROM User").executeUpdate();
+        entityManager.flush();
         // 테스트 데이터 생성
         testUser1 = new User("Admin User", "admin@test.com", "password123", Role.ADMIN);
         testUser2 = new User("Regular User", "user@test.com", "password456", Role.USER);

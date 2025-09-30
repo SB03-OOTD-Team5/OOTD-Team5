@@ -1,6 +1,6 @@
 package com.sprint.ootd5team.domain.clothes.dto.response;
 
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import java.util.List;
 import java.util.UUID;

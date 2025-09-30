@@ -1,7 +1,7 @@
 package com.sprint.ootd5team.domain.clothes.entity;
 
 import com.sprint.ootd5team.base.entity.BaseUpdatableEntity;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeValue;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeValue;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.user.entity.User;
 import jakarta.persistence.CascadeType;

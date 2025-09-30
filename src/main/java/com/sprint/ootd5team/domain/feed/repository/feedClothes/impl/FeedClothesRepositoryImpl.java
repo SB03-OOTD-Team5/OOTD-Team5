@@ -2,10 +2,10 @@ package com.sprint.ootd5team.domain.feed.repository.feedClothes.impl;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
-import com.sprint.ootd5team.domain.clothattribute.entity.QClothesAttribute;
-import com.sprint.ootd5team.domain.clothattribute.entity.QClothesAttributeDef;
-import com.sprint.ootd5team.domain.clothattribute.entity.QClothesAttributeValue;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.clothesattribute.entity.QClothesAttribute;
+import com.sprint.ootd5team.domain.clothesattribute.entity.QClothesAttributeDef;
+import com.sprint.ootd5team.domain.clothesattribute.entity.QClothesAttributeValue;
 import com.sprint.ootd5team.domain.clothes.entity.QClothes;
 import com.sprint.ootd5team.domain.feed.dto.data.OotdDto;
 import com.sprint.ootd5team.domain.feed.entity.QFeedClothes;

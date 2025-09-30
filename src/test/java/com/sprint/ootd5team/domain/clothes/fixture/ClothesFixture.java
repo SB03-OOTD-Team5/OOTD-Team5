@@ -1,8 +1,8 @@
 package com.sprint.ootd5team.domain.clothes.fixture;
 
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeDef;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;

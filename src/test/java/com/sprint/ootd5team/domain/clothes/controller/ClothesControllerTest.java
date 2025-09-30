@@ -13,13 +13,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sprint.ootd5team.base.security.service.AuthService;
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
-import com.sprint.ootd5team.domain.extract.extractor.ClothesExtractor;
 import com.sprint.ootd5team.domain.clothes.service.ClothesService;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.extract.extractor.ClothesExtractor;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;

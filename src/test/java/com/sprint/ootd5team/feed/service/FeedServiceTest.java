@@ -16,7 +16,7 @@ import com.sprint.ootd5team.base.errorcode.ErrorCode;
 import com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException;
 import com.sprint.ootd5team.base.exception.feed.FeedNotFoundException;
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
