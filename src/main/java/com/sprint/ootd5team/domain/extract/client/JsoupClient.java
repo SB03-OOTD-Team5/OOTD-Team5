@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.base.jsoup;
+package com.sprint.ootd5team.domain.extract.client;
 
 import com.sprint.ootd5team.base.exception.jsoup.JsoupFetchException;
 import java.io.IOException;

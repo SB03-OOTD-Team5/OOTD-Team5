@@ -29,19 +29,6 @@ public class ClothesFixture {
         return clothes;
     }
 
-    public static ClothesDto createClothesDto(UUID id, UUID ownerId, String name,
-        ClothesType type, String imageUrl) {
-
-        return ClothesDto.builder()
-            .id(id)
-            .ownerId(ownerId)
-            .name(name)
-            .type(type)
-            .imageUrl(imageUrl)
-            .attributes(List.of())
-            .build();
-    }
-
     public static List<Clothes> createTestClothes(User owner) {
         return List.of(
             createClothesEntity(owner, "흰 티셔츠", ClothesType.TOP, null),
@@ -72,21 +59,21 @@ public class ClothesFixture {
             .build();
     }
 
-    public static List<ClothesDto> createTestClothesDtos(UUID ownerId) {
-        Instant now = Instant.now();
-        return List.of(
-            createClothesDto(UUID.randomUUID(), ownerId, "흰 티셔츠", ClothesType.TOP, null),
-            createClothesDto(UUID.randomUUID(), ownerId, "청바지", ClothesType.BOTTOM, null),
-            createClothesDto(UUID.randomUUID(), ownerId, "운동화", ClothesType.SHOES, null)
-        );
-    }
-
     public static ClothesAttribute createSeasonAttribute(UUID id) {
         ClothesAttribute attribute = new ClothesAttribute("계절");
         attribute.getDefs().add(new ClothesAttributeDef(attribute, "봄"));
         attribute.getDefs().add(new ClothesAttributeDef(attribute, "여름"));
         attribute.getDefs().add(new ClothesAttributeDef(attribute, "가을"));
         attribute.getDefs().add(new ClothesAttributeDef(attribute, "겨울"));
+        ReflectionTestUtils.setField(attribute, "id", id);
+        return attribute;
+    }
+
+    public static ClothesAttribute createColorAttribute(UUID id) {
+        ClothesAttribute attribute = new ClothesAttribute("색상");
+        attribute.getDefs().add(new ClothesAttributeDef(attribute, "그레이"));
+        attribute.getDefs().add(new ClothesAttributeDef(attribute, "기타"));
+        attribute.getDefs().add(new ClothesAttributeDef(attribute, "화이트"));
         ReflectionTestUtils.setField(attribute, "id", id);
         return attribute;
     }
