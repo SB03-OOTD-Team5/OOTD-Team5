@@ -2,7 +2,7 @@ package com.sprint.ootd5team.base.batch;
 
 import com.sprint.ootd5team.domain.location.dto.data.LocationWithProfileIds;
 import com.sprint.ootd5team.domain.location.service.LocationService;
-import com.sprint.ootd5team.domain.weather.service.WeatherFactory;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaWeatherFactory;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -29,7 +29,7 @@ public class WeatherBatchDataReader implements ItemStreamReader<LocationWithProf
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final ZoneId SEOUL_ZONE_ID = ZoneId.of("Asia/Seoul");
     private final LocationService locationService;
-    private final WeatherFactory weatherFactory;
+    private final KmaWeatherFactory kmaWeatherFactory;
     //    private final String BASE_TIME = "2300";
     private final String BASE_TIME = "0800"; // 테스트용
     private Iterator<LocationWithProfileIds> iterator;
@@ -52,7 +52,7 @@ public class WeatherBatchDataReader implements ItemStreamReader<LocationWithProf
             withProfileIds.profileIds().toString());
 
         // 사용자의 해당 하는 날씨 데이터가 이미 있으면 fetch 보낼 리스트에서 제외
-        boolean exists = weatherFactory.existsWeatherFor(baseDate, BASE_TIME,
+        boolean exists = kmaWeatherFactory.existsWeatherFor(baseDate, BASE_TIME,
             withProfileIds.locationId());
         if (exists) {
             log.info("[WeatherBatchDataReader] 기존 날씨 데이터 존재 locationId={}",

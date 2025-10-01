@@ -14,12 +14,12 @@ import com.sprint.ootd5team.domain.location.service.LocationService;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
 import com.sprint.ootd5team.domain.weather.exception.WeatherNotFoundException;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaApiAdapter;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto.Body;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto.Header;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto.Items;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto.Response;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto.WeatherItem;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaResponse;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaResponse.Body;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaResponse.Header;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaResponse.Items;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaResponse.Response;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaResponse.WeatherItem;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaWeatherFactory;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
@@ -123,7 +123,7 @@ class KmaWeatherFactoryTest {
         when(weatherRepository.findFirstByLocationIdAndForecastAtBetweenOrderByForecastAtDesc(
             eq(locationId), any(), any())).thenReturn(Optional.empty());
         when(kmaApiAdapter.getBaseTime(anyString())).thenReturn(baseTime);
-        KmaResponseDto dto = buildSimpleResponse(baseDate, baseTime, baseDate, "0000");
+        KmaResponse dto = buildSimpleResponse(baseDate, baseTime, baseDate, "0000");
         when(kmaApiAdapter.getKmaWeather(anyString(), anyString(), eq(lat), eq(lon), eq(1000)))
             .thenReturn(dto);
         when(weatherRepository.saveAll(any())).thenReturn(List.of(newWeather));
@@ -144,7 +144,7 @@ class KmaWeatherFactoryTest {
             .build();
         ReflectionTestUtils.setField(location, "id", UUID.randomUUID());
 
-        KmaResponseDto dto = new KmaResponseDto(new Response(
+        KmaResponse dto = new KmaResponse(new Response(
             new Header("00", "OK"),
             new Body("JSON", new Items(Collections.emptyList()), 1, 1, 0)
         ));
@@ -170,7 +170,7 @@ class KmaWeatherFactoryTest {
         assertEquals(true, exists);
     }
 
-    private KmaResponseDto buildSimpleResponse(String baseDate, String baseTime,
+    private KmaResponse buildSimpleResponse(String baseDate, String baseTime,
         String forecastDate,
         String forecastTime) {
         WeatherItem tmp = new WeatherItem(baseDate, baseTime, "TMP", forecastDate, forecastTime,
@@ -187,7 +187,7 @@ class KmaWeatherFactoryTest {
             "25", 60, 127);
         WeatherItem tmn = new WeatherItem(baseDate, baseTime, "TMN", forecastDate, forecastTime,
             "15", 60, 127);
-        return new KmaResponseDto(new Response(
+        return new KmaResponse(new Response(
             new Header("00", "OK"),
             new Body("JSON", new Items(List.of(tmp, pop, pty, reh, wsd, tmx, tmn)), 1, 1, 7)
         ));

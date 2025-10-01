@@ -6,9 +6,9 @@ import com.sprint.ootd5team.domain.location.repository.LocationRepository;
 import com.sprint.ootd5team.domain.notification.service.NotificationService;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaApiAdapter;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaResponse;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaWeatherFactory;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
-import com.sprint.ootd5team.domain.weather.service.WeatherFactory;
 import com.sprint.ootd5team.domain.weather.service.WeatherService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,7 +29,7 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final ZoneId SEOUL_ZONE_ID = ZoneId.of("Asia/Seoul");
-    private final WeatherFactory weatherFactory;
+    private final KmaWeatherFactory kmaWeatherFactory;
     private final KmaApiAdapter kmaApiAdapter;
     private final WeatherService weatherService;
     private final NotificationService notificationService;
@@ -67,13 +67,14 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
                 Weather latestTodayWeather = weatherService.getLatestWeatherForLocationAndDate(
                     location.getId(), LocalDate.now(SEOUL_ZONE_ID));
 
-                KmaResponseDto kmaResponseDto = kmaApiAdapter.getKmaWeather(baseDate, BASE_TIME,
+                KmaResponse kmaResponse = kmaApiAdapter.getKmaWeather(baseDate, BASE_TIME,
                     item.latitude(), item.longitude(), 300);
 
                 log.info("[WeatherBatchWriter] 외부 API 호출 완료 locationId={} lat={} lon={}",
                     location.getId(), item.latitude(), item.longitude());
 
-                List<Weather> newWeathers = weatherFactory.createWeathers(kmaResponseDto, baseDate,
+                List<Weather> newWeathers = kmaWeatherFactory.createWeathers(kmaResponse,
+                    baseDate,
                     location);
 
                 log.info("[WeatherBatchWriter] weather {}건 생성완료", newWeathers.size());

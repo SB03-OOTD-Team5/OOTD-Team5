@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.weather.external.kma;
 
+import com.sprint.ootd5team.base.util.DateTimeUtils;
 import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.location.service.LocationService;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
@@ -7,7 +8,7 @@ import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.enums.SkyStatus;
 import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
 import com.sprint.ootd5team.domain.weather.exception.WeatherNotFoundException;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto.WeatherItem;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaResponse.WeatherItem;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -55,16 +56,16 @@ public class KmaWeatherFactory {
         }
         // 2. 날씨 데이터 불러오기
         log.debug("[Weather] 날씨 데이터 존재 X");
-        KmaResponseDto kmaResponseDto = kmaApiAdapter.getKmaWeather(baseDate, baseTime,
+        KmaResponse kmaResponse = kmaApiAdapter.getKmaWeather(baseDate, baseTime,
             location.getLatitude(), location.getLongitude(), 1000);
         // 3. 날씨 생성
-        List<Weather> newWeathers = createWeathers(kmaResponseDto, baseDate, location);
+        List<Weather> newWeathers = createWeathers(kmaResponse, baseDate, location);
         return weatherRepository.saveAll(newWeathers);
     }
 
 
     public List<Weather> findWeathers(String baseDate, String baseTime, Location location) {
-        Instant forecastedAt = toInstant(baseDate, baseTime);
+        Instant forecastedAt = DateTimeUtils.toInstant(baseDate, baseTime);
         log.debug("[Weather repository] 날씨 존재하는지 확인중 forecastedAt:{}, lat: {}, lon: {}",
             forecastedAt, location.getLatitude(), location.getLongitude());
 
@@ -72,17 +73,17 @@ public class KmaWeatherFactory {
     }
 
     public boolean existsWeatherFor(String baseDate, String baseTime, UUID locationId) {
-        Instant forecastedAt = toInstant(baseDate, baseTime);
+        Instant forecastedAt = DateTimeUtils.toInstant(baseDate, baseTime);
         return weatherRepository.existsByLocationIdAndForecastedAt(locationId, forecastedAt);
     }
 
-    public List<Weather> createWeathers(KmaResponseDto kmaResponseDto, String baseDate,
+    public List<Weather> createWeathers(KmaResponse kmaResponse, String baseDate,
         Location location) {
         log.debug("[Weather] 날씨 dto 생성 시작");
-        return buildWeathersFromKmaResponse(kmaResponseDto, baseDate, location);
+        return buildWeathersFromKmaResponse(kmaResponse, baseDate, location);
     }
 
-    private List<Weather> buildWeathersFromKmaResponse(KmaResponseDto kmaResponse, String baseDate,
+    private List<Weather> buildWeathersFromKmaResponse(KmaResponse kmaResponse, String baseDate,
         Location location) {
 
         List<WeatherItem> allItems = kmaResponse.response().body().items().weatherItems();
@@ -207,10 +208,12 @@ public class KmaWeatherFactory {
     private Weather buildSingleWeather(List<WeatherItem> dailyItems,
         List<WeatherItem> targetDateItems, Location location, Weather yesterdayWeather) {
         WeatherItem anyItem = targetDateItems.get(0);
-        Instant forecastedAt = toInstant(anyItem.baseDate(), String.format("%04d", Integer.parseInt(
-            anyItem.baseTime())));
-        Instant forecastAt = toInstant(anyItem.fcstDate(), String.format("%04d", Integer.parseInt(
-            anyItem.fcstTime())));
+        Instant forecastedAt = DateTimeUtils.toInstant(anyItem.baseDate(),
+            String.format("%04d", Integer.parseInt(
+                anyItem.baseTime())));
+        Instant forecastAt = DateTimeUtils.toInstant(anyItem.fcstDate(),
+            String.format("%04d", Integer.parseInt(
+                anyItem.fcstTime())));
 
         SkyStatus skyStatus = SkyStatus.CLEAR;
         PrecipitationType precipitationType = PrecipitationType.NONE;
@@ -316,11 +319,6 @@ public class KmaWeatherFactory {
         } catch (NumberFormatException e) {
             return PrecipitationType.NONE;
         }
-    }
-
-    private Instant toInstant(String date, String time) {
-        LocalDateTime ldt = LocalDateTime.parse(date + time, DATETIME_FORMATTER);
-        return ldt.atZone(SEOUL_ZONE_ID).toInstant();
     }
 
     private double parseDouble(String value) {

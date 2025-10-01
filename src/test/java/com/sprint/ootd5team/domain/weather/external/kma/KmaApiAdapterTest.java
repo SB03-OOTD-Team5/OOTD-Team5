@@ -49,7 +49,7 @@ class KmaApiAdapterTest {
 
         KmaApiAdapter adapter = new KmaApiAdapter(webClient, OBJECT_MAPPER);
 
-        KmaResponseDto dto = adapter.getKmaWeather("20250925", "0600",
+        KmaResponse dto = adapter.getKmaWeather("20250925", "0600",
             BigDecimal.valueOf(37.5), BigDecimal.valueOf(127.0), 10);
 
         assertEquals("00", dto.response().header().resultCode());

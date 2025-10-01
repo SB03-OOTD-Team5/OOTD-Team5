@@ -41,12 +41,15 @@ public class KmaApiAdapter {
      * @return 파싱된 기상청 응답 DTO
      * @brief 주어진 날짜/시간과 좌표로 기상청 API에서 날씨 예보 데이터를 조회한다
      */
-    public KmaResponseDto getKmaWeather(String baseDate, String baseTime, BigDecimal latitude,
+    public KmaResponse getKmaWeather(String baseDate, String baseTime, BigDecimal latitude,
         BigDecimal longitude, int limit) {
+        // 1. fetchRowData
         String responseJson = requestJsonFromKma(baseDate, baseTime, latitude, longitude, limit);
-        KmaResponseDto kmaResponseDto = parseToKmaResponseDto(responseJson);
-        validateKmaData(kmaResponseDto);
-        return kmaResponseDto;
+        // 2. parseToResponse
+        KmaResponse kmaResponse = parseToKmaResponseDto(responseJson);
+        //3. validate response
+        validateKmaData(kmaResponse);
+        return kmaResponse;
     }
 
     /**
@@ -87,7 +90,7 @@ public class KmaApiAdapter {
 
         try {
             log.debug(
-                "[Weather] 날씨 정보 조회 요청 longitude:{},latitude:{},x:{},y:{},base date:{},base time:{}",
+                "[KMA] 날씨 정보 조회 요청 longitude:{},latitude:{},x:{},y:{},base date:{},base time:{}",
                 longitude, latitude,
                 kmaXY.x(), kmaXY.y(), baseDate, baseTime);
 
@@ -104,7 +107,7 @@ public class KmaApiAdapter {
                     clientResponse -> clientResponse.bodyToMono(String.class)
                 )
                 .block();
-            log.debug("[Weather] 날씨 정보 Fetch 완료");
+            log.debug("[KMA] 날씨 정보 Fetch 완료");
 
             return response;
         } catch (Exception e) {
@@ -121,7 +124,7 @@ public class KmaApiAdapter {
     private GridXY convertGridXY(BigDecimal latitude, BigDecimal longitude) {
         try {
             GridXY gridXY = KmaGridConverter.toGrid(longitude, latitude);
-            log.debug("[Weather] 좌표변환완료: x:{},y:{}", gridXY.x(), gridXY.y());
+            log.debug("[KMA] 좌표변환완료: x:{},y:{}", gridXY.x(), gridXY.y());
             return gridXY;
         } catch (Exception e) {
             ConvertCoordFailException ex = new ConvertCoordFailException();
@@ -136,9 +139,9 @@ public class KmaApiAdapter {
      * @return 파싱된 기상청 DTO
      * @brief 기상청 응답 JSON을 DTO로 파싱한다
      */
-    private KmaResponseDto parseToKmaResponseDto(String responseJson) {
+    private KmaResponse parseToKmaResponseDto(String responseJson) {
         try {
-            return mapper.readValue(responseJson, KmaResponseDto.class);
+            return mapper.readValue(responseJson, KmaResponse.class);
         } catch (Exception e) {
             throw new WeatherKmaParseException(e.getMessage());
         }
@@ -148,7 +151,7 @@ public class KmaApiAdapter {
      * @param kmaDto 기상청 응답 DTO
      * @brief 기상청 응답 코드가 성공인지 검증한다
      */
-    private void validateKmaData(KmaResponseDto kmaDto) {
+    private void validateKmaData(KmaResponse kmaDto) {
         if (!kmaDto.response().header().resultCode().equals("00")) {
             throw new WeatherKmaParseException(kmaDto.response().header().resultMsg());
         }
