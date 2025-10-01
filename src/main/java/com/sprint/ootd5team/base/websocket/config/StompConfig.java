@@ -2,6 +2,7 @@ package com.sprint.ootd5team.base.websocket.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.task.ThreadPoolTaskExecutorBuilder;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -49,6 +50,12 @@ public class StompConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.taskExecutor(new ThreadPoolTaskExecutorBuilder()
+            .corePoolSize(4)
+            .maxPoolSize(16)
+            .queueCapacity(200)
+            .threadNamePrefix("stomp-in-")
+            .build());
         // 클라이언트 → 서버 방향(INBOUND) 메시지를 가로채 로그
         registration.interceptors(stompAuthChannelInterceptor, loggingInterceptor(Direction.INBOUND));
     }
@@ -57,6 +64,12 @@ public class StompConfig implements WebSocketMessageBrokerConfigurer {
     public void configureClientOutboundChannel(ChannelRegistration registration) {
         // 서버 → 클라이언트 방향(OUTBOUND) 메시지를 가로채 로그
         registration.interceptors(loggingInterceptor(Direction.OUTBOUND));
+        registration.taskExecutor(new ThreadPoolTaskExecutorBuilder()
+            .corePoolSize(4)
+            .maxPoolSize(16)
+            .queueCapacity(200)
+            .threadNamePrefix("stomp-out-")
+            .build());
     }
 
     // ====== 공통 로깅 인터셉터 ======
