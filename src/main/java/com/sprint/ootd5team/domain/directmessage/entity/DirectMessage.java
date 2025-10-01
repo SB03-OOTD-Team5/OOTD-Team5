@@ -23,9 +23,4 @@ public class DirectMessage extends BaseEntity {
 
 	@Column(name = "content", nullable = false, columnDefinition = "TEXT")
 	private String content;  // 메시지 본문
-
-	// ChatRoom.addMessage()에서 호출될 setter
-	protected void setDirectMessageRoom(DirectMessageRoom directMessageRoom) {
-		this.directMessageRoom = directMessageRoom;
-	}
 }

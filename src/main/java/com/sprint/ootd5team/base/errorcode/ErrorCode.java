@@ -31,6 +31,8 @@ public enum ErrorCode {
     WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당하는 날씨 데이터가 없습니다."),
     WEATHER_KMA_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "기상청 데이터를 가져오는데 실패했습니다."),
     WEATHER_KMA_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "기상청 데이터를 분석하는데 실패했습니다."),
+    WEATHER_METEO_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "Open-Meteo 데이터를 가져오는데 실패했습니다."),
+    WEATHER_METEO_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Open-Meteo 데이터를 분석하는데 실패했습니다."),
 
     //위치 관련 에러코드
     LOCATION_NOT_FOUND(HttpStatus.NOT_FOUND, "해당하는 위치 데이터가 없습니다"),
@@ -57,6 +59,11 @@ public enum ErrorCode {
     INVALID_ATTRIBUTE_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 속성명입니다."),
     CLOTHES_ATTRIBUTE_VALUE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "허용되지 않은 속성값입니다."),
     INVALID_ATTRIBUTE(HttpStatus.BAD_REQUEST, "유효하지 않은 속성입니다."),
+
+    // DirectMessage 관련 에러코드
+    DIRECT_MESSAGE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "DM 대화방 참여자가 아닙니다."),
+    DIRECT_MESSAGE_AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "DM 요청 사용자 인증에 실패했습니다."),
+    DIRECT_MESSAGE_ROOM_CREATION_FAILED(HttpStatus.CONFLICT, "DM 방 생성 중 충돌이 발생했습니다."),
 
     // 웹 크롤링 관련 에러코드
     SCRAPING_FAILED(HttpStatus.BAD_GATEWAY, "웹 스크래핑 실패"),

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.sprint.ootd5team.base.exception.directmessage.DirectMessageAccessDeniedException;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageCreateRequest;
 import com.sprint.ootd5team.domain.directmessage.dto.event.DirectMessageCommittedEvent;
 import com.sprint.ootd5team.domain.directmessage.entity.DirectMessage;
@@ -172,8 +173,8 @@ class DirectMessageWsServiceTest {
         when(roomRepository.findByDmKey(dmKey)).thenReturn(Optional.of(room));
 
         assertThatThrownBy(() -> wsService.handleSend(payload))
-            .isInstanceOf(AccessDeniedException.class)
-            .hasMessage("채팅방 멤버가 아닙니다.");
+            .isInstanceOf(DirectMessageAccessDeniedException.class)
+            .hasMessage("DM 대화방 참여자가 아닙니다.");
 
         verify(messageRepository, never()).save(any(DirectMessage.class));
         verify(eventPublisher, never()).publishEvent(any(Object.class));
