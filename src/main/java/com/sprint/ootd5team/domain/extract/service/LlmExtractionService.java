@@ -2,10 +2,13 @@ package com.sprint.ootd5team.domain.extract.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.extract.dto.BasicClothesInfo;
 import com.sprint.ootd5team.domain.extract.dto.ClothesExtraInfo;
 import com.sprint.ootd5team.domain.extract.provider.LlmProvider;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -28,12 +31,14 @@ public class LlmExtractionService {
     private final LlmProvider llmProvider;
     private final ObjectMapper objectMapper;
 
-    public ClothesExtraInfo extractExtra(BasicClothesInfo basic) {
+    public ClothesExtraInfo extractExtra(BasicClothesInfo basic,
+        Map<String, ClothesAttribute> attributeCache) {
         // 1. 입력 데이터
         String llmInput = buildLlmInput(basic);
+        String candidateList = buildCandidateList(attributeCache);
 
         // 2. Prompt 생성
-        Prompt chatPrompt = buildPrompt(llmInput);
+        Prompt chatPrompt = buildPrompt(llmInput, candidateList);
         log.debug("[LlmExtractionService] prompt=\n{}", chatPrompt);
 
         // 3. LLM 호출
@@ -88,20 +93,26 @@ public class LlmExtractionService {
         return inputString;
     }
 
+    private String buildCandidateList(Map<String, ClothesAttribute> attributeCache) {
+        return attributeCache.values().stream()
+            .map(attr -> "- " + attr.getName() + ": " +
+                attr.getDefs().stream()
+                    .map(def -> def.getAttDef())
+                    .collect(Collectors.joining(", ", "[", "]"))
+            )
+            .collect(Collectors.joining("\n"));
+    }
+
     /** LLM 프롬프트(지시문 + JSON 형식 + 분석 텍스트) 생성 */
-    private Prompt buildPrompt(String llmInput) {
+    private Prompt buildPrompt(String llmInput, String candidateList) {
         return new Prompt(new UserMessage("""
             <instruction>
-            반드시 아래 JSON 형식만 출력하세요. 
+            반드시 아래 JSON 형식만 출력하세요.
             다른 텍스트나 코드 블록은 절대 포함하지 마세요.
-            
+    
             [규칙]
             - "본문(bodyText)"을 최우선 근거로 추출, 없으면 상품명(name) 참고
-            - 계절은 소재/두께 기준으로 분류:
-                * 다운/패딩/헤비 아우터 → 겨울
-                * 얇은 아우터(자켓, 가디건 등) → 봄/가을
-                * 반팔/얇은 소재 → 여름
-                * 정장/언더웨어/기본 티셔츠 등 → 사계절
+            - 후보 목록에 없는 값은 "기타"로 출력하세요
             - 값이 없으면 반드시 "" (빈 문자열)로 출력
             </instruction>
             
@@ -110,17 +121,17 @@ public class LlmExtractionService {
               "name": "제품명",
               "typeRaw": "상의",
               "attributes": {
-                "계절": "봄 | 여름 | 가을 | 겨울 | 봄/가을 | 사계절 | 기타",
-                "색상": "",
-                "소재": "",
-                "스타일": "",
-                "핏": ""
+                "속성1" : ""
               }
             }
+            
+            [속성 후보 목록]
+            %s
+
             </expected_output>
             
             %s
-            """.formatted(llmInput)));
+            """.formatted(candidateList, llmInput)));
     }
 
     /** 입력 문자열 검증 + 길이 제한 */

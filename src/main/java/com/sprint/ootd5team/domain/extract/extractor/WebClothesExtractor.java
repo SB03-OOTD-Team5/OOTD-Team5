@@ -75,7 +75,7 @@ public class WebClothesExtractor implements ClothesExtractor {
             BasicClothesInfo basicInfo = metadataExtractionService.extract(url);
 
             // 2. LLM 보강
-            ClothesExtraInfo extraInfo = llmExtractionService.extractExtra(basicInfo);
+            ClothesExtraInfo extraInfo = llmExtractionService.extractExtra(basicInfo, attributeCache);
 
             // 3. 속성 매핑
             List<ClothesAttributeWithDefDto> attributes =
