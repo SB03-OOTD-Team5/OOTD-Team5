@@ -153,9 +153,10 @@ public class UserService {
         log.info("[user]계정 잠금여부 업데이트 메서드 시작 userId:{}, request:{}", userId, request);
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
         user.updateLock(request.locked());
+        User save = userRepository.save(user);
         jwtRegistry.invalidateJwtInformationByUserId(userId);
         log.debug("[user] 계정잠금 완료");
-        return userMapper.toDto(userRepository.save(user));
+        return userMapper.toDto(save);
 
     }
 }
