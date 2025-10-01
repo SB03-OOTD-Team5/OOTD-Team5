@@ -7,7 +7,7 @@ import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.security.JwtInformation;
 import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
-import com.sprint.ootd5team.base.security.OotdUserDetails;
+import com.sprint.ootd5team.base.security.OotdSecurityUserDetails;
 import com.sprint.ootd5team.domain.notification.event.type.single.RoleUpdatedEvent;
 import com.sprint.ootd5team.domain.user.dto.TemporaryPasswordCreatedEvent;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
@@ -100,16 +100,16 @@ public class AuthService {
         String username = tokenProvider.getEmailFromToken(refreshToken);
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-        if (!(userDetails instanceof OotdUserDetails ootdUserDetails)) {
+        if (!(userDetails instanceof OotdSecurityUserDetails ootdSecurityUserDetails)) {
             throw new OotdException(ErrorCode.INVALID_USER_DETAILS);
         }
 
         try {
-            String newAccessToken = tokenProvider.generateAccessToken(ootdUserDetails);
-            String newRefreshToken = tokenProvider.generateRefreshToken(ootdUserDetails);
+            String newAccessToken = tokenProvider.generateAccessToken(ootdSecurityUserDetails);
+            String newRefreshToken = tokenProvider.generateRefreshToken(ootdSecurityUserDetails);
 
             JwtInformation newJwtInformation = new JwtInformation(
-                ootdUserDetails.getUserDto(),
+                ootdSecurityUserDetails.getUserDto(),
                 newAccessToken,
                 newRefreshToken
             );
@@ -136,7 +136,7 @@ public class AuthService {
             throw new OotdException(ErrorCode.UNAUTHORIZED);
         }
         Object principal = authentication.getPrincipal();
-        if (principal instanceof OotdUserDetails userDetails) {
+        if (principal instanceof OotdSecurityUserDetails userDetails) {
             return userDetails.getUserId();
         }
         OotdException ex = new OotdException(ErrorCode.UNSUPPORTED_PRINCIPAL);

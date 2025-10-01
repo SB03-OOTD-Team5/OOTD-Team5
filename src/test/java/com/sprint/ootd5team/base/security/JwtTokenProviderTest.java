@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.nimbusds.jose.JOSEException;
-import com.sprint.ootd5team.base.security.JwtTokenProvider;
-import com.sprint.ootd5team.base.security.OotdUserDetails;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import java.time.Instant;
@@ -19,7 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 public class JwtTokenProviderTest {
 
     private JwtTokenProvider jwtTokenProvider;
-    private OotdUserDetails userDetails;
+    private OotdSecurityUserDetails userDetails;
 
     @BeforeEach
     void setUp() throws JOSEException {
@@ -41,7 +39,7 @@ public class JwtTokenProviderTest {
             false
         );
 
-        userDetails = new OotdUserDetails(userDto, "encoded-password");
+        userDetails = new OotdSecurityUserDetails(userDto, "encoded-password");
     }
 
     @Test
@@ -196,7 +194,7 @@ public class JwtTokenProviderTest {
             null,
             false
         );
-        OotdUserDetails anotherUserDetails = new OotdUserDetails(anotherUserDto,
+        OotdSecurityUserDetails anotherUserDetails = new OotdSecurityUserDetails(anotherUserDto,
             "another-password");
 
         // When

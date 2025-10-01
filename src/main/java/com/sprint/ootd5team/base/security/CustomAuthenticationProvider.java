@@ -7,7 +7,6 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -29,7 +28,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         String password = authentication.getCredentials().toString();
 
         try{
-            OotdUserDetails userDetails = (OotdUserDetails)userDetailsService.loadUserByUsername(email);
+            OotdSecurityUserDetails userDetails = (OotdSecurityUserDetails)userDetailsService.loadUserByUsername(email);
 
             // 1. 계정 잠금 체크
             if(userDetails.getUserDto().locked()==true){

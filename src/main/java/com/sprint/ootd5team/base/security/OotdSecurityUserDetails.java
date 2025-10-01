@@ -14,7 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 @EqualsAndHashCode(of = "userDto")
 @Getter
 @RequiredArgsConstructor
-public class OotdUserDetails implements UserDetails {
+public class OotdSecurityUserDetails implements UserDetails {
 
     private final UserDto userDto;
     private final String password;

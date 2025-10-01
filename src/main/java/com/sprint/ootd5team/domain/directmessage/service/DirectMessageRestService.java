@@ -1,6 +1,6 @@
 package com.sprint.ootd5team.domain.directmessage.service;
 
-import com.sprint.ootd5team.base.security.OotdUserDetails;
+import com.sprint.ootd5team.base.security.OotdSecurityUserDetails;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageDto;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageDtoCursorResponse;
 import com.sprint.ootd5team.domain.directmessage.dto.ParticipantDto;
@@ -205,7 +205,7 @@ public class DirectMessageRestService {
 		}
 
 		// 2) 커스텀 UserDetails
-		if (principal instanceof OotdUserDetails userDetails) {
+		if (principal instanceof OotdSecurityUserDetails userDetails) {
 			return userDetails.getUserId();
 		}
 

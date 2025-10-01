@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.config.SecurityConfig;
 import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
-import com.sprint.ootd5team.base.security.OotdUserDetails;
+import com.sprint.ootd5team.base.security.OotdSecurityUserDetails;
 import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.feed.controller.FeedController;
 import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
@@ -89,7 +89,7 @@ public class FeedControllerTest {
     void getFeeds_success() throws Exception {
         // given
         UUID testUserId = UUID.randomUUID();
-        OotdUserDetails ootdUser = createTestUser(testUserId, Role.USER);
+        OotdSecurityUserDetails ootdUser = createTestUser(testUserId, Role.USER);
         Authentication auth = new UsernamePasswordAuthenticationToken(ootdUser, null, ootdUser.getAuthorities());
 
         FeedDtoCursorResponse response = new FeedDtoCursorResponse(
@@ -132,7 +132,7 @@ public class FeedControllerTest {
         verify(feedService, times(1)).delete(feedId);
     }
 
-    private OotdUserDetails createTestUser(UUID userId, Role role) {
+    private OotdSecurityUserDetails createTestUser(UUID userId, Role role) {
         UserDto userDto = new UserDto(
             userId,
             Instant.now(),
@@ -142,7 +142,7 @@ public class FeedControllerTest {
             List.of(),
             false
         );
-        return new OotdUserDetails(userDto, "password");
+        return new OotdSecurityUserDetails(userDto, "password");
     }
 
     @Test

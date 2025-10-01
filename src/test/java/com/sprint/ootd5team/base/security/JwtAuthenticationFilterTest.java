@@ -8,11 +8,6 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
-import com.sprint.ootd5team.base.security.JwtRegistry;
-import com.sprint.ootd5team.base.security.JwtTokenProvider;
-import com.sprint.ootd5team.base.security.OotdUserDetails;
-import com.sprint.ootd5team.base.security.OotdUserDetailsService;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import jakarta.servlet.FilterChain;
@@ -60,7 +55,7 @@ class JwtAuthenticationFilterTest {
     private JwtRegistry jwtRegistry;
 
     private JwtAuthenticationFilter jwtAuthenticationFilter;
-    private OotdUserDetails userDetails;
+    private OotdSecurityUserDetails userDetails;
     private ObjectMapper objectMapper;
 
     @BeforeEach
@@ -81,7 +76,7 @@ class JwtAuthenticationFilterTest {
             false
         );
 
-        userDetails = new OotdUserDetails(userDto, "encoded-password");
+        userDetails = new OotdSecurityUserDetails(userDto, "encoded-password");
 
         SecurityContextHolder.setContext(securityContext);
     }

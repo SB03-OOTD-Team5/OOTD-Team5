@@ -75,7 +75,7 @@ public class JwtTokenProvider {
      * @throws JOSEException 예외처리
      */
     private String generateToken(
-        OotdUserDetails userDetails,
+        OotdSecurityUserDetails userDetails,
         int expirationMs,
         JWSSigner signer,
         String tokenType) throws JOSEException {
@@ -112,7 +112,7 @@ public class JwtTokenProvider {
      * @return 생성된 엑세스 토큰
      * @throws JOSEException 예외
      */
-    public String generateAccessToken(OotdUserDetails userDetails) throws JOSEException {
+    public String generateAccessToken(OotdSecurityUserDetails userDetails) throws JOSEException {
         return generateToken(userDetails, accessTokenExpirationInMs, accessTokenSigner, "access");
     }
 
@@ -122,7 +122,7 @@ public class JwtTokenProvider {
      * @return 생성된 리프레쉬 토큰
      * @throws JOSEException 예외
      */
-    public String generateRefreshToken(OotdUserDetails userDetails) throws JOSEException {
+    public String generateRefreshToken(OotdSecurityUserDetails userDetails) throws JOSEException {
         return generateToken(userDetails, refreshTokenExpirationInMs, refreshTokenSigner, "refresh");
     }
 
