@@ -1,20 +1,26 @@
 package com.sprint.ootd5team.domain.extract.extractor;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.anyMap;
+import static org.mockito.BDDMockito.eq;
+import static org.mockito.BDDMockito.given;
+
 import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeValue;
-import com.sprint.ootd5team.domain.clothattribute.mapper.ClothesAttributeMapper;
-import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.fixture.ClothesFixture;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeValue;
+import com.sprint.ootd5team.domain.clothesattribute.mapper.ClothesAttributeMapper;
+import com.sprint.ootd5team.domain.clothesattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.extract.dto.BasicClothesInfo;
 import com.sprint.ootd5team.domain.extract.dto.ClothesExtraInfo;
 import com.sprint.ootd5team.domain.extract.service.LlmExtractionService;
 import com.sprint.ootd5team.domain.extract.service.MetadataExtractionService;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,12 +29,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("WebClothesExtractor 단위 테스트")
@@ -64,8 +64,11 @@ class WebClothesExtractorTest {
         String url = "https://dummy.com/product/1";
         BasicClothesInfo basic = new BasicClothesInfo("https://dummy.com/img.png", "본문 텍스트", "이름");
         ClothesExtraInfo extra = new ClothesExtraInfo("테스트 자켓", "아우터", Map.of("색상", "화이트"));
+
         given(metadataExtractionService.extract(url)).willReturn(basic);
-        given(llmExtractionService.extractExtra(basic)).willReturn(extra);
+        // attributeCache를 함께 전달하도록 수정
+        given(llmExtractionService.extractExtra(eq(basic), anyMap())).willReturn(extra);
+
         ClothesAttribute colorAttr = clothesAttributeRepository.findAllWithDefs().get(0);
         ClothesAttributeValue value = new ClothesAttributeValue(colorAttr, "화이트");
         ClothesAttributeWithDefDto dto = new ClothesAttributeWithDefDto(
@@ -99,8 +102,8 @@ class WebClothesExtractorTest {
 
         // then
         assertThat(thrown)
-                .isInstanceOf(ClothesExtractionFailedException.class)
-                .hasMessageContaining("의상 정보 추출에 실패했습니다.");
+            .isInstanceOf(ClothesExtractionFailedException.class)
+            .hasMessageContaining("의상 정보 추출에 실패했습니다.");
     }
 
     @Test
@@ -109,8 +112,9 @@ class WebClothesExtractorTest {
         String url = "https://dummy.com/product/2";
         BasicClothesInfo basic = new BasicClothesInfo("https://dummy.com/img.png", "본문 텍스트", "이름");
         ClothesExtraInfo extra = new ClothesExtraInfo("테스트 바지", "하의", Map.of("없는속성", "값"));
+
         given(metadataExtractionService.extract(url)).willReturn(basic);
-        given(llmExtractionService.extractExtra(basic)).willReturn(extra);
+        given(llmExtractionService.extractExtra(eq(basic), anyMap())).willReturn(extra);
 
         // when
         ClothesDto result = extractor.extractByUrl(url);
@@ -124,12 +128,13 @@ class WebClothesExtractorTest {
         // given
         String url = "https://dummy.com/product/3";
         BasicClothesInfo basic = new BasicClothesInfo("https://dummy.com/img.png", "본문 텍스트", "이름");
-        // LLM이 "라이트 그레이" 반환
         ClothesExtraInfo extra = new ClothesExtraInfo("테스트 후드티", "상의", Map.of("색상", "라이트 그레이"));
+
         given(metadataExtractionService.extract(url)).willReturn(basic);
-        given(llmExtractionService.extractExtra(basic)).willReturn(extra);
+        given(llmExtractionService.extractExtra(eq(basic), anyMap())).willReturn(extra);
+
         ClothesAttribute colorAttr = clothesAttributeRepository.findAllWithDefs().get(0);
-        ClothesAttributeValue value = new ClothesAttributeValue(colorAttr, "그레이"); // normalize 결과값
+        ClothesAttributeValue value = new ClothesAttributeValue(colorAttr, "그레이"); // normalize 결과
         ClothesAttributeWithDefDto dto = new ClothesAttributeWithDefDto(
             colorAttr.getId(),
             "색상",
@@ -152,17 +157,12 @@ class WebClothesExtractorTest {
         // given
         String url = "https://dummy.com/product/4";
         BasicClothesInfo basic = new BasicClothesInfo("https://dummy.com/img.png", "본문 텍스트", "이름");
-
-        // LLM이 매칭 안 되는 색상 반환
         ClothesExtraInfo extra = new ClothesExtraInfo("테스트 셔츠", "상의", Map.of("색상", "라이트 블루"));
+
         given(metadataExtractionService.extract(url)).willReturn(basic);
-        given(llmExtractionService.extractExtra(basic)).willReturn(extra);
+        given(llmExtractionService.extractExtra(eq(basic), anyMap())).willReturn(extra);
 
-        // selectableValues: 블랙, 화이트, 기타
         ClothesAttribute colorAttr = clothesAttributeRepository.findAllWithDefs().get(0);
-        given(clothesAttributeRepository.findAllWithDefs()).willReturn(List.of(colorAttr));
-        extractor.initCache();
-
         ClothesAttributeValue value = new ClothesAttributeValue(colorAttr, "기타");
         ClothesAttributeWithDefDto dto = new ClothesAttributeWithDefDto(
             colorAttr.getId(),
