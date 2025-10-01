@@ -2,6 +2,7 @@ package com.sprint.ootd5team.domain.user.service;
 
 import com.sprint.ootd5team.base.exception.user.UserAlreadyExistException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
+import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
@@ -35,6 +36,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final UserRepositoryCustom userRepositoryCustom;
+    private final JwtRegistry jwtRegistry;
 
 
     /**
@@ -151,8 +153,10 @@ public class UserService {
         log.info("[user]계정 잠금여부 업데이트 메서드 시작 userId:{}, request:{}", userId, request);
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
         user.updateLock(request.locked());
+        User save = userRepository.save(user);
+        jwtRegistry.invalidateJwtInformationByUserId(userId);
         log.debug("[user] 계정잠금 완료");
-        return userMapper.toDto(userRepository.save(user));
+        return userMapper.toDto(save);
 
     }
 }

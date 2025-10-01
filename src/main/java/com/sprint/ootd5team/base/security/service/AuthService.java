@@ -57,9 +57,10 @@ public class AuthService {
         Role newRole = Role.valueOf(request.role());
         user.updateRole(newRole);
 
+        User save = userRepository.save(user);
+        jwtRegistry.invalidateJwtInformationByUserId(userId);
         eventPublisher.publishEvent(new RoleUpdatedEvent(user.getId(), oldRole.name(), newRole.name()));
-
-        return userMapper.toDto(userRepository.save(user));
+        return userMapper.toDto(save);
     }
 
     /**

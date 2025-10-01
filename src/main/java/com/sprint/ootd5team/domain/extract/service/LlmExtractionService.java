@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 public class LlmExtractionService {
 
     private final LlmProvider llmProvider;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     public ClothesExtraInfo extractExtra(BasicClothesInfo basic) {
         // 1. 입력 데이터
@@ -47,20 +47,16 @@ public class LlmExtractionService {
 
         // 4. 코드블록(``` ... ```) 제거
         result = result.trim();
-        if (result.startsWith("```")) {
-            int firstBrace = result.indexOf("{");
-            int lastBrace = result.lastIndexOf("}");
-            if (firstBrace >= 0 && lastBrace > firstBrace) {
-                result = result.substring(firstBrace, lastBrace + 1).trim();
-                log.debug("[LlmExtractionService] 코드블록 제거 후 응답: {}", result);
-            }
+        String unwrapped = stripCodeFence(result);
+        if (!unwrapped.equals(result)) {
+            log.debug("[LlmExtractionService] 코드블록 제거 후 응답: {}", unwrapped);
         }
-
-        // 5. JSON 형식 검증
-        if (!result.startsWith("{") || !result.endsWith("}")) {
+        String jsonPayload = extractJsonObject(unwrapped);
+        if (jsonPayload == null) {
             log.error("[LlmExtractionService] LLM 응답이 JSON이 아님: {}", result);
             throw ClothesExtractionFailedException.invalidJson();
         }
+        result = jsonPayload;
 
         // 6. JSON 파싱
         try {
@@ -86,7 +82,9 @@ public class LlmExtractionService {
             </user_input>
             """.formatted(name, body);
 
-        log.info("[LlmExtractionService] llmInput: {}", inputString);
+        log.debug("[LlmExtractionService] llmInput length={}, hash={}", inputString.length(),
+            inputString.hashCode());
+
         return inputString;
     }
 
@@ -147,5 +145,43 @@ public class LlmExtractionService {
             sanitized = sanitized.substring(0, maxLength) + "...";
         }
         return sanitized;
+    }
+
+    private String stripCodeFence(String response) {
+        if (!response.startsWith("```")) {
+            return response;
+        }
+        int closingFence = response.indexOf("```", 3);
+        if (closingFence == -1) {
+            return response;
+        }
+        String body = response.substring(3, closingFence);
+        int newline = body.indexOf('\n');
+        if (newline >= 0) {
+            body = body.substring(newline + 1);
+        }
+        return body.trim();
+    }
+
+    private String extractJsonObject(String response) {
+        int depth = 0;
+        int start = -1;
+        for (int i = 0; i < response.length(); i++) {
+            char ch = response.charAt(i);
+            if (ch == '{') {
+                if (depth == 0) {
+                    start = i;
+                }
+                depth++;
+            } else if (ch == '}') {
+                if (depth > 0) {
+                    depth--;
+                    if (depth == 0 && start >= 0) {
+                        return response.substring(start, i + 1).trim();
+                    }
+                }
+            }
+        }
+        return null;
     }
 }
