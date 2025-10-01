@@ -6,6 +6,7 @@ import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.weather.dto.data.WeatherDto;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaWeatherFactory;
 import com.sprint.ootd5team.domain.weather.mapper.WeatherMapper;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
@@ -24,13 +25,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @ConditionalOnProperty(prefix = "weather.api-client", name = "provider", havingValue = "kma", matchIfMissing = true)
 @RequiredArgsConstructor
-public class WeatherServiceImpl implements WeatherService {
+public class WeatherServiceKma implements WeatherService {
 
     private static final ZoneId SEOUL_ZONE_ID = ZoneId.of("Asia/Seoul");
     private final static BigDecimal DEFAULT_LAT = BigDecimal.valueOf(37.5665); // 서울시청주소
     private final static BigDecimal DEFAULT_LON = BigDecimal.valueOf(126.9780);
     private final ProfileRepository profileRepository;
-    private final WeatherFactory weatherFactory;
+    private final KmaWeatherFactory kmaWeatherFactory;
     private final WeatherMapper weatherMapper;
     private final WeatherRepository weatherRepository;
 
@@ -52,7 +53,7 @@ public class WeatherServiceImpl implements WeatherService {
                 : profile.getLocation().getLongitude()
                 : longitude;
         log.info("파라미터 위경도:{}, {} \n 최종 위경도:{}, {}", latitude, longitude, lat, lon);
-        List<Weather> weathers = weatherFactory.findOrCreateWeathers(lat, lon);
+        List<Weather> weathers = kmaWeatherFactory.findOrCreateWeathers(lat, lon);
 
         //  최종 DTO로 변환하여 반환
         return weathers.stream()

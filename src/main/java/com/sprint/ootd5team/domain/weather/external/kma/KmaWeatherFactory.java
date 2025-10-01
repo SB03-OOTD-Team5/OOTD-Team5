@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.domain.weather.service;
+package com.sprint.ootd5team.domain.weather.external.kma;
 
 import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.location.service.LocationService;
@@ -7,9 +7,6 @@ import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.enums.SkyStatus;
 import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
 import com.sprint.ootd5team.domain.weather.exception.WeatherNotFoundException;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaApiAdapter;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaCategoryType;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto.WeatherItem;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
@@ -32,7 +29,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class WeatherFactory {
+public class KmaWeatherFactory {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern(

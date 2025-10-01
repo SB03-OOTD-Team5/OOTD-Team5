@@ -14,6 +14,7 @@ import com.sprint.ootd5team.domain.user.entity.Role;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.weather.dto.data.WeatherDto;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaWeatherFactory;
 import com.sprint.ootd5team.domain.weather.mapper.WeatherMapper;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
@@ -35,13 +36,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class WeatherServiceImplTest {
+class WeatherServiceKmaTest {
 
     @Mock
     private ProfileRepository profileRepository;
 
     @Mock
-    private WeatherFactory weatherFactory;
+    private KmaWeatherFactory kmaWeatherFactory;
 
     @Mock
     private WeatherMapper weatherMapper;
@@ -50,7 +51,7 @@ class WeatherServiceImplTest {
     private WeatherRepository weatherRepository;
 
     @InjectMocks
-    private WeatherServiceImpl weatherService;
+    private WeatherServiceKma weatherService;
 
     private Profile profile;
     private Location location;
@@ -89,7 +90,7 @@ class WeatherServiceImplTest {
             .build();
 
         when(profileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
-        when(weatherFactory.findOrCreateWeathers(requestLat, requestLon)).thenReturn(
+        when(kmaWeatherFactory.findOrCreateWeathers(requestLat, requestLon)).thenReturn(
             List.of(weather));
         when(weatherMapper.toDto(eq(weather), any())).thenReturn(dto);
 
@@ -124,14 +125,14 @@ class WeatherServiceImplTest {
             .build();
 
         when(profileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
-        when(weatherFactory.findOrCreateWeathers(profileLat, profileLon)).thenReturn(
+        when(kmaWeatherFactory.findOrCreateWeathers(profileLat, profileLon)).thenReturn(
             List.of(weather));
         when(weatherMapper.toDto(eq(weather), any())).thenReturn(dto);
 
         List<WeatherDto> result = weatherService.fetchWeatherByLocation(null, null, userId);
 
         assertEquals(1, result.size());
-        verify(weatherFactory).findOrCreateWeathers(profileLat, profileLon);
+        verify(kmaWeatherFactory).findOrCreateWeathers(profileLat, profileLon);
 
         ArgumentCaptor<com.sprint.ootd5team.domain.location.dto.data.ClientCoords> captor =
             ArgumentCaptor.forClass(

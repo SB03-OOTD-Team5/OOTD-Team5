@@ -20,6 +20,7 @@ import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto.Header;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto.Items;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto.Response;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaResponseDto.WeatherItem;
+import com.sprint.ootd5team.domain.weather.external.kma.KmaWeatherFactory;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -38,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class WeatherFactoryTest {
+class KmaWeatherFactoryTest {
 
     @Mock
     private WeatherRepository weatherRepository;
@@ -69,7 +70,7 @@ class WeatherFactoryTest {
             .forecastedAt(Instant.now())
             .build();
 
-        WeatherFactory factory = new WeatherFactory(weatherRepository, kmaApiAdapter,
+        KmaWeatherFactory factory = new KmaWeatherFactory(weatherRepository, kmaApiAdapter,
             locationService);
 
         when(locationService.findOrCreateLocation(lat, lon)).thenReturn(location);
@@ -109,7 +110,7 @@ class WeatherFactoryTest {
             .forecastedAt(Instant.now())
             .build();
 
-        WeatherFactory factory = new WeatherFactory(weatherRepository, kmaApiAdapter,
+        KmaWeatherFactory factory = new KmaWeatherFactory(weatherRepository, kmaApiAdapter,
             locationService);
 
         String baseDate = LocalDate.now(ZoneId.of("Asia/Seoul"))
@@ -148,7 +149,7 @@ class WeatherFactoryTest {
             new Body("JSON", new Items(Collections.emptyList()), 1, 1, 0)
         ));
 
-        WeatherFactory factory = new WeatherFactory(weatherRepository, kmaApiAdapter,
+        KmaWeatherFactory factory = new KmaWeatherFactory(weatherRepository, kmaApiAdapter,
             locationService);
 
         assertThrows(WeatherNotFoundException.class,
@@ -162,7 +163,7 @@ class WeatherFactoryTest {
         when(weatherRepository.existsByLocationIdAndForecastedAt(eq(locationId), any()))
             .thenReturn(true);
 
-        WeatherFactory factory = new WeatherFactory(weatherRepository, kmaApiAdapter,
+        KmaWeatherFactory factory = new KmaWeatherFactory(weatherRepository, kmaApiAdapter,
             locationService);
 
         boolean exists = factory.existsWeatherFor("20250925", "0600", locationId);
