@@ -5,6 +5,7 @@ import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedExcept
 import com.sprint.ootd5team.domain.extract.dto.BasicClothesInfo;
 import com.sprint.ootd5team.domain.extract.dto.ClothesExtraInfo;
 import com.sprint.ootd5team.domain.extract.provider.LlmProvider;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -75,13 +76,16 @@ public class LlmExtractionService {
 
     /** LLM에 넘길 입력 데이터 */
     private String buildLlmInput(BasicClothesInfo basicInfo) {
+        String name = sanitizeInput(basicInfo.name(), 100);
+        String body = sanitizeInput(basicInfo.bodyText(), 2000);
+
         String inputString = """
+            <user_input>
             [상품명] %s
             [본문] %s
-            """.formatted(
-            safe(basicInfo.name()),
-            safe(basicInfo.bodyText())
-        );
+            </user_input>
+            """.formatted(name, body);
+
         log.info("[LlmExtractionService] llmInput: {}", inputString);
         return inputString;
     }
@@ -89,7 +93,8 @@ public class LlmExtractionService {
     /** LLM 프롬프트(지시문 + JSON 형식 + 분석 텍스트) 생성 */
     private Prompt buildPrompt(String llmInput) {
         return new Prompt(new UserMessage("""
-                반드시 아래 JSON 형식만 출력하세요. 
+            <instruction>
+            반드시 아래 JSON 형식만 출력하세요. 
             다른 텍스트나 코드 블록은 절대 포함하지 마세요.
             
             [규칙]
@@ -100,8 +105,9 @@ public class LlmExtractionService {
                 * 반팔/얇은 소재 → 여름
                 * 정장/언더웨어/기본 티셔츠 등 → 사계절
             - 값이 없으면 반드시 "" (빈 문자열)로 출력
+            </instruction>
             
-            [출력 형식]
+            <expected_output>
             {
               "name": "제품명",
               "typeRaw": "상의",
@@ -113,15 +119,33 @@ public class LlmExtractionService {
                 "핏": ""
               }
             }
+            </expected_output>
             
-            분석할 텍스트:
             %s
             """.formatted(llmInput)));
-
     }
 
-    private String safe(String value) {
-        return (value == null) ? "" : value;
-    }
+    /** 입력 문자열 검증 + 길이 제한 */
+    private String sanitizeInput(String input, int maxLength) {
+        if (input == null) {
+            return "";
+        }
+        String sanitized = input.trim();
 
+        // 의심 키워드 검증
+        String lower = sanitized.toLowerCase();
+        List<String> forbidden = List.of("ignore previous", "output format", "system prompt");
+        for (String bad : forbidden) {
+            if (lower.contains(bad)) {
+                log.warn("[LlmExtractionService] 의심 키워드 감지: {}", bad);
+                throw ClothesExtractionFailedException.invalidJson();
+            }
+        }
+
+        // 길이 제한
+        if (sanitized.length() > maxLength) {
+            sanitized = sanitized.substring(0, maxLength) + "...";
+        }
+        return sanitized;
+    }
 }

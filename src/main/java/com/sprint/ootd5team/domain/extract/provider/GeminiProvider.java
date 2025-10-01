@@ -29,7 +29,11 @@ public class GeminiProvider implements LlmProvider {
 
     @Override
     public String chatCompletion(Prompt prompt) {
-        log.debug("[GeminiProvider] 프롬프트 요청: {}", prompt.getContents());
+        String promptPreview = prompt.getContents().toString();
+        int promptLength = promptPreview.length();
+        int promptHash = promptPreview.hashCode();
+        log.debug("[GeminiProvider] 프롬프트 요청: length={}, hash={}", promptLength, promptHash);
+
         try {
             ChatResponse response = geminiChatModel.call(prompt);
             if (response != null && response.getResult() != null && response.getResult().getOutput() != null) {
