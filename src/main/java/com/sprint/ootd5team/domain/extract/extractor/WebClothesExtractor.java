@@ -1,12 +1,14 @@
 package com.sprint.ootd5team.domain.extract.extractor;
 
 import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
-import com.sprint.ootd5team.domain.clothattribute.mapper.ClothesAttributeMapper;
-import com.sprint.ootd5team.domain.clothattribute.repository.ClothesAttributeRepository;
+
+
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
+import com.sprint.ootd5team.domain.clothesattribute.mapper.ClothesAttributeMapper;
+import com.sprint.ootd5team.domain.clothesattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.extract.dto.BasicClothesInfo;
 import com.sprint.ootd5team.domain.extract.dto.ClothesExtraInfo;
 import com.sprint.ootd5team.domain.extract.service.LlmExtractionService;

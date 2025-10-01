@@ -1,10 +1,10 @@
 package com.sprint.ootd5team.domain.extract.util;
 
-import com.sprint.ootd5team.domain.clothattribute.dto.ClothesAttributeWithDefDto;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttribute;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeDef;
-import com.sprint.ootd5team.domain.clothattribute.entity.ClothesAttributeValue;
-import com.sprint.ootd5team.domain.clothattribute.mapper.ClothesAttributeMapper;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeDef;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeValue;
+import com.sprint.ootd5team.domain.clothesattribute.mapper.ClothesAttributeMapper;
 import com.sprint.ootd5team.domain.extract.dto.ClothesExtraInfo;
 import java.util.ArrayList;
 import java.util.List;
