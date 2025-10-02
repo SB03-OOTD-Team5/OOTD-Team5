@@ -61,8 +61,11 @@ export default function ClosetPage() {
     <div className="flex flex-col h-full px-10 py-2.5">
       {/* 카테고리 필터 */}
       {!isEmpty() && (
-        <div className="flex-shrink-0 mb-6">
-          <ClothesFilter onAddClick={() => setIsAddModalOpen(true)} />
+          <div className="flex items-center justify-between gap-4">
+            {/* 카테고리 탭 (길어지면 가로 스크롤) */}
+            <div className="flex-1 overflow-x-auto flex gap-4">
+              <ClothesFilter onAddClick={() => setIsAddModalOpen(true)} />
+            </div>
         </div>
       )}
       
