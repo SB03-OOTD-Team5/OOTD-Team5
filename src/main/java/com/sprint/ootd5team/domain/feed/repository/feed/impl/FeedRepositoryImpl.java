@@ -177,7 +177,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             feed.updatedAt,
             Projections.constructor(AuthorDto.class,
                 user.id,
-                user.name,
+                profile.name,
                 profile.profileImageUrl
             ),
             Projections.constructor(WeatherSummaryDto.class,

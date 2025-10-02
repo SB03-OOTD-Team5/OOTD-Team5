@@ -48,3 +48,6 @@ logs/
 **/logs/
 
 /uploads/
+
+# LLM API Keys
+/src/main/resources/keys/*

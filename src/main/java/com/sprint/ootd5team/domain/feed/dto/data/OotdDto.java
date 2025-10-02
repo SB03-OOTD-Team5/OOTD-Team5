@@ -10,4 +10,14 @@ public record OotdDto(
     String imageUrl,
     String type,
     List<ClothesAttributeWithDefDto> attributes
-) { }
+) {
+    public OotdDto withResolvedImageUrl(String resolvedUrl) {
+        return new OotdDto(
+            clothesId,
+            name,
+            resolvedUrl != null ? resolvedUrl : imageUrl,
+            type,
+            attributes
+        );
+    }
+}

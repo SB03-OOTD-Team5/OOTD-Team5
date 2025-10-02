@@ -13,13 +13,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sprint.ootd5team.base.security.service.AuthService;
-import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
-import com.sprint.ootd5team.domain.clothes.extractor.ClothesExtractionService;
 import com.sprint.ootd5team.domain.clothes.service.ClothesService;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.extract.extractor.ClothesExtractor;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
@@ -54,7 +54,7 @@ class ClothesControllerTest {
     private AuthService authService;
 
     @MockitoBean
-    private ClothesExtractionService clothesExtractionService;
+    private ClothesExtractor clothesExtractor;
 
     private UUID ownerId;
     private List<ClothesDto> mockClothes;
@@ -243,7 +243,7 @@ class ClothesControllerTest {
             .type(null)
             .build();
 
-        given(clothesExtractionService.extractByUrl(url)).willReturn(dto);
+        given(clothesExtractor.extractByUrl(url)).willReturn(dto);
 
         // when & then
         mockMvc.perform(get("/api/clothes/extractions")
