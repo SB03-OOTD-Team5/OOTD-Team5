@@ -36,6 +36,13 @@ app:
   security:
     enabled: false
 
+# 테스트 전용 secret key
+weather:
+  kakao:
+    client-secret: test
+  kma:
+    client-secret: test
+
 # Admin 설정
 ootd:
   admin:

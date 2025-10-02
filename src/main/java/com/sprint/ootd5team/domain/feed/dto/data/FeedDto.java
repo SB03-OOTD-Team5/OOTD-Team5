@@ -19,6 +19,38 @@ public record FeedDto(
     boolean likedByMe
 ) {
     public FeedDto withOotds(List<OotdDto> ootds) {
-        return new FeedDto(id, createdAt, updatedAt, author, weather, ootds, content, likeCount, commentCount, likedByMe);
+        return new FeedDto(
+            id,
+            createdAt,
+            updatedAt,
+            author,
+            weather,
+            ootds,
+            content,
+            likeCount,
+            commentCount,
+            likedByMe
+        );
+    }
+
+    public FeedDto withResolvedProfileImageUrl(String resolvedUrl) {
+        AuthorDto authorDto = new AuthorDto(
+            author.userId(),
+            author.name(),
+            resolvedUrl != null ? resolvedUrl : author.profileImageUrl()
+        );
+
+        return new FeedDto(
+            id,
+            createdAt,
+            updatedAt,
+            authorDto,
+            weather,
+            ootds,
+            content,
+            likeCount,
+            commentCount,
+            likedByMe
+        );
     }
 }
