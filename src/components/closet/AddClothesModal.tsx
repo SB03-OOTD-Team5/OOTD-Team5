@@ -96,6 +96,19 @@ export default function AddClothesModal({ open, onClose }: AddClothesModalProps)
     setLoading(true);
     try {
       const extracted = await extractByUrl(url.trim());
+
+      // attribute 기본값 반영
+      const initialSelected: Record<string, string> = {};
+      extracted.attributes?.forEach(attr => {
+        if (attr.value) initialSelected[attr.definitionId] = attr.value;
+      });
+      setSelectedAttributes(initialSelected);
+      setFormData({
+        name: extracted.name || formData.name,
+        type: extracted.type || formData.type,
+        attributes: extracted.attributes || formData.attributes
+      });
+
       setFormData({
         name: extracted.name || formData.name,
         type: extracted.type || formData.type,
