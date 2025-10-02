@@ -4,6 +4,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.base.sse.service.SseService;
@@ -64,5 +66,14 @@ class SseControllerTest {
         mockMvc.perform(get("/api/sse").accept(MediaType.TEXT_EVENT_STREAM))
             .andExpect(status().isOk());
         then(sseService).should().connect(userId, null);
+    }
+
+    @Test
+    void testSseErrorHandled() throws Exception {
+        mockMvc.perform(get("/api/sse/test-error")
+                .accept(MediaType.TEXT_EVENT_STREAM))
+            .andExpect(status().isInternalServerError())
+            .andExpect(content().string(containsString("event: error")))
+            .andExpect(content().string(containsString("data: 테스트용 에러 발생!")));
     }
 }
