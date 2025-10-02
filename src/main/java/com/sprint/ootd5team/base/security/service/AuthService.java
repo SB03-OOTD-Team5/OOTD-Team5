@@ -105,8 +105,8 @@ public class AuthService {
         }
 
         try {
-            String newAccessToken = tokenProvider.generateAccessToken(ootdSecurityUserDetails);
-            String newRefreshToken = tokenProvider.generateRefreshToken(ootdSecurityUserDetails);
+            String newAccessToken = tokenProvider.generateAccessToken(ootdSecurityUserDetails.getUserDto());
+            String newRefreshToken = tokenProvider.generateRefreshToken(ootdSecurityUserDetails.getUserDto());
 
             JwtInformation newJwtInformation = new JwtInformation(
                 ootdSecurityUserDetails.getUserDto(),

@@ -39,8 +39,8 @@ public class JwtLoginSuccessHandler implements
         if (authentication.getPrincipal() instanceof OotdSecurityUserDetails userDetails) {
             try {
                 // 1. 토큰생성
-                String accessToken = tokenProvider.generateAccessToken(userDetails);
-                String refreshToken = tokenProvider.generateRefreshToken(userDetails);
+                String accessToken = tokenProvider.generateAccessToken(userDetails.getUserDto());
+                String refreshToken = tokenProvider.generateRefreshToken(userDetails.getUserDto());
 
                 // 2. 서버 상태 등록
                 jwtRegistry.registerJwtInformation(

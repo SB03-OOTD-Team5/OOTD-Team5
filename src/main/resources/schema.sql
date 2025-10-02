@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS tbl_oauth_users
     provider_id              VARCHAR(300) NOT NULL,
     -- constraints
     CONSTRAINT fk_oauth_user_user FOREIGN KEY (user_id) REFERENCES tbl_users (id),
-    CONSTRAINT check_provider CHECK (provider IN ('GOOGLE', 'KAKAO'))
+    CONSTRAINT check_provider CHECK (provider IN ('google', 'kakao'))
 
 );
 
