@@ -37,7 +37,6 @@ class SseControllerTest {
     private AuthService authService;
 
     @Test
-    @DisplayName("SSE 구독 요청 성공")
     void Sse_구독_요청_성공_lastEventId_존재() throws Exception {
         // given
         UUID userId = UUID.randomUUID();
@@ -69,11 +68,11 @@ class SseControllerTest {
     }
 
     @Test
-    void testSseErrorHandled() throws Exception {
+    void Sse_에러_핸들링_동작_확인() throws Exception {
         mockMvc.perform(get("/api/sse/test-error")
                 .accept(MediaType.TEXT_EVENT_STREAM))
             .andExpect(status().isInternalServerError())
             .andExpect(content().string(containsString("event: error")))
-            .andExpect(content().string(containsString("data: 테스트용 에러 발생!")));
+            .andExpect(content().string(containsString("data: 서버 오류가 발생했습니다.")));
     }
 }

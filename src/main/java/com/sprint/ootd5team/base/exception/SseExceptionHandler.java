@@ -32,17 +32,23 @@ public class SseExceptionHandler {
             log.error("[SseExceptionHandler] SSE 요청 중 예외 발생: type={}, message={}",
                 ex.getClass().getSimpleName(), ex.getMessage(), ex);
 
+            if (response.isCommitted()) {
+                log.warn("[SseExceptionHandler] 응답이 이미 커밋되어 SSE error 이벤트 전송 불가");
+                return;
+            }
+
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.setCharacterEncoding("UTF-8");
             response.setContentType("text/event-stream");
             response.getWriter().write("event: error\n");
-            response.getWriter().write("data: " + ex.getMessage() + "\n\n");
+            response.getWriter().write("data: 서버 오류가 발생했습니다.\n\n");
             response.flushBuffer();
 
             log.info("[SseExceptionHandler] SSE error 이벤트 전송 완료");
+        } catch (IllegalStateException ise) {
+            log.warn("[SseExceptionHandler] 응답 스트림이 이미 닫혔거나 커밋됨: {}", ise.getMessage());
         } catch (IOException io) {
-            log.warn("[SseExceptionHandler] SSE error 이벤트 전송 실패 (스트림이 이미 닫혔을 수 있음): {}",
-                io.getMessage());
+            log.warn("[SseExceptionHandler] SSE error 이벤트 전송 실패: {}", io.getMessage());
         }
     }
 }
