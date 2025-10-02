@@ -32,9 +32,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
         Authentication authentication) throws IOException, ServletException {
 
-        if (authentication.getPrincipal() instanceof OotdOauth2UserDetails) {
+        if (authentication.getPrincipal() instanceof OotdOAuth2UserDetails) {
             try {
-                OotdOauth2UserDetails oauthUser = (OotdOauth2UserDetails) authentication.getPrincipal();
+                OotdOAuth2UserDetails oauthUser = (OotdOAuth2UserDetails) authentication.getPrincipal();
                 UserDto userDto = oauthUser.getUserDto();
                 log.info("OAuth2 Login Success. userDto: {}", userDto.email());
 

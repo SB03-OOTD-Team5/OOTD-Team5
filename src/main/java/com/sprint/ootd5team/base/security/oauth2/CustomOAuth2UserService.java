@@ -1,6 +1,5 @@
 package com.sprint.ootd5team.base.security.oauth2;
 
-import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.domain.oauthuser.entity.OauthUser;
 import com.sprint.ootd5team.domain.oauthuser.repository.OauthRepository;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
@@ -23,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class CustomOauth2UserService extends DefaultOAuth2UserService {
+public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final OauthRepository oauthRepository;
     private final UserRepository userRepository;
@@ -63,7 +62,7 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
             return createduser;
         });
 
-        return new OotdOauth2UserDetails(userMapper.toDto(user), oAuth2User.getAttributes());
+        return new OotdOAuth2UserDetails(userMapper.toDto(user), oAuth2User.getAttributes());
     }
 
 }

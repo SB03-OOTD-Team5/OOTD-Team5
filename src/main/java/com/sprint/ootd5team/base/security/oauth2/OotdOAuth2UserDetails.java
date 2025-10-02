@@ -16,7 +16,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 @EqualsAndHashCode(of = "userDto")
 @Getter
 @RequiredArgsConstructor
-public class OotdOauth2UserDetails implements UserDetails, OAuth2User {
+public class OotdOAuth2UserDetails implements UserDetails, OAuth2User {
 
     private final UserDto userDto;
     private final Map<String, Object> attributes;
