@@ -12,8 +12,6 @@ import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.extract.dto.BasicClothesInfo;
 import com.sprint.ootd5team.domain.extract.dto.ClothesExtraInfo;
 import com.sprint.ootd5team.domain.extract.provider.LlmProvider;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
