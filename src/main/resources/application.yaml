@@ -52,7 +52,7 @@ app:
 #외부 API key 설정
 weather:
   api-client:
-    provider: ${WEATHER_API_CLIENT:kma} # 기본값=kma, 2순위API='meteo'
+    provider: ${WEATHER_API_CLIENT:kma} # 기본값=kma, 들어올수있는값 openWeather,meteo
   kakao:
     base-url: https://dapi.kakao.com/v2/local/geo/coord2regioncode.json
     client-secret: ${KAKAO_CLIENT_SECRET}
@@ -60,6 +60,9 @@ weather:
     base-url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getVilageFcst
     #base-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst
     client-secret: ${KMA_CLIENT_SECRET}
+  openWeather:
+    base-url: api.openweathermap.org/data/2.5/forecast
+    client-secret: ${OPEN_WEATHER_CLIENT_SECRET}
 
 # Swagger UI
 springdoc:

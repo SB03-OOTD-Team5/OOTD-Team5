@@ -30,7 +30,7 @@ public class WebclientConfig {
             .uriBuilderFactory(ubf)
             .filter((request, next) -> {
                 String url = request.url().toString()
-                //    .replaceAll("(?i)(serviceKey=)[^&]+", "$1****");
+                    //    .replaceAll("(?i)(serviceKey=)[^&]+", "$1****");
                     .replaceAll("(?i)(authKey=)[^&]+", "$1****");
                 log.debug("[기상청 API 리퀘스트] {} {}", request.method(), url);
                 return next.exchange(request);
@@ -64,5 +64,27 @@ public class WebclientConfig {
             .baseUrl("https://api.open-meteo.com/v1")
             .build();
     }
+
+    @Bean("openWeatherClient")
+    public WebClient openWeatherClient(
+        @Value("${weather.openWeather.base-url}") String baseUrl,
+        @Value("${weather.openWeather.client-secret}") String secretKey
+    ) {
+        String fixedBase = baseUrl + "?appid=" + secretKey;
+
+        DefaultUriBuilderFactory ubf = new DefaultUriBuilderFactory(fixedBase);
+        ubf.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.VALUES_ONLY);
+
+        return WebClient.builder()
+            .uriBuilderFactory(ubf)
+            .filter((request, next) -> {
+                String url = request.url().toString()
+                    .replaceAll("(?i)(appid=)[^&]+", "$1****");
+                log.debug("[OpenWeather API 리퀘스트] {} {}", request.method(), url);
+                return next.exchange(request);
+            })
+            .build();
+    }
+
 
 }
