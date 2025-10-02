@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.base.security;
+package com.sprint.ootd5team.base.security.oauth2;
 
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import java.util.Collection;

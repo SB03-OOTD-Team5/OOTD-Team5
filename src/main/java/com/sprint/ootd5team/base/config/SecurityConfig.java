@@ -118,6 +118,11 @@ public class SecurityConfig {
                 .successHandler(jwtLoginSuccessHandler)
                 .failureHandler(loginFailureHandler)
             )
+            // oauth 로그인 설정
+            .oauth2Login(auth-> auth
+                .successHandler(jwtLoginSuccessHandler)
+                .failureHandler(loginFailureHandler)
+            )
             // 로그아웃 설정
             .logout(logout -> logout
                 .logoutUrl("/api/auth/sign-out")
@@ -133,6 +138,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-out").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-in").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
+                .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()  // oauth 연결 허용
                 .requestMatchers("/ws/**").permitAll()   // ★ 웹소켓 허용
                 .requestMatchers("/sub/**", "/pub/**").permitAll() // 구독/발행 경로도 필요시
                 .requestMatchers("/api/sse").authenticated()
