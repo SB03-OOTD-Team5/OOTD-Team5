@@ -29,8 +29,15 @@ public class FeedDtoAssembler {
 
         return feedDtos.stream()
             .map(feedDto -> feedDto
-                    .withOotds(ootdsMap.getOrDefault(feedDto.id(), List.of()))
-                    .withResolvedProfileImageUrl(fileStorage.resolveUrl(feedDto.author().profileImageUrl()))
-                ).toList();
+                .withOotds(
+                    ootdsMap.getOrDefault(feedDto.id(), List.of())
+                        .stream()
+                        .map(ootdDto -> ootdDto.withResolvedImageUrl(
+                            fileStorage.resolveUrl(ootdDto.imageUrl())
+                        ))
+                        .toList()
+                    )
+                .withResolvedProfileImageUrl(fileStorage.resolveUrl(feedDto.author().profileImageUrl()))
+            ).toList();
     }
 }
