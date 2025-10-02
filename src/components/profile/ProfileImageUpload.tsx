@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import {useState, useRef} from 'react';
 import { Button } from '@/components/ui/button';
 import profileIcon from '@/assets/icons/profile.svg';
 
@@ -15,7 +15,6 @@ export default function ProfileImageUpload({
   onImageSelect,
   className = ""
 }: ProfileImageUploadProps) {
-  const [preview, setPreview] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,16 +37,8 @@ export default function ProfileImageUpload({
         return;
       }
 
-      // 미리보기 생성
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-
       onImageSelect(file);
     } else {
-      setPreview(null);
       onImageSelect(null);
     }
   };
@@ -56,16 +47,16 @@ export default function ProfileImageUpload({
     fileInputRef.current?.click();
   };
 
-  const displayImage = preview || currentImageUrl;
+
 
   return (
     <div className={`flex flex-col items-center ${className}`}>
       <div className="relative w-[140px] flex flex-col items-end pb-[27px]">
         {/* 프로필 이미지 */}
         <div className="aspect-square bg-[var(--color-gray-400)] rounded-full w-full overflow-hidden border border-[var(--color-gray-300)] shadow-[0px_2px_4px_0px_rgba(55,55,64,0.03)] mb-[-27px]">
-          {displayImage && !imageError ? (
+          {currentImageUrl && !imageError ? (
             <img
-              src={displayImage}
+              src={currentImageUrl}
               alt={name || '프로필'}
               className="w-full h-full object-cover"
               onError={handleImageError}

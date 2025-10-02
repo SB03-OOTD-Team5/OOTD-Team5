@@ -19,6 +19,7 @@ interface SettingsFormData {
   birthDate?: string;
   location?: WeatherAPILocation;
   temperatureSensitivity?: number;
+  profileImageUrl?: string;
 }
 
 export default function MyProfileSettingsPage() {
@@ -53,7 +54,8 @@ export default function MyProfileSettingsPage() {
         gender: profile.gender,
         birthDate: profile.birthDate || '',
         location: profile.location,
-        temperatureSensitivity: profile.temperatureSensitivity
+        temperatureSensitivity: profile.temperatureSensitivity,
+        profileImageUrl: profile.profileImageUrl
       });
     }
   }, [profile, reset]);
@@ -63,6 +65,8 @@ export default function MyProfileSettingsPage() {
 
   const handleImageSelect = (file: File | null) => {
     setSelectedImage(file);
+    const profileImageUrl = file ? URL.createObjectURL(file) : profile?.profileImageUrl || '';
+    setValue('profileImageUrl', profileImageUrl, { shouldDirty: true }); //
   };
 
   const handleGenderChange = (gender: Gender) => {
@@ -84,7 +88,8 @@ export default function MyProfileSettingsPage() {
         gender: profile.gender,
         birthDate: profile.birthDate || '',
         location: profile.location,
-        temperatureSensitivity: profile.temperatureSensitivity
+        temperatureSensitivity: profile.temperatureSensitivity,
+        profileImageUrl: profile.profileImageUrl
       });
       setSelectedImage(null);
     }
@@ -146,7 +151,7 @@ export default function MyProfileSettingsPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="max-w-[428px] mx-auto space-y-6">
           {/* 프로필 이미지 */}
           <ProfileImageUpload
-            currentImageUrl={profile?.profileImageUrl}
+            currentImageUrl={watchedValues.profileImageUrl}
             name={profile?.name}
             onImageSelect={handleImageSelect}
             className="mb-6"
