@@ -12,6 +12,7 @@ import com.sprint.ootd5team.base.security.handler.Http403ForbiddenAccessDeniedHa
 import com.sprint.ootd5team.base.security.handler.JwtLoginSuccessHandler;
 import com.sprint.ootd5team.base.security.handler.JwtLogoutHandler;
 import com.sprint.ootd5team.base.security.handler.LoginFailureHandler;
+import com.sprint.ootd5team.base.security.oauth2.OAuth2LoginSuccessHandler;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -99,6 +100,7 @@ public class SecurityConfig {
         LoginFailureHandler loginFailureHandler,
         ObjectMapper objectMapper,
         JwtAuthenticationFilter jwtAuthenticationFilter,
+        OAuth2LoginSuccessHandler oauth2LoginSuccessHandler,
         JwtLogoutHandler jwtLogoutHandler
     )
         throws Exception {
@@ -120,7 +122,7 @@ public class SecurityConfig {
             )
             // oauth 로그인 설정
             .oauth2Login(auth-> auth
-                .successHandler(jwtLoginSuccessHandler)
+                .successHandler(oauth2LoginSuccessHandler)
                 .failureHandler(loginFailureHandler)
             )
             // 로그아웃 설정
