@@ -7,7 +7,7 @@ import com.sprint.ootd5team.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
-import com.sprint.ootd5team.domain.clothes.extractor.ClothesExtractionService;
+import com.sprint.ootd5team.domain.extract.extractor.ClothesExtractor;
 import com.sprint.ootd5team.domain.clothes.service.ClothesService;
 import java.time.Instant;
 import java.util.UUID;
@@ -27,7 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class ClothesController implements ClothesApi {
 
     private final ClothesService clothesService;
-    private final ClothesExtractionService clothesExtractionService;
+    private final ClothesExtractor clothesExtractor;
     private final AuthService authService;
 
     @Override
@@ -126,7 +126,7 @@ public class ClothesController implements ClothesApi {
             return ResponseEntity.badRequest().build();
         }
 
-        ClothesDto clothesDto = clothesExtractionService.extractByUrl(url);
+        ClothesDto clothesDto = clothesExtractor.extractByUrl(url);
 
         log.info("[ClothesController] 추출 결과 name={}, imageUrl={}",
             clothesDto.name(), clothesDto.imageUrl());
