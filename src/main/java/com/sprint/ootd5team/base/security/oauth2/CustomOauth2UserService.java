@@ -43,21 +43,23 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
             log.info("구글 로그인");
             oAuth2UserInfo = new GoogleUserDetails(oAuth2User.getAttributes());
         }
+        if(provider.equals("kakao")){
+            log.info("카카오 로그인");
+            oAuth2UserInfo = new KakaoUserDetails(oAuth2User.getAttributes());
+        }
 
         String providerId = oAuth2UserInfo.getProviderId();
         String email = oAuth2UserInfo.getEmail();
         String name = oAuth2UserInfo.getName();
 
         Optional<User> findUser = userRepository.findByEmail(email);
-        User user;
-        user = findUser.orElseGet(() -> {
+        User user = findUser.orElseGet(() -> {
             User createduser = new User(name, email, null, Role.USER);
             userRepository.save(createduser);
             OauthUser oauthUser = new OauthUser(createduser, provider, providerId);
             oauthRepository.save(oauthUser);
             Profile profile = new Profile(createduser, name, null, null, null, null, null);
             profileRepository.save(profile);
-
             return createduser;
         });
 
