@@ -23,12 +23,8 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,8 +59,10 @@ public class OpenWeatherFactory implements
             return cachedWeathers;
         }
 
+        // 2. 날씨 데이터 불러오기
         OpenWeatherResponse openWeatherResponse = openWeatherAdapter.getWeather(
             location.getLatitude(), location.getLongitude(), null, null, 0);
+        // 3. 날씨 생성
         List<Weather> newWeathers = createWeathers(openWeatherResponse, cachedWeathers,
             issueContext, location);
         weatherRepository.saveAll(newWeathers);
@@ -78,57 +76,9 @@ public class OpenWeatherFactory implements
     public List<Weather> findWeathers(Location location, ForecastIssueContext issueContext) {
         Instant issueAt = issueContext.getIssueAt();
         List<Instant> targetAtList = issueContext.getTargetForecasts();
-        log.debug(
-            "[findWeathers] 날씨 존재하는지 확인 forecastedAt:{}, location:{}, targetAtList:{}",
-            issueAt, location.getId(), targetAtList);
-
-        List<Weather> exactMatches = weatherRepository
+        return weatherRepository
             .findAllByLocationIdAndForecastedAtAndForecastAtIn(location.getId(), issueAt,
                 targetAtList);
-
-        log.debug("[findWeathers] 목표 건수:{}건, 정확히 매치하는 건수:{}건 ", targetAtList.size(),
-            targetAtList.size());
-        if (exactMatches.size() == targetAtList.size()) {
-            return exactMatches;
-        }
-
-        // 타켓 시간에 맞는 정확한 예보가 없을때, 근사한 날짜 가져옴
-        Set<Instant> foundForecasts = exactMatches.stream()
-            .map(Weather::getForecastAt)
-            .collect(Collectors.toCollection(HashSet::new));
-
-        Map<LocalDate, List<Weather>> dailyCache = new HashMap<>();
-        List<Weather> enrichedResults = new ArrayList<>(exactMatches);
-
-        for (Instant targetAt : targetAtList) {
-            if (foundForecasts.contains(targetAt)) {
-                continue;
-            }
-
-            ZonedDateTime targetDateTime = targetAt.atZone(SEOUL_ZONE_ID);
-            LocalDate targetDate = targetDateTime.toLocalDate();
-            List<Weather> dailyCandidates = dailyCache.computeIfAbsent(targetDate, date -> {
-                Instant dayStart = date.atStartOfDay(SEOUL_ZONE_ID).toInstant();
-                Instant dayEnd = date.plusDays(1).atStartOfDay(SEOUL_ZONE_ID).toInstant();
-                return weatherRepository
-                    .findAllByLocationIdAndForecastedAtAndForecastAtBetween(location.getId(),
-                        issueAt,
-                        dayStart, dayEnd);
-            });
-
-            Weather nearest = dailyCandidates.stream()
-                .min(Comparator.comparingLong(candidate -> Math.abs(
-                    candidate.getForecastAt().toEpochMilli() - targetAt.toEpochMilli())))
-                .orElse(null);
-
-            if (nearest != null && foundForecasts.add(nearest.getForecastAt())) {
-                enrichedResults.add(nearest);
-            }
-        }
-
-        log.debug("[findWeathers] 최종반환 건수:{}건 ", enrichedResults.size());
-
-        return enrichedResults;
     }
 
     @Override

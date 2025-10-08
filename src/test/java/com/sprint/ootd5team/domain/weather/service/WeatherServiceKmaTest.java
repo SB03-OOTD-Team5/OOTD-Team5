@@ -2,6 +2,7 @@ package com.sprint.ootd5team.domain.weather.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -182,6 +183,6 @@ class WeatherServiceKmaTest {
             .thenReturn(true);
 
         boolean exists = weatherService.existsWeatherFor("20250925", "0600", locationId);
-        assertEquals(true, exists);
+        assertTrue(exists);
     }
 }

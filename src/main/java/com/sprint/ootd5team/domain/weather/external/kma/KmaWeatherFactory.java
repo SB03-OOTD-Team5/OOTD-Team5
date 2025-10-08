@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,20 +58,29 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
 
         // 1. 날씨 찾기
         List<Weather> cachedWeathers = findWeathers(location, issueContext);
-        if (!cachedWeathers.isEmpty()) {
-            log.debug("[Weather] 날씨 데이터 이미 존재: {}건", cachedWeathers.size());
+        log.debug("[Weather] 기존 날씨 데이터 총 {}건, ids:{}", cachedWeathers.size(),
+            cachedWeathers.stream()
+                .map(e -> e.getId().toString())
+                .collect(Collectors.joining(", ")));
+
+        log.debug("[findWeathers] 목표 건수:{}건, 정확히 매치하는 건수:{}건 ", WEATHER_REQUESTED_CNT,
+            cachedWeathers.size());
+
+        if (cachedWeathers.size() == WEATHER_REQUESTED_CNT) {
             return cachedWeathers;
         }
         // 2. 날씨 데이터 불러오기
         String baseDate = issueContext.getIssueDateTime().format(DATE_FORMATTER);
         String baseTime = issueContext.getIssueDateTime().format(TIME_FORMATTER);
-        log.debug("[Weather] 날씨 데이터 존재 X");
         KmaResponse kmaResponse = kmaApiAdapter.getWeather(location.getLatitude(),
             location.getLongitude(), baseDate, baseTime, 1000);
         // 3. 날씨 생성
-        List<Weather> newWeathers = createWeathers(kmaResponse, Collections.emptyList(),
+        List<Weather> newWeathers = createWeathers(kmaResponse, cachedWeathers,
             issueContext, location);
-        return weatherRepository.saveAll(newWeathers);
+        weatherRepository.saveAll(newWeathers);
+        log.debug("[Weather] 신규 생성 건수:{}", newWeathers.size());
+
+        return findNearestWeathers(cachedWeathers, location, issueContext);
     }
 
     @Override
@@ -93,33 +101,30 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
         return issueContext;
     }
 
-
     // 5일치 데이터 찾기
     @Override
     public List<Weather> findWeathers(Location location, ForecastIssueContext issueContext) {
         Instant issueAt = issueContext.getIssueAt();
         List<Instant> targetAtList = issueContext.getTargetForecasts();
-        log.debug(
-            "[findWeathers] 날씨 존재하는지 확인 forecastedAt:{}, location:{}, targetAtList:{}",
-            issueAt, location.getId(), targetAtList);
-
-        List<Weather> exactMatches = weatherRepository
+        return weatherRepository
             .findAllByLocationIdAndForecastedAtAndForecastAtIn(location.getId(), issueAt,
                 targetAtList);
+    }
 
-        log.debug("[findWeathers] 목표 건수:{}건, 정확히 매치하는 건수:{}건 ", targetAtList.size(),
-            targetAtList.size());
-        if (exactMatches.size() == targetAtList.size()) {
-            return exactMatches;
-        }
+
+    // 5일치 데이터 근사값 찾기 - Kma의 4-5일뒤의 날씨는 3시간마다 예측
+    private List<Weather> findNearestWeathers(List<Weather> cachedWeathers, Location location,
+        ForecastIssueContext issueContext) {
+        Instant issueAt = issueContext.getIssueAt();
+        List<Instant> targetAtList = issueContext.getTargetForecasts();
 
         // 타켓 시간에 맞는 정확한 예보가 없을때, 근사한 날짜 가져옴
-        Set<Instant> foundForecasts = exactMatches.stream()
+        Set<Instant> foundForecasts = cachedWeathers.stream()
             .map(Weather::getForecastAt)
             .collect(Collectors.toCollection(HashSet::new));
 
         Map<LocalDate, List<Weather>> dailyCache = new HashMap<>();
-        List<Weather> enrichedResults = new ArrayList<>(exactMatches);
+        List<Weather> enrichedResults = new ArrayList<>(cachedWeathers);
 
         for (Instant targetAt : targetAtList) {
             if (foundForecasts.contains(targetAt)) {
@@ -146,6 +151,8 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
                 enrichedResults.add(nearest);
             }
         }
+
+        enrichedResults.sort(Comparator.comparing(Weather::getForecastAt));
 
         log.debug("[findWeathers] 최종반환 건수:{}건 ", enrichedResults.size());
 
