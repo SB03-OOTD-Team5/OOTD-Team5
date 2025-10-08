@@ -1,6 +1,11 @@
 package com.sprint.ootd5team.domain.weather.external.kma;
 
-import com.sprint.ootd5team.base.util.DateTimeUtils;
+import static com.sprint.ootd5team.base.util.DateTimeUtils.DATE_FORMATTER;
+import static com.sprint.ootd5team.base.util.DateTimeUtils.SEOUL_ZONE_ID;
+import static com.sprint.ootd5team.base.util.DateTimeUtils.TIME_FORMATTER;
+import static com.sprint.ootd5team.base.util.DateTimeUtils.getZonedDateTime;
+import static com.sprint.ootd5team.base.util.DateTimeUtils.toInstant;
+
 import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.location.service.LocationService;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
@@ -8,6 +13,8 @@ import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.enums.SkyStatus;
 import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
 import com.sprint.ootd5team.domain.weather.exception.WeatherNotFoundException;
+import com.sprint.ootd5team.domain.weather.external.WeatherFactory;
+import com.sprint.ootd5team.domain.weather.external.context.ForecastIssueContext;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaResponse.WeatherItem;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
@@ -15,76 +22,148 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class KmaWeatherFactory {
+public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, KmaResponse> {
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
-    private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern(
-        "yyyyMMddHHmm");
-    private static final ZoneId SEOUL_ZONE_ID = ZoneId.of("Asia/Seoul");
+    private static final int WEATHER_REQUESTED_CNT = 5;
     private final WeatherRepository weatherRepository;
     private final KmaApiAdapter kmaApiAdapter;
-    //FIXME : service 의존하면 X
     private final LocationService locationService;
 
+    @Override
     public List<Weather> findOrCreateWeathers(BigDecimal latitude, BigDecimal longitude) {
-        String baseDate = LocalDate.now(SEOUL_ZONE_ID).format(DATE_FORMATTER);
-        String baseTime = kmaApiAdapter.getBaseTime(baseDate); // 기상청 API BaseTime
-
-        //FIXME: find랑 create 분리하면 좋을듯
         Location location = locationService.findOrCreateLocation(latitude, longitude);
 
+        //발행날짜시간, 예보날짜시간을 객체로 저장
+        ForecastIssueContext issueContext = createForecastIssueContext(
+            ZonedDateTime.now(SEOUL_ZONE_ID));
+
         // 1. 날씨 찾기
-        List<Weather> cachedWeathers = findWeathers(baseDate, baseTime, location);
+        List<Weather> cachedWeathers = findWeathers(location, issueContext);
         if (!cachedWeathers.isEmpty()) {
             log.debug("[Weather] 날씨 데이터 이미 존재: {}건", cachedWeathers.size());
             return cachedWeathers;
         }
         // 2. 날씨 데이터 불러오기
+        String baseDate = issueContext.getIssueDateTime().format(DATE_FORMATTER);
+        String baseTime = issueContext.getIssueDateTime().format(TIME_FORMATTER);
         log.debug("[Weather] 날씨 데이터 존재 X");
-        KmaResponse kmaResponse = kmaApiAdapter.getKmaWeather(baseDate, baseTime,
-            location.getLatitude(), location.getLongitude(), 1000);
+        KmaResponse kmaResponse = kmaApiAdapter.getWeather(location.getLatitude(),
+            location.getLongitude(), baseDate, baseTime, 1000);
         // 3. 날씨 생성
-        List<Weather> newWeathers = createWeathers(kmaResponse, baseDate, location);
+        List<Weather> newWeathers = createWeathers(kmaResponse, Collections.emptyList(),
+            issueContext, location);
         return weatherRepository.saveAll(newWeathers);
     }
 
-
-    public List<Weather> findWeathers(String baseDate, String baseTime, Location location) {
-        Instant forecastedAt = DateTimeUtils.toInstant(baseDate, baseTime);
-        log.debug("[Weather repository] 날씨 존재하는지 확인중 forecastedAt:{}, lat: {}, lon: {}",
-            forecastedAt, location.getLatitude(), location.getLongitude());
-
-        return weatherRepository.findAllByLocationIdAndForecastedAt(location.getId(), forecastedAt);
+    @Override
+    public ForecastIssueContext createForecastIssueContext(ZonedDateTime reference) {
+        LocalDate referenceDate = reference.toLocalDate();
+        // 발행 시각 base time 구함
+        LocalTime issueTime = kmaApiAdapter.resolveIssueTime(reference); // 기상청 API BaseTime
+        ZonedDateTime issueDateTime = getZonedDateTime(
+            referenceDate, issueTime);
+        // 예보 시각 base time 구함
+        LocalTime targetTime = kmaApiAdapter.resolveIssueTime(reference);
+        ZonedDateTime targetDateTime = getZonedDateTime(
+            referenceDate, targetTime);
+        ForecastIssueContext issueContext = ForecastIssueContext.of(issueDateTime, targetDateTime,
+            WEATHER_REQUESTED_CNT);
+        log.debug("[KMA] issueContext - issueDateTime:{}, targetDateTime:{}",
+            issueContext.getIssueDateTime(), issueContext.getTargetDateTime());
+        return issueContext;
     }
 
-    public boolean existsWeatherFor(String baseDate, String baseTime, UUID locationId) {
-        Instant forecastedAt = DateTimeUtils.toInstant(baseDate, baseTime);
-        return weatherRepository.existsByLocationIdAndForecastedAt(locationId, forecastedAt);
+
+    // 5일치 데이터 찾기
+    @Override
+    public List<Weather> findWeathers(Location location, ForecastIssueContext issueContext) {
+        Instant issueAt = issueContext.getIssueAt();
+        List<Instant> targetAtList = issueContext.getTargetForecasts();
+        log.debug(
+            "[findWeathers] 날씨 존재하는지 확인 forecastedAt:{}, location:{}, targetAtList:{}",
+            issueAt, location.getId(), targetAtList);
+
+        List<Weather> exactMatches = weatherRepository
+            .findAllByLocationIdAndForecastedAtAndForecastAtIn(location.getId(), issueAt,
+                targetAtList);
+
+        log.debug("[findWeathers] 목표 건수:{}건, 정확히 매치하는 건수:{}건 ", targetAtList.size(),
+            targetAtList.size());
+        if (exactMatches.size() == targetAtList.size()) {
+            return exactMatches;
+        }
+
+        // 타켓 시간에 맞는 정확한 예보가 없을때, 근사한 날짜 가져옴
+        Set<Instant> foundForecasts = exactMatches.stream()
+            .map(Weather::getForecastAt)
+            .collect(Collectors.toCollection(HashSet::new));
+
+        Map<LocalDate, List<Weather>> dailyCache = new HashMap<>();
+        List<Weather> enrichedResults = new ArrayList<>(exactMatches);
+
+        for (Instant targetAt : targetAtList) {
+            if (foundForecasts.contains(targetAt)) {
+                continue;
+            }
+
+            ZonedDateTime targetDateTime = targetAt.atZone(SEOUL_ZONE_ID);
+            LocalDate targetDate = targetDateTime.toLocalDate();
+            List<Weather> dailyCandidates = dailyCache.computeIfAbsent(targetDate, date -> {
+                Instant dayStart = date.atStartOfDay(SEOUL_ZONE_ID).toInstant();
+                Instant dayEnd = date.plusDays(1).atStartOfDay(SEOUL_ZONE_ID).toInstant();
+                return weatherRepository
+                    .findAllByLocationIdAndForecastedAtAndForecastAtBetween(location.getId(),
+                        issueAt,
+                        dayStart, dayEnd);
+            });
+
+            Weather nearest = dailyCandidates.stream()
+                .min(Comparator.comparingLong(candidate -> Math.abs(
+                    candidate.getForecastAt().toEpochMilli() - targetAt.toEpochMilli())))
+                .orElse(null);
+
+            if (nearest != null && foundForecasts.add(nearest.getForecastAt())) {
+                enrichedResults.add(nearest);
+            }
+        }
+
+        log.debug("[findWeathers] 최종반환 건수:{}건 ", enrichedResults.size());
+
+        return enrichedResults;
     }
 
-    public List<Weather> createWeathers(KmaResponse kmaResponse, String baseDate,
-        Location location) {
+
+    @Override
+    public List<Weather> createWeathers(KmaResponse kmaResponse, List<Weather> existingWeathers,
+        ForecastIssueContext issueContext, Location location) {
         log.debug("[Weather] 날씨 dto 생성 시작");
-        return buildWeathersFromKmaResponse(kmaResponse, baseDate, location);
+        String baseDate = issueContext.getIssueDateTime().toLocalDate()
+            .format(DATE_FORMATTER);
+        return buildWeathersFromKmaResponse(kmaResponse, baseDate, location, issueContext);
     }
 
     private List<Weather> buildWeathersFromKmaResponse(KmaResponse kmaResponse, String baseDate,
-        Location location) {
+        Location location, ForecastIssueContext issueContext) {
 
         List<WeatherItem> allItems = kmaResponse.response().body().items().weatherItems();
         if (allItems == null || allItems.isEmpty()) {
@@ -92,7 +171,7 @@ public class KmaWeatherFactory {
         }
         List<Weather> result = new ArrayList<>();
         String currentTime = LocalDateTime.now(SEOUL_ZONE_ID)
-            .format(DateTimeFormatter.ofPattern("HHmm"));
+            .format(TIME_FORMATTER);
 
         log.debug("[Weather] buildWeathersFromKmaResponse 시작. currentTime:{}", currentTime);
 
@@ -100,9 +179,9 @@ public class KmaWeatherFactory {
             .collect(Collectors.groupingBy(WeatherItem::fcstDate));
         // 날짜 오름차순으로 정렬
         List<String> sortedDates = itemsByDate.keySet().stream().sorted().toList();
-
         // 첫 예보일(오늘)의 비교 대상인 '어제' 날씨를 DB에서 조회
         Weather yesterdayWeather = findYesterdayWeather(location, sortedDates.get(0));
+
         for (Map.Entry<String, List<WeatherItem>> entry : itemsByDate.entrySet()) {
             List<WeatherItem> itemsOfDate = entry.getValue();
             if (itemsOfDate.isEmpty()) {
@@ -144,7 +223,7 @@ public class KmaWeatherFactory {
             }
 
             Weather currentWeather = buildSingleWeather(itemsOfDate, itemsForTargetSlot, location,
-                yesterdayWeather);
+                yesterdayWeather, issueContext);
             result.add(currentWeather);
 
             // 다음날 날씨에 현재 날씨 전달
@@ -152,6 +231,7 @@ public class KmaWeatherFactory {
         }
         return result;
     }
+
 
     // 해당 날짜 최저/최고온도 구하는 로직
     private double[] getDailyTemperatures(List<WeatherItem> dailyItems) {
@@ -206,12 +286,11 @@ public class KmaWeatherFactory {
     }
 
     private Weather buildSingleWeather(List<WeatherItem> dailyItems,
-        List<WeatherItem> targetDateItems, Location location, Weather yesterdayWeather) {
+        List<WeatherItem> targetDateItems, Location location, Weather yesterdayWeather,
+        ForecastIssueContext issueContext) {
         WeatherItem anyItem = targetDateItems.get(0);
-        Instant forecastedAt = DateTimeUtils.toInstant(anyItem.baseDate(),
-            String.format("%04d", Integer.parseInt(
-                anyItem.baseTime())));
-        Instant forecastAt = DateTimeUtils.toInstant(anyItem.fcstDate(),
+        Instant forecastedAt = issueContext.getIssueAt();
+        Instant forecastAt = toInstant(anyItem.fcstDate(),
             String.format("%04d", Integer.parseInt(
                 anyItem.fcstTime())));
 
@@ -271,7 +350,7 @@ public class KmaWeatherFactory {
             .build();
     }
 
-    //현재시간과 fcstTime비교
+    // 오늘날짜의 날씨는 현재시간과 가장 가까운 시간을 보여주고, 다른 날짜의 날씨는 관측된 첫번째 날씨를 보여줌
     private String pickNearestPastOrFirst(List<String> sortedTimesAsc, String currentTime) {
         String target = null;
         for (String time : sortedTimesAsc) {

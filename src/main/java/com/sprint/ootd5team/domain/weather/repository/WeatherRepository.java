@@ -24,6 +24,21 @@ public interface WeatherRepository extends JpaRepository<Weather, UUID> {
 
     List<Weather> findAllByLocationIdAndForecastedAt(UUID locationId, Instant forecastedAt);
 
+    List<Weather> findAllByLocationIdAndForecastedAtAndForecastAt(UUID locationId,
+        Instant forecastedAt, Instant forecastAt);
+
+
+    List<Weather> findAllByLocationIdAndForecastedAtAndForecastAtIn(UUID locationId,
+        Instant forecastedAt, List<Instant> forecastAts);
+
+
+    List<Weather> findAllByLocationIdAndForecastedAtAndForecastAtBetween(UUID locationId,
+        Instant forecastedAt, Instant startInclusive, Instant endExclusive);
+
+
+    List<Weather> findFirstByLocationIdAndForecastAtOrderByForecastedAtDesc(UUID locationId,
+        Instant forecastAt);
+
     long deleteByLocationIdAndForecastAt(UUID locationId, Instant forecastAt);
 
     Optional<Weather> findFirstByLocationIdOrderByForecastedAtDesc(UUID locationId);

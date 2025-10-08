@@ -13,6 +13,7 @@ import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.location.service.LocationService;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
 import com.sprint.ootd5team.domain.weather.exception.WeatherNotFoundException;
+import com.sprint.ootd5team.domain.weather.external.context.ForecastIssueContext;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaApiAdapter;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaResponse;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaResponse.Body;
@@ -25,6 +26,7 @@ import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -74,18 +76,16 @@ class KmaWeatherFactoryTest {
             locationService);
 
         when(locationService.findOrCreateLocation(lat, lon)).thenReturn(location);
-        when(kmaApiAdapter.getBaseTime(anyString())).thenReturn("0600");
+        when(kmaApiAdapter.resolveIssueTime(any())).thenReturn(LocalTime.parse("0600"));
         when(weatherRepository.findAllByLocationIdAndForecastedAt(eq(locationId), any()))
             .thenReturn(List.of(cached));
 
         List<Weather> result = factory.findOrCreateWeathers(lat, lon);
 
         assertEquals(List.of(cached), result);
-        verify(kmaApiAdapter, never()).getKmaWeather(
+        verify(kmaApiAdapter, never()).getWeather(
+            eq(lat), eq(lon), anyString(),
             anyString(),
-            anyString(),
-            eq(lat),
-            eq(lon),
             eq(1000)
         );
         verify(weatherRepository, never()).saveAll(any());
@@ -122,16 +122,16 @@ class KmaWeatherFactoryTest {
             .thenReturn(Collections.emptyList());
         when(weatherRepository.findFirstByLocationIdAndForecastAtBetweenOrderByForecastAtDesc(
             eq(locationId), any(), any())).thenReturn(Optional.empty());
-        when(kmaApiAdapter.getBaseTime(anyString())).thenReturn(baseTime);
+        when(kmaApiAdapter.resolveIssueTime(any())).thenReturn(LocalTime.parse(baseTime));
         KmaResponse dto = buildSimpleResponse(baseDate, baseTime, baseDate, "0000");
-        when(kmaApiAdapter.getKmaWeather(anyString(), anyString(), eq(lat), eq(lon), eq(1000)))
+        when(kmaApiAdapter.getWeather(eq(lat), eq(lon), anyString(), anyString(), eq(1000)))
             .thenReturn(dto);
         when(weatherRepository.saveAll(any())).thenReturn(List.of(newWeather));
 
         List<Weather> result = factory.findOrCreateWeathers(lat, lon);
 
         assertEquals(List.of(newWeather), result);
-        verify(kmaApiAdapter).getKmaWeather(anyString(), anyString(), eq(lat), eq(lon), eq(1000));
+        verify(kmaApiAdapter).getWeather(eq(lat), eq(lon), anyString(), anyString(), eq(1000));
         verify(weatherRepository).saveAll(any());
     }
 
@@ -152,23 +152,11 @@ class KmaWeatherFactoryTest {
         KmaWeatherFactory factory = new KmaWeatherFactory(weatherRepository, kmaApiAdapter,
             locationService);
 
+        ForecastIssueContext issueContext = factory.createForecastIssueContext(any());
         assertThrows(WeatherNotFoundException.class,
-            () -> factory.createWeathers(dto, "20250925", location));
+            () -> factory.createWeathers(dto, Collections.emptyList(), issueContext, location));
     }
 
-    @Test
-    @DisplayName("existsWeatherFor - 리포지토리 조회")
-    void 예보_존재여부_체크는_리포지토리에_위임한다() {
-        UUID locationId = UUID.randomUUID();
-        when(weatherRepository.existsByLocationIdAndForecastedAt(eq(locationId), any()))
-            .thenReturn(true);
-
-        KmaWeatherFactory factory = new KmaWeatherFactory(weatherRepository, kmaApiAdapter,
-            locationService);
-
-        boolean exists = factory.existsWeatherFor("20250925", "0600", locationId);
-        assertEquals(true, exists);
-    }
 
     private KmaResponse buildSimpleResponse(String baseDate, String baseTime,
         String forecastDate,
