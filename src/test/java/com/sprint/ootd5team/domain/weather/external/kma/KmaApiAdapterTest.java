@@ -19,7 +19,7 @@ class KmaApiAdapterTest {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Test
-    @DisplayName("getKmaWeather - 정상 응답을 파싱한다")
+    @DisplayName("getWeather - 정상 응답을 파싱한다")
     void 정상응답이면_DTO로_파싱한다() {
         String json = """
             {
@@ -49,15 +49,16 @@ class KmaApiAdapterTest {
 
         KmaApiAdapter adapter = new KmaApiAdapter(webClient, OBJECT_MAPPER);
 
-        KmaResponse dto = adapter.getKmaWeather("20250925", "0600",
-            BigDecimal.valueOf(37.5), BigDecimal.valueOf(127.0), 10);
+        KmaResponse dto = adapter.getWeather(BigDecimal.valueOf(37.5), BigDecimal.valueOf(127.0),
+            "20250925", "0600",
+            10);
 
         assertEquals("00", dto.response().header().resultCode());
         assertEquals(1, dto.response().body().items().weatherItems().size());
     }
 
     @Test
-    @DisplayName("getKmaWeather - 결과 코드가 00이 아니면 예외")
+    @DisplayName("getWeather - 결과 코드가 00이 아니면 예외")
     void 응답코드가_성공이_아니면_예외를_던진다() {
         String json = """
             {
@@ -78,8 +79,9 @@ class KmaApiAdapterTest {
         KmaApiAdapter adapter = new KmaApiAdapter(webClient, OBJECT_MAPPER);
 
         assertThrows(WeatherKmaParseException.class, () ->
-            adapter.getKmaWeather("20250925", "0600",
-                BigDecimal.valueOf(37.5), BigDecimal.valueOf(127.0), 10)
+            adapter.getWeather(BigDecimal.valueOf(37.5), BigDecimal.valueOf(127.0), "20250925",
+                "0600",
+                10)
         );
     }
 }
