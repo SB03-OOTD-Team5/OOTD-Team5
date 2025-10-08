@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.domain.weather.service;
 
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
+import com.sprint.ootd5team.base.util.DateTimeUtils;
 import com.sprint.ootd5team.domain.location.dto.data.ClientCoords;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
@@ -69,5 +70,11 @@ public class WeatherServiceKma implements WeatherService {
 
         return weatherRepository.findTopByLocationIdAndForecastDateOrderByLatest(
             locationId, startOfDay, endOfDay);
+    }
+
+    @Override
+    public boolean existsWeatherFor(String baseDate, String baseTime, UUID locationId) {
+        Instant forecastedAt = DateTimeUtils.toInstant(baseDate, baseTime);
+        return weatherRepository.existsByLocationIdAndForecastedAt(locationId, forecastedAt);
     }
 }

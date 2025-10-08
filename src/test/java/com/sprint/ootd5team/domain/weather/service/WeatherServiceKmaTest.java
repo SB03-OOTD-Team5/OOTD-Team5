@@ -173,4 +173,15 @@ class WeatherServiceKmaTest {
         assertEquals(targetDate.plusDays(1), endDate);
         assertSame(expected, result);
     }
+
+    @Test
+    @DisplayName("existsWeatherFor - 리포지토리 조회")
+    void 예보_존재여부_체크는_리포지토리에_위임한다() {
+        UUID locationId = UUID.randomUUID();
+        when(weatherRepository.existsByLocationIdAndForecastedAt(eq(locationId), any()))
+            .thenReturn(true);
+
+        boolean exists = weatherService.existsWeatherFor("20250925", "0600", locationId);
+        assertEquals(true, exists);
+    }
 }

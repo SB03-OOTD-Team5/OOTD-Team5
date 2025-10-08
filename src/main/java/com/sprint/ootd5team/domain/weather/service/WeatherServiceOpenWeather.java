@@ -70,4 +70,9 @@ public class WeatherServiceOpenWeather implements WeatherService {
             locationId, startOfDay, endOfDay);
     }
 
+    @Override
+    public boolean existsWeatherFor(String baseDate, String baseTime, UUID locationId) {
+        return false;
+    }
+
 }

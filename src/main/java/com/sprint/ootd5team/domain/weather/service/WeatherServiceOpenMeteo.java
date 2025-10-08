@@ -109,7 +109,8 @@ public class WeatherServiceOpenMeteo implements WeatherService {
             }
         }
 
-        OpenMeteoResponse response = openMeteoAdapter.getDailyForecast(resolvedLat, resolvedLon);
+        OpenMeteoResponse response = openMeteoAdapter.getWeather(resolvedLat, resolvedLon, null,
+            null, 0);
 
         List<Weather> weathers = buildWeathers(response, location);
         if (weathers.isEmpty()) {
@@ -125,6 +126,11 @@ public class WeatherServiceOpenMeteo implements WeatherService {
     @Override
     public Weather getLatestWeatherForLocationAndDate(UUID locationId, LocalDate targetDate) {
         return null;
+    }
+
+    @Override
+    public boolean existsWeatherFor(String baseDate, String baseTime, UUID locationId) {
+        return false;
     }
 
     /**
