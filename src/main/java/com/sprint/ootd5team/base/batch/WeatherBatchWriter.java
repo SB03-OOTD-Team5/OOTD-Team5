@@ -1,51 +1,65 @@
 package com.sprint.ootd5team.base.batch;
 
+import static com.sprint.ootd5team.base.util.DateTimeUtils.DATE_FORMATTER;
+import static com.sprint.ootd5team.base.util.DateTimeUtils.SEOUL_ZONE_ID;
+import static com.sprint.ootd5team.base.util.DateTimeUtils.TIME_FORMATTER;
+
 import com.sprint.ootd5team.domain.location.dto.data.LocationWithProfileIds;
 import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.location.repository.LocationRepository;
 import com.sprint.ootd5team.domain.notification.service.NotificationService;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaApiAdapter;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaResponse;
-import com.sprint.ootd5team.domain.weather.external.kma.KmaWeatherFactory;
+import com.sprint.ootd5team.domain.weather.external.WeatherExternalAdapter;
+import com.sprint.ootd5team.domain.weather.external.WeatherFactory;
+import com.sprint.ootd5team.domain.weather.external.context.ForecastIssueContext;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import com.sprint.ootd5team.domain.weather.service.WeatherService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
-    private static final ZoneId SEOUL_ZONE_ID = ZoneId.of("Asia/Seoul");
-    private final KmaWeatherFactory kmaWeatherFactory;
-    private final KmaApiAdapter kmaApiAdapter;
+    private final WeatherFactory weatherFactory;
+    private final WeatherExternalAdapter externalAdapter;
     private final WeatherService weatherService;
     private final NotificationService notificationService;
     private final WeatherRepository weatherRepository;
     private final LocationRepository locationRepository;
-    //    private final String BASE_TIME = "2300";
-    private final String BASE_TIME = "0800"; // 테스트용
 
+    public WeatherBatchWriter(Map<String, WeatherFactory> weatherFactories,
+        Map<String, WeatherExternalAdapter> externalAdapters, WeatherService weatherService,
+        NotificationService notificationService, WeatherRepository weatherRepository,
+        LocationRepository locationRepository,
+        @Value("${weather.api-client.provider}") String provider) {
+        this.weatherFactory = resolveFactory(weatherFactories, provider);
+        this.externalAdapter = resolveAdapter(externalAdapters, provider);
+        this.weatherService = weatherService;
+        this.notificationService = notificationService;
+        this.weatherRepository = weatherRepository;
+        this.locationRepository = locationRepository;
+    }
 
     @Override
     public void write(Chunk<? extends LocationWithProfileIds> chunk) throws Exception {
         try {
-            String baseDate = LocalDate.now(SEOUL_ZONE_ID).format(DATE_FORMATTER);
-            String baseTime = kmaApiAdapter.getBaseTime(baseDate);
-            log.info("[WeatherBatchWriter] write start chunkSize={} baseDate={} baseTime={}",
-                chunk.size(), baseDate, baseTime);
+            ZonedDateTime issueDate = ZonedDateTime.now(SEOUL_ZONE_ID);
+            LocalTime issueTime = externalAdapter.resolveIssueTime(issueDate);
+            log.info("[WeatherBatchWriter] write start chunkSize={} issueDate={} issueTime={}",
+                chunk.size(), issueDate, issueTime);
+            ForecastIssueContext issueContext = weatherFactory.createForecastIssueContext(
+                issueDate);
 
             // chunk에 있는 데이터를 fetch함
             for (LocationWithProfileIds item : chunk) {
@@ -67,14 +81,18 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
                 Weather latestTodayWeather = weatherService.getLatestWeatherForLocationAndDate(
                     location.getId(), LocalDate.now(SEOUL_ZONE_ID));
 
-                KmaResponse kmaResponse = kmaApiAdapter.getKmaWeather(baseDate, BASE_TIME,
-                    item.latitude(), item.longitude(), 300);
+                String baseDate = issueContext.getIssueDateTime().format(DATE_FORMATTER);
+                String baseTime = issueContext.getIssueDateTime().format(TIME_FORMATTER);
+                Object response = externalAdapter.getWeather(item.latitude(),
+                    item.longitude(), baseDate, baseTime, 300);
 
                 log.info("[WeatherBatchWriter] 외부 API 호출 완료 locationId={} lat={} lon={}",
                     location.getId(), item.latitude(), item.longitude());
 
-                List<Weather> newWeathers = kmaWeatherFactory.createWeathers(kmaResponse,
-                    baseDate,
+                List<Weather> cached = weatherFactory.findWeathers(location, issueContext);
+                List<Weather> newWeathers = weatherFactory.createWeathers(response,
+                    cached,
+                    issueContext,
                     location);
 
                 log.info("[WeatherBatchWriter] weather {}건 생성완료", newWeathers.size());
@@ -84,7 +102,7 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
                     location.getId());
 
                 // 새로 생성된 weather 중 다음날 날씨만 가져와서 오늘 날씨와 비교
-                LocalDate targetDate = LocalDate.parse(baseDate, DATE_FORMATTER).plusDays(1);
+                LocalDate targetDate = issueContext.getTargetDateTime().plusDays(1).toLocalDate();
                 Weather tomorrowWeather = newWeathers.stream()
                     .filter(
                         weather -> LocalDateTime.ofInstant(weather.getForecastAt(), SEOUL_ZONE_ID)
@@ -146,5 +164,38 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
             temperatureChanged);
 
         return changedToPrecipitation || temperatureChanged;
+    }
+
+    private WeatherFactory resolveFactory(Map<String, WeatherFactory> factories, String provider) {
+        String beanName = switch (provider) {
+            case "kma" -> "kmaWeatherFactory";
+            case "openWeather" -> "openWeatherFactory";
+            case "meteo" -> "meteoWeatherFactory";
+            default -> throw new IllegalArgumentException(
+                "지원하지 않는 weather provider 입니다: " + provider);
+        };
+        WeatherFactory factory = factories.get(beanName);
+        if (factory == null) {
+            throw new IllegalStateException(
+                "WeatherFactory 빈을 찾을 수 없습니다. beanName=" + beanName);
+        }
+        return factory;
+    }
+
+    private WeatherExternalAdapter resolveAdapter(Map<String, WeatherExternalAdapter> adapters,
+        String provider) {
+        String beanName = switch (provider) {
+            case "kma" -> "kmaApiAdapter";
+            case "openWeather" -> "openWeatherAdapter";
+            case "meteo" -> "openMeteoAdapter";
+            default -> throw new IllegalArgumentException(
+                "지원하지 않는 weather provider 입니다: " + provider);
+        };
+        WeatherExternalAdapter adapter = adapters.get(beanName);
+        if (adapter == null) {
+            throw new IllegalStateException(
+                "WeatherExternalAdapter 빈을 찾을 수 없습니다. beanName=" + beanName);
+        }
+        return adapter;
     }
 }
