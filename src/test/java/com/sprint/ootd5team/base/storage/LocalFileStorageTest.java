@@ -2,6 +2,7 @@ package com.sprint.ootd5team.base.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mockStatic;
 
 import com.sprint.ootd5team.base.exception.file.FileDeleteFailedException;
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
@@ -14,6 +15,7 @@ import java.nio.file.Paths;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 public class LocalFileStorageTest {
 
@@ -151,11 +153,15 @@ public class LocalFileStorageTest {
         LocalFileStorage storage = new LocalFileStorage(root);
         Path fakeFile = root.resolve("locked.txt");
         Files.writeString(fakeFile, "lock");
-        fakeFile.toFile().setWritable(false); // 삭제 권한 제한
 
-        // when & then
-        assertThatThrownBy(() -> storage.delete("locked.txt"))
-            .isInstanceOf(FileDeleteFailedException.class);
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            filesMock.when(() -> Files.deleteIfExists(fakeFile))
+                .thenThrow(new IOException("삭제 실패"));
+
+            // when & then
+            assertThatThrownBy(() -> storage.delete("locked.txt"))
+                .isInstanceOf(FileDeleteFailedException.class);
+        }
     }
 
     @Test
