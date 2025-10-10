@@ -12,6 +12,7 @@ import com.sprint.ootd5team.base.security.handler.Http403ForbiddenAccessDeniedHa
 import com.sprint.ootd5team.base.security.handler.JwtLoginSuccessHandler;
 import com.sprint.ootd5team.base.security.handler.JwtLogoutHandler;
 import com.sprint.ootd5team.base.security.handler.LoginFailureHandler;
+import com.sprint.ootd5team.base.security.oauth2.OAuth2LoginSuccessHandler;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -99,6 +100,7 @@ public class SecurityConfig {
         LoginFailureHandler loginFailureHandler,
         ObjectMapper objectMapper,
         JwtAuthenticationFilter jwtAuthenticationFilter,
+        OAuth2LoginSuccessHandler oauth2LoginSuccessHandler,
         JwtLogoutHandler jwtLogoutHandler
     )
         throws Exception {
@@ -118,6 +120,11 @@ public class SecurityConfig {
                 .successHandler(jwtLoginSuccessHandler)
                 .failureHandler(loginFailureHandler)
             )
+            // oauth 로그인 설정
+            .oauth2Login(auth-> auth
+                .successHandler(oauth2LoginSuccessHandler)
+                .failureHandler(loginFailureHandler)
+            )
             // 로그아웃 설정
             .logout(logout -> logout
                 .logoutUrl("/api/auth/sign-out")
@@ -133,6 +140,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-out").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-in").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
+                .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()  // oauth 연결 허용
                 .requestMatchers("/ws/**").permitAll()   // ★ 웹소켓 허용
                 .requestMatchers("/sub/**", "/pub/**").permitAll() // 구독/발행 경로도 필요시
                 .requestMatchers("/api/sse").authenticated()

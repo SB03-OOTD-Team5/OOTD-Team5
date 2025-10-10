@@ -46,7 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     String email = jwtTokenProvider.getEmailFromToken(token);
 
                     // 추출한 이메일을 통해 UserDto를 불러오고, userDetails로 변환하여 저장
-                    OotdUserDetails userDetails = (OotdUserDetails) userDetailsService.loadUserByUsername(
+                    OotdSecurityUserDetails userDetails = (OotdSecurityUserDetails) userDetailsService.loadUserByUsername(
                         email);
 
                     // 스프링 시큐리티 인증객체 생성

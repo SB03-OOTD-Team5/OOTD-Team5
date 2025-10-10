@@ -67,7 +67,7 @@ public class JwtTokenProvider {
 
     /**
      * 토큰 생성 메서드
-     * @param userDetails user정보
+     * @param user user정보
      * @param expirationMs 만료기한
      * @param signer 서명자
      * @param tokenType 토큰의 타입
@@ -75,13 +75,12 @@ public class JwtTokenProvider {
      * @throws JOSEException 예외처리
      */
     private String generateToken(
-        OotdUserDetails userDetails,
+        UserDto user,
         int expirationMs,
         JWSSigner signer,
         String tokenType) throws JOSEException {
 
         String tokenId = UUID.randomUUID().toString();
-        UserDto user = userDetails.getUserDto();
 
         Date now = new Date();
         Date expiration = new Date(now.getTime() + expirationMs);
@@ -108,22 +107,22 @@ public class JwtTokenProvider {
 
     /**
      * 엑세스 토큰 생성
-     * @param userDetails user정보
+     * @param user user정보
      * @return 생성된 엑세스 토큰
      * @throws JOSEException 예외
      */
-    public String generateAccessToken(OotdUserDetails userDetails) throws JOSEException {
-        return generateToken(userDetails, accessTokenExpirationInMs, accessTokenSigner, "access");
+    public String generateAccessToken(UserDto user) throws JOSEException {
+        return generateToken(user, accessTokenExpirationInMs, accessTokenSigner, "access");
     }
 
     /**
      * 리프레쉬 토큰 생성
-     * @param userDetails user정보
+     * @param user user정보
      * @return 생성된 리프레쉬 토큰
      * @throws JOSEException 예외
      */
-    public String generateRefreshToken(OotdUserDetails userDetails) throws JOSEException {
-        return generateToken(userDetails, refreshTokenExpirationInMs, refreshTokenSigner, "refresh");
+    public String generateRefreshToken(UserDto user) throws JOSEException {
+        return generateToken(user, refreshTokenExpirationInMs, refreshTokenSigner, "refresh");
     }
 
     /**

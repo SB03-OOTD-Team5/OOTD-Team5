@@ -2,7 +2,7 @@ package com.sprint.ootd5team.base.security.handler;
 
 import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
-import com.sprint.ootd5team.base.security.OotdUserDetails;
+import com.sprint.ootd5team.base.security.OotdSecurityUserDetails;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
@@ -46,7 +45,7 @@ public class JwtLogoutHandler implements LogoutHandler {
                 UUID userId = tokenProvider.getUserId(refreshToken);
                 jwtRegistry.invalidateJwtInformationByUserId(userId);
                 String username = tokenProvider.getEmailFromToken(refreshToken);
-                OotdUserDetails userDetails = (OotdUserDetails)userDetailsService.loadUserByUsername(username);
+                OotdSecurityUserDetails userDetails = (OotdSecurityUserDetails)userDetailsService.loadUserByUsername(username);
             });
         log.debug("JWT logout handler executed - refresh token cookie cleared");
     }

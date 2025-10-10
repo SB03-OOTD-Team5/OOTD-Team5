@@ -26,7 +26,7 @@ public class OotdUserDetailsService implements UserDetailsService {
 
         UserDto dto = userMapper.toDto(user);
 
-        return new OotdUserDetails(dto, user.getPassword());
+        return new OotdSecurityUserDetails(dto, user.getPassword());
     }
 
     /**

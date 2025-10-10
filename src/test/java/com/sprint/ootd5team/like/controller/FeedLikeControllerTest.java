@@ -17,6 +17,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -30,7 +32,9 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest(controllers = FeedLikeController.class,
     excludeAutoConfiguration = {
         SecurityAutoConfiguration.class,
-        SecurityFilterAutoConfiguration.class
+        SecurityFilterAutoConfiguration.class,
+        OAuth2ClientAutoConfiguration.class,
+        OAuth2ResourceServerAutoConfiguration.class
     },
     excludeFilters = {
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtAuthenticationFilter.class),
