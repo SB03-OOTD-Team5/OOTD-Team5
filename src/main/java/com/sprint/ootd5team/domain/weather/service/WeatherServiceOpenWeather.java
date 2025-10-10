@@ -68,8 +68,10 @@ public class WeatherServiceOpenWeather implements WeatherService {
         Instant startOfDay = targetDate.atStartOfDay(SEOUL_ZONE_ID).toInstant();
         Instant endOfDay = targetDate.plusDays(1).atStartOfDay(SEOUL_ZONE_ID).toInstant();
 
-        return weatherRepository.findTopByLocationIdAndForecastDateOrderByLatest(
-            locationId, startOfDay, endOfDay);
+        return weatherRepository
+            .findFirstByLocationIdAndForecastAtBetweenOrderByForecastedAtDescForecastAtDescCreatedAtDesc(
+                locationId, startOfDay, endOfDay)
+            .orElse(null);
     }
 
     @Override

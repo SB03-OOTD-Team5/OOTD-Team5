@@ -65,7 +65,8 @@ public class OpenWeatherAdapter implements WeatherExternalAdapter<OpenWeatherRes
                 break;
             }
         }
-        log.debug("발행 시각 계산 결정 reference:{}, issueTime:{}", reference, issueTime);
+        log.debug("[OpenWeather] 발행 시각 계산 결정 reference:{}, issueTime:{}", reference,
+            issueTime);
         return issueTime;
     }
 
@@ -79,7 +80,8 @@ public class OpenWeatherAdapter implements WeatherExternalAdapter<OpenWeatherRes
             ZonedDateTime candidateTime = ZonedDateTime.of(reference.toLocalDate(), candidate,
                 DateTimeUtils.SEOUL_ZONE_ID);
             if (reference.isBefore(candidateTime)) {
-                log.debug("[OpenWeather] 다음 예보 기준 시각 결정 reference:{}, issueTime:{}", reference,
+                log.debug("[OpenWeather] 다음 예보 기준 시각 결정 reference:{}, issueTime:{}",
+                    reference,
                     candidate);
                 return candidate;
             }

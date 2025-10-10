@@ -53,7 +53,7 @@ public class WeatherServiceKma implements WeatherService {
             longitude == null ? profile.getLocation().getLongitude() == null ? DEFAULT_LON
                 : profile.getLocation().getLongitude()
                 : longitude;
-        log.info("[OpenMeteo] 요청 좌표({}, {}) -> 사용 좌표({}, {})", latitude, longitude,
+        log.info("[KMA] 요청 좌표({}, {}) -> 사용 좌표({}, {})", latitude, longitude,
             resolvedLat, resolvedLon);
         List<Weather> weathers = kmaWeatherFactory.findOrCreateWeathers(resolvedLat, resolvedLon);
 
@@ -69,8 +69,10 @@ public class WeatherServiceKma implements WeatherService {
         Instant startOfDay = targetDate.atStartOfDay(SEOUL_ZONE_ID).toInstant();
         Instant endOfDay = targetDate.plusDays(1).atStartOfDay(SEOUL_ZONE_ID).toInstant();
 
-        return weatherRepository.findTopByLocationIdAndForecastDateOrderByLatest(
-            locationId, startOfDay, endOfDay);
+        return weatherRepository
+            .findFirstByLocationIdAndForecastAtBetweenOrderByForecastedAtDescForecastAtDescCreatedAtDesc(
+                locationId, startOfDay, endOfDay)
+            .orElse(null);
     }
 
     @Override

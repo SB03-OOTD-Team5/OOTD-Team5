@@ -145,7 +145,7 @@ public class NotificationServiceImpl implements NotificationService {
         log.info("[NotificationService] 알림 생성. profileId:{}, userId:{}", profileId, user.getId());
 
         Notification notification = Notification.builder()
-            .title("날씨변경타이틀")
+            .title("날씨가 변경되었습니다")
             .content(content)
             .level(NotificationLevel.INFO)
             .receiver(user)

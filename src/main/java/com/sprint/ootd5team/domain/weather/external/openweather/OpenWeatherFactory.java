@@ -19,16 +19,22 @@ import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -42,6 +48,7 @@ public class OpenWeatherFactory implements
     private final LocationService locationService;
 
     @Override
+    @Transactional
     public List<Weather> findOrCreateWeathers(BigDecimal latitude, BigDecimal longitude) {
         Location location = locationService.findOrCreateLocation(latitude, longitude);
 
@@ -50,12 +57,7 @@ public class OpenWeatherFactory implements
             ZonedDateTime.now(SEOUL_ZONE_ID));
 
         List<Weather> cachedWeathers = findWeathers(location, issueContext);
-        log.debug("[Weather] 기존 날씨 데이터 총 {}건, ids:{}", cachedWeathers.size(),
-            cachedWeathers.stream()
-                .map(e -> e.getId().toString())
-                .collect(Collectors.joining(", ")));
-
-        if (cachedWeathers.size() == WEATHER_REQUESTED_CNT) {
+        if (!cachedWeathers.isEmpty()) {
             return cachedWeathers;
         }
 
@@ -66,7 +68,7 @@ public class OpenWeatherFactory implements
         List<Weather> newWeathers = createWeathers(openWeatherResponse, cachedWeathers,
             issueContext, location);
         weatherRepository.saveAll(newWeathers);
-        log.debug("[Weather] 신규 생성 건수:{}", newWeathers.size());
+        log.debug(" [OpenWeather] 신규 생성 건수:{}", newWeathers.size());
 
         return findWeathers(location, issueContext);
     }
@@ -74,36 +76,71 @@ public class OpenWeatherFactory implements
     // 5일치 데이터 찾기
     @Override
     public List<Weather> findWeathers(Location location, ForecastIssueContext issueContext) {
-        Instant issueAt = issueContext.getIssueAt();
-        List<Instant> targetAtList = issueContext.getTargetForecasts();
-        return weatherRepository
-            .findAllByLocationIdAndForecastedAtAndForecastAtIn(location.getId(), issueAt,
-                targetAtList);
+        log.debug(" [OpenWeather] findWeathers 시작. issueContext:{}, targetForecasts:{}",
+            issueContext.getIssueAt().atZone(ZoneId.of("Asia/Seoul")),
+            issueContext.getTargetForecasts().stream()
+                .map(i -> i.atZone(ZoneId.of("Asia/Seoul")).toString())
+                .toList()
+        );
+
+        List<Weather> cached = weatherRepository
+            .findAllByLocationIdAndForecastedAtAndForecastAtIn(location.getId(),
+                issueContext.getIssueAt(),
+                issueContext.getTargetForecasts());
+        log.debug(" [OpenWeather] 기존 날씨 데이터 총 {}건, ids:{}", cached.size(),
+            cached.stream()
+                .map(e -> e.getId().toString())
+                .collect(Collectors.joining(", ")));
+        return cached;
     }
 
     @Override
     public List<Weather> createWeathers(OpenWeatherResponse response,
-        List<Weather> existingWeatherList, ForecastIssueContext issueContext, Location location) {
-        log.debug("[Weather] 날씨 dto 생성 시작");
+        List<Weather> cachedWeathers, ForecastIssueContext issueContext, Location location) {
+        log.debug(" [OpenWeather] 날씨 dto 생성 시작");
         List<ForecastItem> allItems = response.list().stream()
             .sorted(Comparator.comparing(ForecastItem::dt)).toList();
         if (allItems.isEmpty()) {
             throw new WeatherNotFoundException();
         }
-
-        Instant issueAt = issueContext.getIssueAt();
+        log.debug(" [OpenWeather] 기존 예보 시각 수:{}", cachedWeathers.size());
         List<Weather> result = new ArrayList<>();
-
-        log.debug("[Weather] 기존 예보 시각 수:{}", existingWeatherList.size());
+        Map<LocalDate, Weather> cachedByDate = new HashMap<>();
 
         for (ForecastItem item : allItems) {
-            Optional<Weather> weather = convertToWeather(item, issueContext, location, issueAt,
-                existingWeatherList);
-            if (weather.isPresent()) {
-                Weather created = weather.get();
-                result.add(created);
-                log.debug("[Weather] 신규 예보 생성 forecastAt:{}", created.getForecastAt());
+            Instant targetAt = extractForecastAt(item.dt());
+            if (targetAt == null) {
+                log.debug(" [OpenWeather] forecastAt 추출 실패, skip");
+                continue;
             }
+
+            Weather yesterdayWeather = findYesterdayWeather(cachedByDate, location,
+                LocalDate.ofInstant(targetAt, SEOUL_ZONE_ID));
+            log.debug(" [OpenWeather] yesterdayWeather 객체:{}", yesterdayWeather);
+
+            Optional<Weather> weather = convertToWeather(item, location, issueContext, targetAt,
+                yesterdayWeather
+            );
+
+            if (weather.isEmpty()) {
+                continue;
+            }
+
+            Weather created = weather.get();
+            cachedByDate.put(LocalDate.ofInstant(targetAt, SEOUL_ZONE_ID), created);
+
+            boolean alreadyExists = cachedWeathers.stream()
+                .anyMatch(existing -> isExistedWeather(existing, created));
+            if (alreadyExists) {
+                log.debug(" [OpenWeather] 중복 예보 건너뜀 forecastAt:{}, forecastedAt:{}",
+                    created.getForecastAt(),
+                    created.getForecastedAt());
+                continue;
+            }
+
+            result.add(created);
+            log.debug(" [OpenWeather] 신규 예보 생성 forecastedAt:{}, forecastAt:{}",
+                created.getForecastedAt(), created.getForecastAt());
         }
 
         return result;
@@ -120,36 +157,31 @@ public class OpenWeatherFactory implements
         ZonedDateTime targetDateTime = getZonedDateTime(referenceDate, targetTime);
         ForecastIssueContext issueContext = ForecastIssueContext.of(issueDateTime, targetDateTime,
             WEATHER_REQUESTED_CNT);
-        log.debug("[Weather] issueContext - issueDateTime:{}, targetDateTime:{}",
-            issueContext.getIssueDateTime(), issueContext.getTargetDateTime());
+        log.debug(
+            " [OpenWeather] issueContext - issueDateTime:{}, targetDateTime:{}, targetDates:{}",
+            issueContext.getIssueDateTime(), issueContext.getTargetDateTime(),
+            issueContext.getTargetForecasts().stream().map(
+                LocalDateTime::from));
         return issueContext;
     }
 
-    private Optional<Weather> convertToWeather(ForecastItem item, ForecastIssueContext issueContext,
-        Location location, Instant issueAt, List<Weather> existingWeatherList) {
+    private Optional<Weather> convertToWeather(ForecastItem item, Location location,
+        ForecastIssueContext issueContext, Instant targetAt, Weather yesterdayWeather) {
         if (item == null) {
-            log.debug("[Weather] forecast item null, skip");
+            log.debug(" [OpenWeather] forecast item null, skip");
             return Optional.empty();
         }
-        Instant targetAt = extractForecastAt(item.dt());
         if (targetAt == null) {
-            log.debug("[Weather] forecastAt 추출 실패, skip");
-            return Optional.empty();
-        }
-        if (!existingWeatherList.stream()
-            .filter((weather -> weather.getForecastAt().equals(targetAt)
-                && weather.getForecastedAt().equals(issueAt))).toList().isEmpty()) {
-            log.debug("[Weather] 이미 존재하는 forecastAt:{}, forecastedAt:{}", targetAt, issueAt);
+            log.debug(" [OpenWeather] forecastAt null, skip");
             return Optional.empty();
         }
 
+        Instant issueAt = issueContext.getIssueAt();
         OpenWeatherResponse.Main main = item.main();
         if (main == null) {
-            log.debug("[Weather] main 데이터 없음 forecastAt:{}", targetAt);
+            log.debug(" [OpenWeather] main 데이터 없음 forecastAt:{}", targetAt);
             return Optional.empty();
         }
-        Weather yesterdayWeather = findYesterdayWeather(location,
-            LocalDate.ofInstant(targetAt, SEOUL_ZONE_ID));
 
         ComparisonMetrics comparisonMetrics = toComparisonMetrics(main, yesterdayWeather);
         PrecipitationType precipitationType = toPrecipitationType(item);
@@ -174,6 +206,51 @@ public class OpenWeatherFactory implements
             .build();
 
         return Optional.of(weather);
+    }
+
+    private boolean isExistedWeather(Weather existing, Weather created) {
+        if (existing == null || created == null) {
+            return false;
+        }
+        log.info("cached weather id:{},forecastedAt:{},forecastAt:{}", existing.getId(),
+            existing.getForecastedAt(), existing.getForecastAt());
+        log.info("new weather id:{},forecastedAt:{},forecastAt:{}", created.getId(),
+            created.getForecastedAt(), created.getForecastAt());
+
+        if (existing.getLocation() == null || created.getLocation() == null) {
+            return false;
+        }
+
+        //시간을 제외하고 년월일까지만 비교
+        LocalDate existingForecastDate = existing.getForecastAt() == null ? null
+            : LocalDate.ofInstant(existing.getForecastAt(), SEOUL_ZONE_ID);
+        LocalDate createdForecastDate = created.getForecastAt() == null ? null
+            : LocalDate.ofInstant(created.getForecastAt(), SEOUL_ZONE_ID);
+
+        return Objects.equals(existing.getLocation().getId(), created.getLocation().getId())
+            && Objects.equals(existing.getForecastedAt(), created.getForecastedAt())
+            && Objects.equals(existingForecastDate, createdForecastDate);
+    }
+
+    // 어제 날씨를 DB에서 조회하는 로직(일단 지금은 날짜만 같으면 최신꺼 하나만 가져옴) 시간 비교 x
+    private Weather findYesterdayWeather(Map<LocalDate, Weather> cachedWeather, Location location,
+        LocalDate baseDate) {
+        LocalDate yesterday = baseDate.minusDays(1);
+        log.debug(" [OpenWeather] yesterday 날짜:{}", yesterday);
+
+        if (cachedWeather.containsKey(yesterday)) {
+            return cachedWeather.get(yesterday);
+        }
+
+        Instant startOfYesterday = yesterday.atStartOfDay(SEOUL_ZONE_ID).toInstant();
+        Instant endOfYesterday = yesterday.atTime(LocalTime.MAX).atZone(SEOUL_ZONE_ID).toInstant();
+
+        Weather found = weatherRepository.findFirstByLocationIdAndForecastAtBetweenOrderByForecastAtDesc(
+            location.getId(), startOfYesterday, endOfYesterday
+        ).orElse(null);
+
+        cachedWeather.put(yesterday, found);
+        return found;
     }
 
     private ComparisonMetrics toComparisonMetrics(OpenWeatherResponse.Main current,
@@ -206,21 +283,6 @@ public class OpenWeatherFactory implements
 
     private double toWindSpeed(ForecastItem item) {
         return item.wind() != null && item.wind().speed() != null ? item.wind().speed() : 0d;
-    }
-
-    // 어제 날씨를 DB에서 조회하는 로직(일단 지금은 날짜만 같으면 최신꺼 하나만 가져옴) 시간 비교 x
-    private Weather findYesterdayWeather(Location location, LocalDate baseDate) {
-        LocalDate yesterday = baseDate.minusDays(1);
-        Instant startOfYesterday =
-            yesterday.atStartOfDay(SEOUL_ZONE_ID).toInstant();
-        Instant endOfYesterday =
-            yesterday.atTime(LocalTime.MAX).atZone(SEOUL_ZONE_ID).toInstant();
-
-        return weatherRepository.findFirstByLocationIdAndForecastAtBetweenOrderByForecastAtDesc(
-            location.getId(),
-            startOfYesterday,
-            endOfYesterday
-        ).orElse(null);
     }
 
 
@@ -297,7 +359,6 @@ public class OpenWeatherFactory implements
         }
         return WindspeedLevel.STRONG;
     }
-
 
     private record ComparisonMetrics(Double tempDiff, Double humidityDiff) {
 
