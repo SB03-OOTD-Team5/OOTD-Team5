@@ -29,10 +29,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final UserMapper userMapper;
     private final ProfileRepository profileRepository;
 
+    private final DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
+
+
     @Transactional
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        OAuth2User oAuth2User = super.loadUser(userRequest);
+        OAuth2User oAuth2User = delegate.loadUser(userRequest);
 
         String provider = userRequest.getClientRegistration().getRegistrationId();
 
@@ -62,6 +65,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             return createduser;
         });
 
+        log.debug("로그인 성공 id: {}", user.getId());
         return new OotdOAuth2UserDetails(userMapper.toDto(user), oAuth2User.getAttributes());
     }
 
