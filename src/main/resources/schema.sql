@@ -198,7 +198,9 @@ CREATE TABLE IF NOT EXISTS tbl_weathers
     CONSTRAINT check_sky_status CHECK (sky_status IN ('CLEAR','MOSTLY_CLOUDY','CLOUDY')),
     CONSTRAINT check_precipitation_type CHECK (precipitation_type IN ('NONE','RAIN','RAIN_SNOW','SNOW','SHOWER')),
     CONSTRAINT check_windspeed_level CHECK (windspeed_level IN ('WEAK','MODERATE','STRONG')),
-    CONSTRAINT fk_tbl_weathers_locations FOREIGN KEY (location_id) REFERENCES tbl_locations (id) ON DELETE CASCADE
+    CONSTRAINT fk_tbl_weathers_locations FOREIGN KEY (location_id) REFERENCES tbl_locations (id) ON DELETE CASCADE,
+    CONSTRAINT ux_location_forecasted_forecast UNIQUE (location_id, forecasted_at,forecast_at)
+
 );
 
 
