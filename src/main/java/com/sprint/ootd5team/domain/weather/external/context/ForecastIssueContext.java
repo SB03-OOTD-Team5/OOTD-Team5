@@ -25,11 +25,11 @@ public class ForecastIssueContext {
         int forecastCount) {
         this.issueDateTime = Objects.requireNonNull(issueDateTime,
             "issueDateTime must not be null");
-        this.issueAt = this.issueDateTime.toInstant();
+        this.issueAt = this.issueDateTime.toInstant(); // forecastedAt
 
         this.targetDateTime = Objects.requireNonNull(targetDateTime,
             "targetDateTime must not be null");
-        this.targetAt = this.targetDateTime.toInstant();
+        this.targetAt = this.targetDateTime.toInstant(); // forecastAt
 
         List<Instant> generatedTargets = IntStream.range(0, Math.max(0, forecastCount))
             .mapToObj(i -> this.targetDateTime.plusDays(i).toInstant())

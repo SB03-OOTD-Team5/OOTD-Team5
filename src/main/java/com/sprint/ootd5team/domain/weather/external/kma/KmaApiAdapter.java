@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -78,6 +80,27 @@ public class KmaApiAdapter implements WeatherExternalAdapter<KmaResponse> {
         }
         log.debug("발행 시각 계산 결정 reference:{}, issueTime:{}", reference, issueTime);
         return issueTime;
+    }
+
+    // 현재시간과 가장 가까운 예보 시각(reference보다 이후 시간 가져옴)
+    public LocalTime resolveTargetTime(ZonedDateTime reference) {
+        List<LocalTime> sortedTimes = Arrays.stream(ISSUE_TIMES)
+            .sorted()
+            .toList();
+
+        for (LocalTime candidate : sortedTimes) {
+            ZonedDateTime candidateTime = ZonedDateTime.of(reference.toLocalDate(), candidate,
+                DateTimeUtils.SEOUL_ZONE_ID);
+            if (reference.isBefore(candidateTime)) {
+                log.debug("[OpenWeatherAdapter] 다음 예보 기준 시각 결정 reference:{}, issueTime:{}",
+                    reference,
+                    candidate);
+                return candidate;
+            }
+        }
+
+        // 오늘 모든 issueTime이 지났으면 → 마지막 시간 21:00 반환
+        return ISSUE_TIMES[0];
     }
 
     /**

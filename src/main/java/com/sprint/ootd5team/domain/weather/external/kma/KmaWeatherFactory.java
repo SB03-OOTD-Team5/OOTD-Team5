@@ -23,14 +23,17 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,15 +61,8 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
 
         // 1. 날씨 찾기
         List<Weather> cachedWeathers = findWeathers(location, issueContext);
-        log.debug("[Weather] 기존 날씨 데이터 총 {}건, ids:{}", cachedWeathers.size(),
-            cachedWeathers.stream()
-                .map(e -> e.getId().toString())
-                .collect(Collectors.joining(", ")));
 
-        log.debug("[findWeathers] 목표 건수:{}건, 정확히 매치하는 건수:{}건 ", WEATHER_REQUESTED_CNT,
-            cachedWeathers.size());
-
-        if (cachedWeathers.size() == WEATHER_REQUESTED_CNT) {
+        if (!cachedWeathers.isEmpty()) {
             return cachedWeathers;
         }
         // 2. 날씨 데이터 불러오기
@@ -78,9 +74,9 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
         List<Weather> newWeathers = createWeathers(kmaResponse, cachedWeathers,
             issueContext, location);
         weatherRepository.saveAll(newWeathers);
-        log.debug("[Weather] 신규 생성 건수:{}", newWeathers.size());
+        log.debug("[KMA] 신규 생성 건수:{}", newWeathers.size());
 
-        return findNearestWeathers(cachedWeathers, location, issueContext);
+        return findWeathers(location, issueContext);
     }
 
     @Override
@@ -91,40 +87,46 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
         ZonedDateTime issueDateTime = getZonedDateTime(
             referenceDate, issueTime);
         // 예보 시각 base time 구함
-        LocalTime targetTime = kmaApiAdapter.resolveIssueTime(reference);
+        LocalTime targetTime = kmaApiAdapter.resolveTargetTime(reference);
         ZonedDateTime targetDateTime = getZonedDateTime(
             referenceDate, targetTime);
         ForecastIssueContext issueContext = ForecastIssueContext.of(issueDateTime, targetDateTime,
             WEATHER_REQUESTED_CNT);
-        log.debug("[KMA] issueContext - issueDateTime:{}, targetDateTime:{}",
-            issueContext.getIssueDateTime(), issueContext.getTargetDateTime());
+        log.debug(
+            "[KMA] issueContext - issueDateTime:{}, targetDateTime:{}, targetDates:{}",
+            issueContext.getIssueDateTime(), issueContext.getTargetDateTime(),
+            issueContext.getTargetForecasts().stream().map(
+                LocalDateTime::from));
         return issueContext;
     }
 
-    // 5일치 데이터 찾기
+    // 5일치 데이터 찾기 + 근사값 포함
     @Override
     public List<Weather> findWeathers(Location location, ForecastIssueContext issueContext) {
         Instant issueAt = issueContext.getIssueAt();
         List<Instant> targetAtList = issueContext.getTargetForecasts();
-        return weatherRepository
+
+        // 시간도 정확한 데이터
+        List<Weather> exactMatches = weatherRepository
             .findAllByLocationIdAndForecastedAtAndForecastAtIn(location.getId(), issueAt,
                 targetAtList);
-    }
 
+        log.debug("[KMA] 시간포함 일치하는 날씨 데이터 총 {}건, ids:{}", exactMatches.size(),
+            exactMatches.stream()
+                .map(e -> e.getId().toString())
+                .collect(Collectors.joining(", ")));
 
-    // 5일치 데이터 근사값 찾기 - Kma의 4-5일뒤의 날씨는 3시간마다 예측
-    private List<Weather> findNearestWeathers(List<Weather> cachedWeathers, Location location,
-        ForecastIssueContext issueContext) {
-        Instant issueAt = issueContext.getIssueAt();
-        List<Instant> targetAtList = issueContext.getTargetForecasts();
+        if (exactMatches.size() >= targetAtList.size()) {
+            return exactMatches;
+        }
 
         // 타켓 시간에 맞는 정확한 예보가 없을때, 근사한 날짜 가져옴
-        Set<Instant> foundForecasts = cachedWeathers.stream()
+        Set<Instant> foundForecasts = exactMatches.stream()
             .map(Weather::getForecastAt)
             .collect(Collectors.toCollection(HashSet::new));
 
         Map<LocalDate, List<Weather>> dailyCache = new HashMap<>();
-        List<Weather> enrichedResults = new ArrayList<>(cachedWeathers);
+        List<Weather> enrichedResults = new ArrayList<>(exactMatches);
 
         for (Instant targetAt : targetAtList) {
             if (foundForecasts.contains(targetAt)) {
@@ -154,91 +156,111 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
 
         enrichedResults.sort(Comparator.comparing(Weather::getForecastAt));
 
-        log.debug("[findWeathers] 최종반환 건수:{}건 ", enrichedResults.size());
+        log.debug("[KMA] 최종반환 건수:{}건 ", enrichedResults.size());
 
         return enrichedResults;
     }
 
-
     @Override
-    public List<Weather> createWeathers(KmaResponse kmaResponse, List<Weather> existingWeathers,
+    public List<Weather> createWeathers(KmaResponse response, List<Weather> cachedWeathers,
         ForecastIssueContext issueContext, Location location) {
-        log.debug("[Weather] 날씨 dto 생성 시작");
-        String baseDate = issueContext.getIssueDateTime().toLocalDate()
-            .format(DATE_FORMATTER);
-        return buildWeathersFromKmaResponse(kmaResponse, baseDate, location, issueContext);
-    }
+        log.debug("[KMA] 날씨 dto 생성 시작");
 
-    private List<Weather> buildWeathersFromKmaResponse(KmaResponse kmaResponse, String baseDate,
-        Location location, ForecastIssueContext issueContext) {
-
-        List<WeatherItem> allItems = kmaResponse.response().body().items().weatherItems();
+        List<WeatherItem> allItems = response.response().body().items().weatherItems();
         if (allItems == null || allItems.isEmpty()) {
             throw new WeatherNotFoundException();
         }
+        Map<Instant, List<WeatherItem>> itemsByForecastAt = allItems.stream()
+            .collect(Collectors.groupingBy(
+                item -> extractForecastAt(item.fcstDate(), item.fcstTime()),
+                TreeMap::new,               // Instant로 정렬
+                Collectors.toList()
+            ));
         List<Weather> result = new ArrayList<>();
-        String currentTime = LocalDateTime.now(SEOUL_ZONE_ID)
-            .format(TIME_FORMATTER);
+        Map<LocalDate, Weather> cachedByDate = new HashMap<>();
 
-        log.debug("[Weather] buildWeathersFromKmaResponse 시작. currentTime:{}", currentTime);
-
-        Map<String, List<WeatherItem>> itemsByDate = allItems.stream()
-            .collect(Collectors.groupingBy(WeatherItem::fcstDate));
-        // 날짜 오름차순으로 정렬
-        List<String> sortedDates = itemsByDate.keySet().stream().sorted().toList();
-        // 첫 예보일(오늘)의 비교 대상인 '어제' 날씨를 DB에서 조회
-        Weather yesterdayWeather = findYesterdayWeather(location, sortedDates.get(0));
-
-        for (Map.Entry<String, List<WeatherItem>> entry : itemsByDate.entrySet()) {
-            List<WeatherItem> itemsOfDate = entry.getValue();
-            if (itemsOfDate.isEmpty()) {
+        for (Map.Entry<Instant, List<WeatherItem>> entry : itemsByForecastAt.entrySet()) {
+            Instant targetAt = entry.getKey();
+            List<WeatherItem> items = entry.getValue();
+            if (items.isEmpty()) {
                 continue;
             }
 
-            // 데이터에 존재하는 날짜 뽑기
-            List<String> availableTimes = itemsOfDate.stream()
-                .map(WeatherItem::fcstTime)
-                .distinct()
-                .sorted()
-                .toList();
-            if (availableTimes.isEmpty()) {
+            Weather yesterdayWeather = findYesterdayWeather(cachedByDate, location,
+                LocalDate.ofInstant(targetAt, SEOUL_ZONE_ID));
+            log.debug("[KMA] yesterdayWeather 객체:{}", yesterdayWeather);
+
+            Weather created = convertToWeather(items, location,
+                issueContext, yesterdayWeather);
+
+            cachedByDate.put(LocalDate.ofInstant(targetAt, SEOUL_ZONE_ID), created);
+
+            boolean alreadyExists = cachedWeathers.stream()
+                .anyMatch(existing -> isExistedWeather(existing, created));
+            if (alreadyExists) {
                 continue;
             }
 
-            String forecastDate = entry.getKey();
-            boolean isToday = baseDate.equals(forecastDate);
-
-            // 오늘 날짜만 현재 시간과 비교해서 가장 가까운 시간대 선택
-            String targetTime = isToday
-                ? pickNearestPastOrFirst(availableTimes, currentTime)
-                : availableTimes.get(0);
-            log.debug(
-                "[Weather] forecastDate:{}, availableTimes:{}, targetTime:{}",
-                forecastDate,
-                availableTimes,
-                targetTime
-            );
-
-            List<WeatherItem> itemsForTargetSlot = itemsOfDate.stream()
-                .filter(it -> targetTime.equals(it.fcstTime()))
-                .toList();
-
-            log.debug("[Weather] itemsForTargetSlot:{}", itemsForTargetSlot.toString());
-
-            if (itemsForTargetSlot.isEmpty()) {
-                continue;
-            }
-
-            Weather currentWeather = buildSingleWeather(itemsOfDate, itemsForTargetSlot, location,
-                yesterdayWeather, issueContext);
-            result.add(currentWeather);
-
-            // 다음날 날씨에 현재 날씨 전달
-            yesterdayWeather = currentWeather;
+            result.add(created);
+            log.debug("[KMA] 신규 예보 생성 forecastedAt:{}, forecastAt:{}",
+                created.getForecastedAt(), created.getForecastAt());
         }
+
         return result;
     }
 
+    private boolean isExistedWeather(Weather existing, Weather created) {
+        if (existing == null || created == null) {
+            return false;
+        }
+        if (existing.getLocation() == null || created.getLocation() == null) {
+            return false;
+        }
+
+        //시간을 제외하고 년월일까지만 비교
+        LocalDate existingForecastDate = existing.getForecastAt() == null ? null
+            : LocalDate.ofInstant(existing.getForecastAt(), SEOUL_ZONE_ID);
+        LocalDate createdForecastDate = created.getForecastAt() == null ? null
+            : LocalDate.ofInstant(created.getForecastAt(), SEOUL_ZONE_ID);
+
+        boolean isExist =
+            Objects.equals(existing.getLocation().getId(), created.getLocation().getId())
+                && Objects.equals(existing.getForecastedAt(), created.getForecastedAt())
+                && Objects.equals(existingForecastDate, createdForecastDate);
+
+        log.debug("[KMA] 기존 예보와 중복 확인.\n"
+                + "<기존> forecastedAt:{}, forecastAt:{}, id:{}, 계산된날:{}\n"
+                + "<NEW>  forecastedAt:{}, forecastAt:{},        계산된날:{}\n"
+                + "isExist:{}"
+            , existing.getForecastedAt().atZone(SEOUL_ZONE_ID)
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssx")),
+            existing.getForecastAt().atZone(SEOUL_ZONE_ID)
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssx")),
+            existing.getId(), existingForecastDate
+            , created.getForecastedAt().atZone(SEOUL_ZONE_ID)
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssx")),
+            created.getForecastAt().atZone(SEOUL_ZONE_ID)
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssx")), createdForecastDate,
+            isExist);
+        return isExist;
+    }
+
+    /**
+     * @param date yyyyMMdd 형식 (예: 20251010)
+     * @param time HHmm 형식 (예: 0930)
+     * @return Asia/Seoul 기준 Instant
+     */
+    private Instant extractForecastAt(String date, String time) {
+        if (date == null || time == null) {
+            return null;
+        }
+
+        LocalDate localDate = LocalDate.parse(date, DATE_FORMATTER);
+        LocalTime localTime = LocalTime.parse(time, TIME_FORMATTER);
+
+        LocalDateTime localDateTime = LocalDateTime.of(localDate, localTime);
+        return localDateTime.atZone(SEOUL_ZONE_ID).toInstant();
+    }
 
     // 해당 날짜 최저/최고온도 구하는 로직
     private double[] getDailyTemperatures(List<WeatherItem> dailyItems) {
@@ -276,25 +298,31 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
         return new double[]{tmn.orElse(0.0), tmx.orElse(0.0)};
     }
 
-    // 어제 날씨를 DB에서 조회하는 로직
-    private Weather findYesterdayWeather(Location location, String todayDateStr) {
-        LocalDate yesterday = LocalDate.parse(todayDateStr,
-            DATE_FORMATTER).minusDays(1);
-        Instant startOfYesterday =
-            yesterday.atStartOfDay(SEOUL_ZONE_ID).toInstant();
-        Instant endOfYesterday =
-            yesterday.atTime(LocalTime.MAX).atZone(SEOUL_ZONE_ID).toInstant();
+    // 어제 날씨를 DB에서 조회하는 로직(일단 지금은 날짜만 같으면 최신꺼 하나만 가져옴) 시간 비교 x
+    private Weather findYesterdayWeather(Map<LocalDate, Weather> cachedWeather, Location location,
+        LocalDate baseDate) {
+        LocalDate yesterday = baseDate.minusDays(1);
+        log.debug("[KMA] yesterday 날짜:{}", yesterday);
 
-        return weatherRepository.findFirstByLocationIdAndForecastAtBetweenOrderByForecastAtDesc(
-            location.getId(),
-            startOfYesterday,
-            endOfYesterday
+        if (cachedWeather.containsKey(yesterday)) {
+            return cachedWeather.get(yesterday);
+        }
+
+        Instant startOfYesterday = yesterday.atStartOfDay(SEOUL_ZONE_ID).toInstant();
+        Instant endOfYesterday = yesterday.atTime(LocalTime.MAX).atZone(SEOUL_ZONE_ID).toInstant();
+
+        Weather found = weatherRepository.findFirstByLocationIdAndForecastAtBetweenOrderByForecastAtDesc(
+            location.getId(), startOfYesterday, endOfYesterday
         ).orElse(null);
+
+        cachedWeather.put(yesterday, found);
+        return found;
     }
 
-    private Weather buildSingleWeather(List<WeatherItem> dailyItems,
-        List<WeatherItem> targetDateItems, Location location, Weather yesterdayWeather,
-        ForecastIssueContext issueContext) {
+    private Weather convertToWeather(
+        List<WeatherItem> targetDateItems, Location location,
+        ForecastIssueContext issueContext, Weather yesterdayWeather) {
+        log.debug("[KMA] convertToWeather 시작");
         WeatherItem anyItem = targetDateItems.get(0);
         Instant forecastedAt = issueContext.getIssueAt();
         Instant forecastAt = toInstant(anyItem.fcstDate(),
@@ -325,7 +353,7 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
             }
         }
         // 해당 날짜 최저/최고 온도
-        double[] dailyTemperatures = getDailyTemperatures(dailyItems);
+        double[] dailyTemperatures = getDailyTemperatures(targetDateItems);
         double temperatureMin = dailyTemperatures[0];
         double temperatureMax = dailyTemperatures[1];
 
