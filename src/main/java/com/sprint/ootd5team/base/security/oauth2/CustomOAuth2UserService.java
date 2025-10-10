@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,9 +46,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             log.info("구글 로그인");
             oAuth2UserInfo = new GoogleUserDetails(oAuth2User.getAttributes());
         }
-        if(provider.equals("kakao")){
+        else if(provider.equals("kakao")){
             log.info("카카오 로그인");
             oAuth2UserInfo = new KakaoUserDetails(oAuth2User.getAttributes());
+        }else {
+            throw new OAuth2AuthenticationException(
+                new OAuth2Error("invalid_request", "Unsupported OAuth2 provider: " + provider, null)
+            );
         }
 
         String providerId = oAuth2UserInfo.getProviderId();
