@@ -4,6 +4,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.base.sse.service.SseService;
@@ -35,7 +37,6 @@ class SseControllerTest {
     private AuthService authService;
 
     @Test
-    @DisplayName("SSE 구독 요청 성공")
     void Sse_구독_요청_성공_lastEventId_존재() throws Exception {
         // given
         UUID userId = UUID.randomUUID();
@@ -64,5 +65,14 @@ class SseControllerTest {
         mockMvc.perform(get("/api/sse").accept(MediaType.TEXT_EVENT_STREAM))
             .andExpect(status().isOk());
         then(sseService).should().connect(userId, null);
+    }
+
+    @Test
+    void Sse_에러_핸들링_동작_확인() throws Exception {
+        mockMvc.perform(get("/api/sse/test-error")
+                .accept(MediaType.TEXT_EVENT_STREAM))
+            .andExpect(status().isInternalServerError())
+            .andExpect(content().string(containsString("event: error")))
+            .andExpect(content().string(containsString("data: 서버 오류가 발생했습니다.")));
     }
 }

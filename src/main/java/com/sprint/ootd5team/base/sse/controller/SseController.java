@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -70,5 +71,11 @@ public class SseController {
             Integer.toHexString(System.identityHashCode(emitter)));
         return emitter;
 
+    }
+
+    @Profile("test")
+    @GetMapping(value = "/test-error", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter testError() {
+        throw new RuntimeException("테스트용 에러 발생!");
     }
 }
