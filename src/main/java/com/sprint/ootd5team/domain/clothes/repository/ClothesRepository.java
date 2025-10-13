@@ -31,4 +31,13 @@ public interface ClothesRepository extends JpaRepository<Clothes, UUID>, Clothes
     List<Clothes> findRandomClothes(Limit limit);
 
     long countByOwner_Id(UUID ownerId);
+
+    @Query("""
+    SELECT DISTINCT c
+    FROM Clothes c
+    LEFT JOIN FETCH c.clothesAttributeValues cav
+    LEFT JOIN FETCH cav.attribute
+    WHERE c.owner.id = :ownerId
+""")
+    List<Clothes> findByOwner_Id(UUID ownerId);
 }

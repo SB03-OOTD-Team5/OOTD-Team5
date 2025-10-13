@@ -9,10 +9,6 @@ import com.sprint.ootd5team.base.exception.clothesattribute.AttributeValueNotAll
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
-import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDto;
-import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
-import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeValue;
-import com.sprint.ootd5team.domain.clothesattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
@@ -21,6 +17,10 @@ import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothes.mapper.ClothesMapper;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDto;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeValue;
+import com.sprint.ootd5team.domain.clothesattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import java.io.IOException;
@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,6 +72,7 @@ public class ClothesServiceImpl implements ClothesService {
      * @param limit   조회할 데이터 개수
      * @return ClothesDtoCursorResponse (데이터, nextCursor, nextIdAfter, hasNext 등 포함)
      */
+    @Cacheable(value = "clothesByUser", key = "#ownerId")
     @Transactional(readOnly = true)
     @Override
     public ClothesDtoCursorResponse getClothes(
@@ -134,6 +137,7 @@ public class ClothesServiceImpl implements ClothesService {
      * @throws UserNotFoundException   주어진 ownerId 에 해당하는 사용자가 없는 경우
      * @throws FileSaveFailedException 이미지 업로드에 실패한 경우
      */
+    @CacheEvict(value = "clothesByUser", key = "#request.ownerId()")
     @Transactional
     @Override
     public ClothesDto create(ClothesCreateRequest request, MultipartFile image) {
@@ -215,13 +219,12 @@ public class ClothesServiceImpl implements ClothesService {
      * 이미지: 새 파일 업로드 후 기존 파일 삭제
      * 속성: 요청된 속성과 현재 속성을 비교하여 추가/수정/삭제
      */
+    @CacheEvict(value = "clothesByUser", key = "#ownerId")
     @Transactional
     @Override
-    public ClothesDto update(UUID clothesId, ClothesUpdateRequest request, MultipartFile image) {
+    public ClothesDto update(UUID ownerId, UUID clothesId, ClothesUpdateRequest request, MultipartFile image) {
         Clothes clothes = clothesRepository.findById(clothesId)
             .orElseThrow(() -> ClothesNotFoundException.withId(clothesId));
-
-        UUID ownerId = clothes.getOwner().getId();
         log.info("[clothes] 수정 요청 - clothesId: {}, ownerId: {}", clothesId, ownerId);
 
         String newName = request.name();
@@ -346,6 +349,7 @@ public class ClothesServiceImpl implements ClothesService {
      * 의상 삭제
      * 이미지 파일 삭제는 {@link #deleteFileSafely(String, String)}에서 처리
      */
+    @CacheEvict(value = "clothesByUser", key = "#ownerId")
     @Transactional
     @Override
     public void delete(UUID ownerId, UUID clothesId) {
