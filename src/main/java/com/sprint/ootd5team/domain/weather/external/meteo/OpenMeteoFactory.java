@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -56,7 +57,7 @@ public class OpenMeteoFactory implements WeatherFactory<ForecastIssueContext, Op
         // 1. 날씨 찾기
         List<Weather> cachedWeathers = findWeathers(location, issueContext);
         if (!cachedWeathers.isEmpty()) {
-            log.debug("[Weather] 날씨 데이터 이미 존재: {}건", cachedWeathers.size());
+            log.info("[Weather] 날씨 데이터 이미 존재: {}건", cachedWeathers.size());
             return cachedWeathers;
         }
 
@@ -83,8 +84,16 @@ public class OpenMeteoFactory implements WeatherFactory<ForecastIssueContext, Op
             Instant forecastedAt = latest.getForecastedAt();
             if (forecastedAt != null && forecastedAt.plus(REFRESH_TIME_RATE, ChronoUnit.MINUTES)
                 .isAfter(now)) {
-                List<Weather> cached = weatherRepository.findAllByLocationIdAndForecastedAt(
-                    location.getId(), forecastedAt);
+//                List<Weather> cached = weatherRepository.findAllByLocationIdAndForecastedAt(
+//                    location.getId(), forecastedAt);
+                List<Weather> cached = weatherRepository
+                    .findAllByLocationIdAndForecastedAtAndForecastAtIn(location.getId(),
+                        context.getIssueAt(),
+                        context.getTargetForecasts());
+                log.info(" [OpenWeather] 기존 날씨 데이터 총 {}건, ids:{}", cached.size(),
+                    cached.stream()
+                        .map(e -> e.getId().toString())
+                        .collect(Collectors.joining(", ")));
                 if (!cached.isEmpty()) {
                     boolean containsTodayForecast = containsForecastForToday(cached);
                     if (cached.size() >= MINIMUM_FORECAST_COUNT && containsTodayForecast) {
@@ -94,8 +103,6 @@ public class OpenMeteoFactory implements WeatherFactory<ForecastIssueContext, Op
                     }
                     log.info("[OpenMeteo] 캐시 무효 - forecastedAt:{}, size:{}, containsToday:{}",
                         forecastedAt, cached.size(), containsTodayForecast);
-                } else {
-                    log.debug("[OpenMeteo] forecastedAt:{} 캐시 목록이 비어 있어 API 호출로 진행", forecastedAt);
                 }
             } else if (forecastedAt != null) {
                 log.info("[OpenMeteo] 캐시 만료 - forecastedAt:{}", forecastedAt);
@@ -111,9 +118,10 @@ public class OpenMeteoFactory implements WeatherFactory<ForecastIssueContext, Op
     @Override
     public List<Weather> createWeathers(OpenMeteoResponse response, List<Weather> existingWeathers,
         ForecastIssueContext context, Location location) {
+        log.info("[OpenMeteo] 캐시 목록이 비어 있어 API 호출로 진행");
         Daily daily = response.daily();
         if (daily == null || daily.time() == null || daily.time().isEmpty()) {
-            log.debug("[OpenMeteo] 일간 데이터가 비어 있어 빈 리스트를 반환합니다.");
+            log.info("[OpenMeteo] 일간 데이터가 비어 있어 빈 리스트를 반환합니다.");
             return List.of();
         }
 
@@ -126,7 +134,7 @@ public class OpenMeteoFactory implements WeatherFactory<ForecastIssueContext, Op
 
         List<Weather> result = new ArrayList<>();
         Set<Instant> forecastSlots = new HashSet<>();
-        log.debug("[OpenMeteo] 일간 데이터 {}건 수신", daily.time().size());
+        log.info("[OpenMeteo] 일간 데이터 {}건 수신", daily.time().size());
         List<String> dates = daily.time();
         for (int idx = 0; idx < dates.size(); idx++) {
             LocalDate forecastDate = parseDate(dates.get(idx));
@@ -186,7 +194,7 @@ public class OpenMeteoFactory implements WeatherFactory<ForecastIssueContext, Op
                 long deletedCount = weatherRepository.deleteByLocationIdAndForecastAt(
                     location.getId(), forecastSlot);
                 if (deletedCount > 0) {
-                    log.debug("[OpenMeteo] 기존 예보 {}건 삭제 - forecastAt:{}", deletedCount,
+                    log.info("[OpenMeteo] 기존 예보 {}건 삭제 - forecastAt:{}", deletedCount,
                         forecastSlot);
                 }
             }
@@ -292,7 +300,7 @@ public class OpenMeteoFactory implements WeatherFactory<ForecastIssueContext, Op
         try {
             return ZoneId.of(timezone);
         } catch (Exception e) {
-            log.debug("[OpenMeteo] 지원되지 않는 타임존 {}, UTC로 대체합니다.", timezone);
+            log.info("[OpenMeteo] 지원되지 않는 타임존 {}, UTC로 대체합니다.", timezone);
             return ZoneId.of("UTC");
         }
     }
@@ -307,7 +315,7 @@ public class OpenMeteoFactory implements WeatherFactory<ForecastIssueContext, Op
         try {
             return LocalDate.parse(dateString);
         } catch (DateTimeParseException e) {
-            log.debug("[OpenMeteo] 날짜 파싱에 실패했습니다. value={}", dateString, e);
+            log.info("[OpenMeteo] 날짜 파싱에 실패했습니다. value={}", dateString, e);
             return null;
         }
     }

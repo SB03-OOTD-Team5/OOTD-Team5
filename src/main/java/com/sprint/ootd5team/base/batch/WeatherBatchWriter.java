@@ -213,7 +213,7 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
         String beanName = switch (provider) {
             case "kma" -> "kmaWeatherFactory";
             case "openWeather" -> "openWeatherFactory";
-            case "meteo" -> "meteoWeatherFactory";
+            case "meteo" -> "openMeteoFactory";
             default -> throw new IllegalArgumentException(
                 "지원하지 않는 weather provider 입니다: " + provider);
         };
