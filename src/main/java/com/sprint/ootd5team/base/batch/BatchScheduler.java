@@ -2,8 +2,8 @@ package com.sprint.ootd5team.base.batch;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
@@ -19,12 +19,12 @@ public class BatchScheduler {
     private final JobLauncher jobLauncher;
     private final WeatherBatchConfig batchConfig;
 
-    @Scheduled(cron = "0 0 23 * * *")
+    @Scheduled(cron = "0 0 23 * * *", zone = "Asia/Seoul")
     public void runJob() {
         // job parameter 설정
         JobParameters jobParameters = new JobParametersBuilder()
-                .addLong("time", System.currentTimeMillis())
-                .toJobParameters();
+            .addLong("time", System.currentTimeMillis())
+            .toJobParameters();
         try {
             jobLauncher.run(batchConfig.weatherBatchJob(), jobParameters);
         } catch (JobExecutionAlreadyRunningException | JobInstanceAlreadyCompleteException

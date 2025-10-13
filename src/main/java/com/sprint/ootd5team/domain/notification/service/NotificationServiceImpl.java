@@ -135,7 +135,7 @@ public class NotificationServiceImpl implements NotificationService {
         log.info("[NotificationService] 알림 삭제 성공");
     }
 
-    /* 임시: 날씨 관련 Notification 생성 */
+    @Transactional
     @Override
     public void createWeatherNotification(UUID profileId, String content) {
         Profile profile = profileRepository.findById(profileId).orElseThrow(

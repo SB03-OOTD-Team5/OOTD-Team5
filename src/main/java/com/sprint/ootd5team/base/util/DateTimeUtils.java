@@ -28,7 +28,7 @@ public class DateTimeUtils {
 
     public static Instant toInstant(LocalDate localDate, LocalTime localTime) {
         Objects.requireNonNull(localDate, "issueDate must not be null");
-        Objects.requireNonNull(localDate, "issueTime must not be null");
+        Objects.requireNonNull(localTime, "issueTime must not be null");
         return localDate.atTime(localTime).atZone(SEOUL_ZONE_ID).toInstant();
     }
 

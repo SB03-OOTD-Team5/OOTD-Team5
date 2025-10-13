@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true">
-  <!-- 로그 레벨별 색상 설정 -->
+  <!-- 콘솔은 모든 로그 표시, 파일은 레벨별 관리 -->
   <appender class="ch.qos.logback.core.ConsoleAppender" name="CONSOLE">
     <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
       <pattern>${LOG_PATTERN}</pattern>
     </encoder>
   </appender>
 
+  <!-- 디버그 로그를 위한 별도 로거 -->
   <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="MAIN_FILE">
     <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
       <pattern>${LOG_PATTERN_FILE}</pattern>
@@ -23,7 +24,8 @@
       <totalSizeCap>1GB</totalSizeCap>
     </rollingPolicy>
   </appender>
-  <!-- red, green, yellow, blue, magenta, cyan, white, faint, bold -->
+
+  <!-- 트레이스 로그를 위한 별도 로거 -->
   <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="DEBUG_FILE">
     <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
       <pattern>${LOG_PATTERN_FILE}</pattern>
@@ -41,6 +43,8 @@
       <totalSizeCap>1GB</totalSizeCap>
     </rollingPolicy>
   </appender>
+  
+  <!-- 로그 레벨별 색상 설정 -->
   <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="TRACE_FILE">
     <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
       <pattern>${LOG_PATTERN_FILE}</pattern>
@@ -76,19 +80,15 @@
       <totalSizeCap>1GB</totalSizeCap>
     </rollingPolicy>
   </appender>
-
-  <!-- main: info 이상 로그 파일 -->
+  <!-- red, green, yellow, blue, magenta, cyan, white, faint, bold -->
   <conversionRule conversionWord="clr"
     converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
-
-  <!-- debug: debug 레벨 로그 파일 -->
   <logger additivity="false" level="DEBUG" name="com.sprint.ootd5team">
     <appender-ref ref="CONSOLE"/>
     <appender-ref ref="MAIN_FILE"/>
     <appender-ref ref="DEBUG_FILE"/>
   </logger>
 
-  <!-- trace: trace 레벨 로그 파일 -->
   <logger additivity="false" level="TRACE" name="com.sprint.ootd5team">
     <appender-ref ref="CONSOLE"/>
     <appender-ref ref="MAIN_FILE"/>
@@ -96,22 +96,23 @@
     <appender-ref ref="TRACE_FILE"/>
   </logger>
 
-  <!-- security-trace: trace 레벨 로그 파일 -->
+  <!-- main: info 이상 로그 파일 -->
   <logger additivity="false" level="TRACE" name="org.springframework.security">
     <appender-ref ref="CONSOLE"/>
     <appender-ref ref="SECURITY_TRACE_FILE"/>
   </logger>
 
-  <!-- 콘솔은 모든 로그 표시, 파일은 레벨별 관리 -->
+  <!-- debug: debug 레벨 로그 파일 -->
   <property name="LOG_PATH" value="logs"/>
 
-  <!-- 디버그 로그를 위한 별도 로거 -->
+  <!-- trace: trace 레벨 로그 파일 -->
   <property name="LOG_PATTERN"
     value="%d{yy-MM-dd HH:mm:ss.SSS} [%clr(%thread){green}] %clr(%-5level) %clr(%-36logger{36}){cyan} [%clr(%X{requestId}){magenta} | %clr(%X{userId}){blue} | %clr(%X{path}){yellow}] - %msg%n"/>
 
-  <!-- 트레이스 로그를 위한 별도 로거 -->
+  <!-- security-trace: trace 레벨 로그 파일 -->
   <property name="LOG_PATTERN_FILE"
     value="%d{yy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %-36logger{36} [%X{requestId} | %X{userId} | %X{path}] - %msg%n"/>
+
 
   <!-- 시큐리티 트레이스 로그 -->
   <root level="TRACE">

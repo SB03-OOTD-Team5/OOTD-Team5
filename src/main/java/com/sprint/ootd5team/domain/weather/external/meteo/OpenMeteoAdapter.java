@@ -58,7 +58,7 @@ public class OpenMeteoAdapter implements WeatherExternalAdapter<OpenMeteoRespons
 
     // reference 시간과 가장 가까운 발행 시각(reference보다 이전 시간 가져옴)
     public LocalTime resolveIssueTime(ZonedDateTime reference) {
-        return null;
+        return LocalTime.MIDNIGHT;
     }
 
     public OpenMeteoResponse getDailyForecast(BigDecimal latitude, BigDecimal longitude) {

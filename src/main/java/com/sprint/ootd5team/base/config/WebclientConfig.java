@@ -69,23 +69,6 @@ public class WebclientConfig {
             .build();
     }
 
-    @Bean("ollamaWebClient")
-    public WebClient ollamaWebClient(@Value("${spring.ai.ollama.api.url}") String baseUrl) {
-        return WebClient.builder()
-            .baseUrl(baseUrl)
-            .clientConnector(
-                new ReactorClientHttpConnector(
-                    HttpClient.create()
-                        .responseTimeout(Duration.ofSeconds(30))
-                        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
-                )
-            )
-            .filter((request, next) -> {
-                log.debug("[Ollama API 리퀘스트] {} {}", request.method(), request.url());
-                return next.exchange(request);
-            })
-            .build();
-    }
     @Bean("openWeatherClient")
     public WebClient openWeatherClient(
         @Value("${weather.openWeather.base-url}") String baseUrl,
@@ -102,6 +85,24 @@ public class WebclientConfig {
                 String url = request.url().toString()
                     .replaceAll("(?i)(appid=)[^&]+", "$1****");
                 log.debug("[OpenWeather API 리퀘스트] {} {}", request.method(), url);
+                return next.exchange(request);
+            })
+            .build();
+    }
+
+    @Bean("ollamaWebClient")
+    public WebClient ollamaWebClient(@Value("${spring.ai.ollama.api.url}") String baseUrl) {
+        return WebClient.builder()
+            .baseUrl(baseUrl)
+            .clientConnector(
+                new ReactorClientHttpConnector(
+                    HttpClient.create()
+                        .responseTimeout(Duration.ofSeconds(30))
+                        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
+                )
+            )
+            .filter((request, next) -> {
+                log.debug("[Ollama API 리퀘스트] {} {}", request.method(), request.url());
                 return next.exchange(request);
             })
             .build();

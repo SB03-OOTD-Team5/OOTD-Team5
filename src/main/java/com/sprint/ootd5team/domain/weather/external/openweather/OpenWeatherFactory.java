@@ -99,8 +99,15 @@ public class OpenWeatherFactory implements
     public List<Weather> createWeathers(OpenWeatherResponse response,
         List<Weather> cachedWeathers, ForecastIssueContext issueContext, Location location) {
         log.info(" [OpenWeather] 날씨 dto 생성 시작");
-        List<ForecastItem> allItems = response.list().stream()
-            .sorted(Comparator.comparing(ForecastItem::dt)).toList();
+        List<ForecastItem> items = response.list();
+        if (items == null || items.isEmpty()) {
+            throw new WeatherNotFoundException();
+        }
+
+        List<ForecastItem> allItems = items.stream()
+            .sorted(Comparator.comparing(ForecastItem::dt))
+            .toList();
+
         if (allItems.isEmpty()) {
             throw new WeatherNotFoundException();
         }
@@ -295,9 +302,9 @@ public class OpenWeatherFactory implements
     private PrecipitationType toPrecipitationType(ForecastItem item) {
 
         double rain = Optional.ofNullable(item.rain()).map(Rain::threeHour)
-            .orElse(Double.MIN_VALUE);
+            .orElse(0d);
         double snow = Optional.ofNullable(item.snow()).map(Snow::threeHour)
-            .orElse(Double.MIN_VALUE);
+            .orElse(0d);
         if (rain > 0d && snow > 0d) {
             return PrecipitationType.RAIN_SNOW;
         }

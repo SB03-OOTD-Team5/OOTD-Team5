@@ -1,5 +1,22 @@
 
 /****** 사용자 & 인증 ******/
+
+-- 위치 테이블
+CREATE TABLE IF NOT EXISTS tbl_locations
+(
+    id                        UUID                     PRIMARY KEY,
+    latitude                  NUMERIC(8, 4)            NOT NULL,
+    longitude                 NUMERIC(8, 4)            NOT NULL,
+    x_coord                   INTEGER,
+    y_coord                   INTEGER,
+    location_names            VARCHAR(100),
+    location_code             VARCHAR(20),
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
+    -- constraints
+    CONSTRAINT uq_locations UNIQUE (latitude,longitude)
+
+);
+
 -- 사용자 테이블
 CREATE TABLE IF NOT EXISTS tbl_users
 (
@@ -153,24 +170,6 @@ CREATE TABLE IF NOT EXISTS tbl_feed_likes
     -- constraints
     CONSTRAINT fk_feed_likes_feed FOREIGN KEY (feed_id) REFERENCES tbl_feeds (id) ON DELETE CASCADE,
     CONSTRAINT uq_feed_like UNIQUE (feed_id, user_id)
-);
-
-
-/****** 위치 ******/
--- 위치 테이블
-CREATE TABLE IF NOT EXISTS tbl_locations
-(
-    id                        UUID                     PRIMARY KEY,
-    latitude                  NUMERIC(8, 4)            NOT NULL,
-    longitude                 NUMERIC(8, 4)            NOT NULL,
-    x_coord                   INTEGER,
-    y_coord                   INTEGER,
-    location_names            VARCHAR(100),
-    location_code             VARCHAR(20),
-    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
-    -- constraints
-    CONSTRAINT uq_locations UNIQUE (latitude,longitude)
-
 );
 
 /****** 날씨 ******/

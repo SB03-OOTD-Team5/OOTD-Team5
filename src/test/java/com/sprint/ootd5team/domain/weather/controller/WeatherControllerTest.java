@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.domain.weather.contoller;
+package com.sprint.ootd5team.domain.weather.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -10,7 +10,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
 import com.sprint.ootd5team.domain.location.service.LocationService;
-import com.sprint.ootd5team.domain.weather.controller.WeatherController;
 import com.sprint.ootd5team.domain.weather.dto.data.HumidityDto;
 import com.sprint.ootd5team.domain.weather.dto.data.PrecipitationDto;
 import com.sprint.ootd5team.domain.weather.dto.data.TemperatureDto;
