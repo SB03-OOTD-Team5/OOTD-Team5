@@ -1,8 +1,7 @@
 package com.sprint.ootd5team.base.llm;
 
-import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
+import com.sprint.ootd5team.base.exception.clothes.LlmFailedException;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
@@ -41,12 +40,14 @@ public class GeminiProvider implements LlmProvider {
                 log.debug("[GeminiProvider] 응답 수신 완료: {}", text);
                 return text != null ? text : "";
             } else {
-                log.warn("[GeminiProvider] 빈 응답 수신 (prompt={})", prompt.getContents());
-                return "";
+                log.warn("[GeminiProvider] 빈 응답 수신: length={}, hash={}",
+                    prompt.getContents().toString().length(),
+                    prompt.getContents().toString().hashCode());
+                throw LlmFailedException.emptyResponse();
             }
         } catch (Exception e) {
             log.error("[GeminiProvider] LLM 호출 실패", e);
-            throw ClothesExtractionFailedException.geminiCallFailed(e);
+            throw LlmFailedException.geminiCallFailed(e);
         }
     }
 }

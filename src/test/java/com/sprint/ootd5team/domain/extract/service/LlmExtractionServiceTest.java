@@ -7,7 +7,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
+import com.sprint.ootd5team.base.exception.clothes.LlmFailedException;
 import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.extract.dto.BasicClothesInfo;
 import com.sprint.ootd5team.domain.extract.dto.ClothesExtraInfo;
@@ -74,7 +74,7 @@ class LlmExtractionServiceTest {
 
         // when & then
         assertThatThrownBy(() -> service.extractExtra(mock(BasicClothesInfo.class), attributeCache))
-            .isInstanceOf(ClothesExtractionFailedException.class);
+            .isInstanceOf(LlmFailedException.class);
     }
 
     @Test
@@ -85,7 +85,7 @@ class LlmExtractionServiceTest {
 
         // when & then
         assertThatThrownBy(() -> service.extractExtra(mock(BasicClothesInfo.class), attributeCache))
-            .isInstanceOf(ClothesExtractionFailedException.class);
+            .isInstanceOf(LlmFailedException.class);
     }
 
     @Test
@@ -127,7 +127,7 @@ class LlmExtractionServiceTest {
 
         // when & then
         assertThatThrownBy(() -> service.extractExtra(mock(BasicClothesInfo.class), attributeCache))
-            .isInstanceOf(ClothesExtractionFailedException.class);
+            .isInstanceOf(LlmFailedException.class);
     }
 
     @Test
@@ -155,7 +155,7 @@ class LlmExtractionServiceTest {
 
         // when & then
         assertThatThrownBy(() -> service.extractExtra(basic, Map.of()))
-            .isInstanceOf(ClothesExtractionFailedException.class);
+            .isInstanceOf(LlmFailedException.class);
     }
 
     @Test
@@ -233,6 +233,6 @@ class LlmExtractionServiceTest {
         given(llmProvider.chatCompletion(any(Prompt.class))).willReturn(onlyCodeBlock);
 
         assertThatThrownBy(() -> service.extractExtra(mock(BasicClothesInfo.class), Map.of()))
-            .isInstanceOf(ClothesExtractionFailedException.class);
+            .isInstanceOf(LlmFailedException.class);
     }
 }

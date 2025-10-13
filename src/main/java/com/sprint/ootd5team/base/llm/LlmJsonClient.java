@@ -1,7 +1,7 @@
 package com.sprint.ootd5team.base.llm;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
+import com.sprint.ootd5team.base.exception.clothes.LlmFailedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -22,17 +22,19 @@ public class LlmJsonClient {
         try {
             String result = llmProvider.chatCompletion(prompt);
             if (result == null || result.isBlank())
-                throw ClothesExtractionFailedException.emptyResponse();
+                throw LlmFailedException.emptyResponse();
 
             String unwrapped = stripCodeFence(result);
             String jsonPayload = extractJsonObject(unwrapped);
             if (jsonPayload == null)
-                throw ClothesExtractionFailedException.invalidJson();
+                throw LlmFailedException.invalidJson();
 
             return objectMapper.readValue(jsonPayload, responseType);
+        } catch (LlmFailedException e) {
+            throw e;
         } catch (Exception e) {
             log.error("[LlmJsonClient] LLM JSON 호출 실패", e);
-            throw ClothesExtractionFailedException.parsingError(e);
+            throw LlmFailedException.parsingError(e);
         }
     }
 

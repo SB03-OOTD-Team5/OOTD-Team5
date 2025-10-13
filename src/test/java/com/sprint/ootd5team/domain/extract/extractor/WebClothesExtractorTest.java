@@ -7,7 +7,7 @@ import static org.mockito.BDDMockito.anyMap;
 import static org.mockito.BDDMockito.eq;
 import static org.mockito.BDDMockito.given;
 
-import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
+import com.sprint.ootd5team.base.exception.clothes.LlmFailedException;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.fixture.ClothesFixture;
 import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
@@ -102,7 +102,7 @@ class WebClothesExtractorTest {
 
         // then
         assertThat(thrown)
-            .isInstanceOf(ClothesExtractionFailedException.class)
+            .isInstanceOf(LlmFailedException.class)
             .hasMessageContaining("의상 정보 추출에 실패했습니다.");
     }
 

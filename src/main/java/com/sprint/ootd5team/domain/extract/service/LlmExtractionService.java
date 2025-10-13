@@ -1,6 +1,6 @@
 package com.sprint.ootd5team.domain.extract.service;
 
-import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
+import com.sprint.ootd5team.base.exception.clothes.LlmFailedException;
 import com.sprint.ootd5team.base.llm.LlmJsonClient;
 import com.sprint.ootd5team.base.llm.LlmProvider;
 import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
@@ -111,7 +111,7 @@ public class LlmExtractionService {
         for (String bad : forbidden) {
             if (lower.contains(bad)) {
                 log.warn("[LlmExtractionService] 의심 키워드 감지: {}", bad);
-                throw ClothesExtractionFailedException.invalidJson();
+                throw LlmFailedException.invalidJson();
             }
         }
 
