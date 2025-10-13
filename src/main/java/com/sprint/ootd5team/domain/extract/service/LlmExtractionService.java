@@ -1,11 +1,11 @@
 package com.sprint.ootd5team.domain.extract.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
+import com.sprint.ootd5team.base.llm.LlmJsonClient;
+import com.sprint.ootd5team.base.llm.LlmProvider;
 import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
 import com.sprint.ootd5team.domain.extract.dto.BasicClothesInfo;
 import com.sprint.ootd5team.domain.extract.dto.ClothesExtraInfo;
-import com.sprint.ootd5team.domain.extract.provider.LlmProvider;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,51 +28,15 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class LlmExtractionService {
 
-    private final LlmProvider llmProvider;
-    private final ObjectMapper objectMapper;
+    private final LlmJsonClient llmJsonClient;
 
-    public ClothesExtraInfo extractExtra(BasicClothesInfo basic,
-        Map<String, ClothesAttribute> attributeCache) {
-        // 1. 입력 데이터
+    public ClothesExtraInfo extractExtra(BasicClothesInfo basic, Map<String, ClothesAttribute> attributeCache) {
         String llmInput = buildLlmInput(basic);
         String candidateList = buildCandidateList(attributeCache);
 
-        // 2. Prompt 생성
-        Prompt chatPrompt = buildPrompt(llmInput, candidateList);
-        log.debug("[LlmExtractionService] prompt=\n{}", chatPrompt);
+        Prompt prompt = buildPrompt(llmInput, candidateList);
 
-        // 3. LLM 호출
-        String result = llmProvider.chatCompletion(chatPrompt);
-        log.debug("[LlmExtractionService] LLM 원본 응답: {}", result);
-
-        if (result == null || result.isBlank()) {
-            log.error("[LlmExtractionService] LLM 응답이 비어 있음");
-            throw ClothesExtractionFailedException.emptyResponse();
-        }
-
-        // 4. 코드블록(``` ... ```) 제거
-        result = result.trim();
-        String unwrapped = stripCodeFence(result);
-        if (!unwrapped.equals(result)) {
-            log.debug("[LlmExtractionService] 코드블록 제거 후 응답: {}", unwrapped);
-        }
-        String jsonPayload = extractJsonObject(unwrapped);
-        if (jsonPayload == null) {
-            log.error("[LlmExtractionService] LLM 응답이 JSON이 아님: {}", result);
-            throw ClothesExtractionFailedException.invalidJson();
-        }
-        result = jsonPayload;
-
-        // 6. JSON 파싱
-        try {
-            ClothesExtraInfo parsed = objectMapper.readValue(result, ClothesExtraInfo.class);
-            log.info("[LlmExtractionService] JSON 파싱 성공: name={}, typeRaw={}, attributes={}",
-                parsed.name(), parsed.typeRaw(), parsed.attributes());
-            return parsed;
-        } catch (Exception e) {
-            log.error("[LlmExtractionService] JSON 파싱 실패: {}", result, e);
-            throw ClothesExtractionFailedException.parsingError(e);
-        }
+        return llmJsonClient.callJsonPrompt(prompt, ClothesExtraInfo.class);
     }
 
     /** LLM에 넘길 입력 데이터 */
@@ -158,41 +122,4 @@ public class LlmExtractionService {
         return sanitized;
     }
 
-    private String stripCodeFence(String response) {
-        if (!response.startsWith("```")) {
-            return response;
-        }
-        int closingFence = response.indexOf("```", 3);
-        if (closingFence == -1) {
-            return response;
-        }
-        String body = response.substring(3, closingFence);
-        int newline = body.indexOf('\n');
-        if (newline >= 0) {
-            body = body.substring(newline + 1);
-        }
-        return body.trim();
-    }
-
-    private String extractJsonObject(String response) {
-        int depth = 0;
-        int start = -1;
-        for (int i = 0; i < response.length(); i++) {
-            char ch = response.charAt(i);
-            if (ch == '{') {
-                if (depth == 0) {
-                    start = i;
-                }
-                depth++;
-            } else if (ch == '}') {
-                if (depth > 0) {
-                    depth--;
-                    if (depth == 0 && start >= 0) {
-                        return response.substring(start, i + 1).trim();
-                    }
-                }
-            }
-        }
-        return null;
-    }
 }

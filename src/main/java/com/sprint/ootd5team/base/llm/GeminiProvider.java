@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.domain.extract.provider;
+package com.sprint.ootd5team.base.llm;
 
 import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
 import lombok.extern.slf4j.Slf4j;
