@@ -4,6 +4,7 @@ import com.sprint.ootd5team.domain.weather.dto.data.WeatherDto;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,5 +16,5 @@ public interface WeatherService {
     Weather getLatestWeatherForLocationAndDate(UUID locationId, LocalDate targetDate);
 
     // batch에서 사용
-    boolean existsWeatherFor(String baseDate, String baseTime, UUID locationId);
+    boolean existsWeatherFor(LocalDate issueDate, LocalTime issueTime, UUID locationId);
 }

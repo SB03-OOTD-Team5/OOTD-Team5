@@ -24,6 +24,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -103,7 +104,6 @@ public class OpenWeatherFactory implements
         if (allItems.isEmpty()) {
             throw new WeatherNotFoundException();
         }
-        log.debug(" [OpenWeather] 기존 예보 시각 수:{}", cachedWeathers.size());
         List<Weather> result = new ArrayList<>();
         Map<LocalDate, Weather> cachedByDate = new HashMap<>();
 
@@ -129,15 +129,14 @@ public class OpenWeatherFactory implements
             Weather created = weather.get();
             cachedByDate.put(LocalDate.ofInstant(targetAt, SEOUL_ZONE_ID), created);
 
-            boolean alreadyExists = cachedWeathers.stream()
+            boolean alreadyExists = Optional.ofNullable(cachedWeathers)
+                .orElse(Collections.emptyList())
+                .stream()
+                .filter(Objects::nonNull)                      // 내부 요소 null 제거
                 .anyMatch(existing -> isExistedWeather(existing, created));
             if (alreadyExists) {
-                log.debug(" [OpenWeather] 중복 예보 건너뜀 forecastAt:{}, forecastedAt:{}",
-                    created.getForecastAt(),
-                    created.getForecastedAt());
                 continue;
             }
-
             result.add(created);
             log.debug(" [OpenWeather] 신규 예보 생성 forecastedAt:{}, forecastAt:{}",
                 created.getForecastedAt(), created.getForecastAt());

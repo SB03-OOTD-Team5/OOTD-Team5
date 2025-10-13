@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -154,15 +155,17 @@ class WeatherServiceKmaTest {
             .forecastedAt(Instant.now())
             .build();
 
-        when(weatherRepository.findTopByLocationIdAndForecastDateOrderByLatest(
-            eq(locationId), any(), any())).thenReturn(expected);
+        when(weatherRepository
+            .findFirstByLocationIdAndForecastAtBetweenOrderByForecastedAtDescForecastAtDescCreatedAtDesc(
+                eq(locationId), any(), any())).thenReturn(Optional.of(expected));
 
         Weather result = weatherService.getLatestWeatherForLocationAndDate(locationId, targetDate);
 
         ArgumentCaptor<Instant> startCaptor = ArgumentCaptor.forClass(Instant.class);
         ArgumentCaptor<Instant> endCaptor = ArgumentCaptor.forClass(Instant.class);
-        verify(weatherRepository).findTopByLocationIdAndForecastDateOrderByLatest(eq(locationId),
-            startCaptor.capture(), endCaptor.capture());
+        verify(weatherRepository)
+            .findFirstByLocationIdAndForecastAtBetweenOrderByForecastedAtDescForecastAtDescCreatedAtDesc(
+                eq(locationId), startCaptor.capture(), endCaptor.capture());
 
         LocalDate startDate = LocalDateTime.ofInstant(startCaptor.getValue(),
                 ZoneId.of("Asia/Seoul"))
@@ -182,7 +185,8 @@ class WeatherServiceKmaTest {
         when(weatherRepository.existsByLocationIdAndForecastedAt(eq(locationId), any()))
             .thenReturn(true);
 
-        boolean exists = weatherService.existsWeatherFor("20250925", "0600", locationId);
+        boolean exists = weatherService.existsWeatherFor(LocalDate.parse("20250925"),
+            LocalTime.parse("0600"), locationId);
         assertTrue(exists);
     }
 }

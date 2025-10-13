@@ -15,6 +15,7 @@ import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -76,8 +77,8 @@ public class WeatherServiceKma implements WeatherService {
     }
 
     @Override
-    public boolean existsWeatherFor(String baseDate, String baseTime, UUID locationId) {
-        Instant forecastedAt = DateTimeUtils.toInstant(baseDate, baseTime);
+    public boolean existsWeatherFor(LocalDate issueDate, LocalTime issueTime, UUID locationId) {
+        Instant forecastedAt = DateTimeUtils.toInstant(issueDate, issueTime);
         return weatherRepository.existsByLocationIdAndForecastedAt(locationId, forecastedAt);
     }
 }

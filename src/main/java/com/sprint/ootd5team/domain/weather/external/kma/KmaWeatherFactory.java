@@ -25,6 +25,7 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -195,7 +196,10 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
 
             cachedByDate.put(LocalDate.ofInstant(targetAt, SEOUL_ZONE_ID), created);
 
-            boolean alreadyExists = cachedWeathers.stream()
+            boolean alreadyExists = Optional.ofNullable(cachedWeathers)
+                .orElse(Collections.emptyList())
+                .stream()
+                .filter(Objects::nonNull)                      // 내부 요소 null 제거
                 .anyMatch(existing -> isExistedWeather(existing, created));
             if (alreadyExists) {
                 continue;

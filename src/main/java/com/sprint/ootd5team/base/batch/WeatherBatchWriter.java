@@ -9,6 +9,8 @@ import com.sprint.ootd5team.domain.location.entity.Location;
 import com.sprint.ootd5team.domain.location.repository.LocationRepository;
 import com.sprint.ootd5team.domain.notification.service.NotificationService;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
+import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
+import com.sprint.ootd5team.domain.weather.enums.SkyStatus;
 import com.sprint.ootd5team.domain.weather.external.WeatherExternalAdapter;
 import com.sprint.ootd5team.domain.weather.external.WeatherFactory;
 import com.sprint.ootd5team.domain.weather.external.context.ForecastIssueContext;
@@ -18,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -77,57 +80,31 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
                     continue;
                 }
 
-                // 새롭게 fetch된 내일 날씨정보와 마지막으로 저장된 오늘 날씨정보를 비교 -> 차이가 크면 알림 보냄
-                Weather latestTodayWeather = weatherService.getLatestWeatherForLocationAndDate(
-                    location.getId(), LocalDate.now(SEOUL_ZONE_ID));
+                // 1. 날씨 찾기
+                List<Weather> weathers = weatherFactory.findWeathers(location, issueContext);
+                if (weathers.isEmpty()) {
+                    // 2. 날씨 데이터 불러오기
+                    String baseDate = issueContext.getIssueDateTime().format(DATE_FORMATTER);
+                    String baseTime = issueContext.getIssueDateTime().format(TIME_FORMATTER);
+                    Object response = externalAdapter.getWeather(item.latitude(),
+                        item.longitude(), baseDate, baseTime, 300);
+                    log.info("[WeatherBatchWriter] 외부 API 호출 완료 locationId={} lat={} lon={}",
+                        location.getId(), item.latitude(), item.longitude());
 
-                String baseDate = issueContext.getIssueDateTime().format(DATE_FORMATTER);
-                String baseTime = issueContext.getIssueDateTime().format(TIME_FORMATTER);
-                Object response = externalAdapter.getWeather(item.latitude(),
-                    item.longitude(), baseDate, baseTime, 300);
+                    // 3. 날씨 생성
+                    weathers = weatherFactory.createWeathers(response,
+                        null,
+                        issueContext,
+                        location);
+                    weatherRepository.saveAll(weathers);
+                    log.info("[WeatherBatchWriter] 새 weather {}건 저장 locationId={}}",
+                        weathers.size(),
+                        location.getId());
 
-                log.info("[WeatherBatchWriter] 외부 API 호출 완료 locationId={} lat={} lon={}",
-                    location.getId(), item.latitude(), item.longitude());
-
-                List<Weather> cached = weatherFactory.findWeathers(location, issueContext);
-                List<Weather> newWeathers = weatherFactory.createWeathers(response,
-                    cached,
-                    issueContext,
-                    location);
-
-                log.info("[WeatherBatchWriter] weather {}건 생성완료", newWeathers.size());
-
-                weatherRepository.saveAll(newWeathers);
-                log.info("[WeatherBatchWriter] 새 weather {}건 저장 locationId={}}", newWeathers.size(),
-                    location.getId());
-
-                // 새로 생성된 weather 중 다음날 날씨만 가져와서 오늘 날씨와 비교
-                LocalDate targetDate = issueContext.getTargetDateTime().plusDays(1).toLocalDate();
-                Weather tomorrowWeather = newWeathers.stream()
-                    .filter(
-                        weather -> LocalDateTime.ofInstant(weather.getForecastAt(), SEOUL_ZONE_ID)
-                            .toLocalDate().isEqual(targetDate))
-                    .max((w1, w2) -> w1.getForecastAt().compareTo(w2.getForecastAt()))
-                    .orElse(null);
-
-                if (tomorrowWeather == null) {
-                    log.info("[WeatherBatchWriter] 내일 예보 없음 locationId={}", location.getId());
-                    continue;
                 }
 
-                boolean shouldNotify = isShouldNotify(latestTodayWeather, tomorrowWeather);
+                createNotification(location, issueContext, weathers, profileIds);
 
-                if (!shouldNotify) {
-                    log.info("[WeatherBatchWriter] 알림 조건 미충족 locationId={}", location.getId());
-                    continue;
-                }
-
-                log.info("[WeatherBatchWriter] 알림 전송 locationId={} targetCount={}",
-                    location.getId(),
-                    profileIds.size());
-                for (UUID profileId : profileIds) {
-                    notificationService.createWeatherNotification(profileId, "날씨알림이 있습니다");
-                }
             }
 
         } catch (Exception e) {
@@ -137,34 +114,100 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
         }
     }
 
-    private boolean isShouldNotify(Weather latestTodayWeather, Weather tomorrowWeather) {
-        if (latestTodayWeather == null) {
-            log.info("[WeatherBatchWriter] 기존 예보 없음");
-            return true;
+    private void createNotification(Location location, ForecastIssueContext issueContext,
+        List<Weather> weathers, List<UUID> profileIds) {
+        //  날씨정보와 마지막으로 저장된 오늘 날씨정보를 비교 -> 차이가 크면 알림 보냄
+        Weather latestTodayWeather = weatherService.getLatestWeatherForLocationAndDate(
+            location.getId(), LocalDate.now(SEOUL_ZONE_ID));
+
+        //  weathers 중 다음날 날씨만 가져와서 오늘 날씨와 비교
+        LocalDate targetDate = issueContext.getTargetDateTime().plusDays(1).toLocalDate();
+        Weather tomorrowWeather = weathers.stream()
+            .filter(
+                weather -> LocalDateTime.ofInstant(weather.getForecastAt(), SEOUL_ZONE_ID)
+                    .toLocalDate().isEqual(targetDate))
+            .max((w1, w2) -> w1.getForecastAt().compareTo(w2.getForecastAt()))
+            .orElse(null);
+
+        if (tomorrowWeather == null) {
+            log.info("[WeatherBatchWriter] 내일 예보 없음 locationId={}", location.getId());
+            return;
         }
 
-        log.info("[WeatherBatchWriter] 기존 예보 있음 -> latestWeatherId={}, locationId={}",
-            latestTodayWeather.getId(), latestTodayWeather.getLocation().getId());
+        NotificationDecision decision = evaluateNotification(latestTodayWeather,
+            tomorrowWeather);
 
-        // 알림 조건 1. 강수타입이 달라짐
-        boolean changedToPrecipitation =
-            latestTodayWeather.getPrecipitationType() != tomorrowWeather.getPrecipitationType();
-        Double latestMinTemp = latestTodayWeather.getTemperatureMin();
-        Double tomorrowMinTemp = tomorrowWeather.getTemperatureMin();
+        if (!decision.shouldNotify()) {
+            log.info("[WeatherBatchWriter] 알림 조건 미충족 locationId={} reason={}",
+                location.getId(), decision.reason());
+            return;
+        }
 
-        // 알림 조건 2. 온도가 3도이상 차이남
-        boolean temperatureChanged = latestMinTemp != null && tomorrowMinTemp != null
-            && Math.abs(tomorrowMinTemp - latestMinTemp) >= 3;
-
-        log.info("[WeatherBatchWriter] 비교 결과 precipChange={} tempDiff={} changedTemp={}",
-            changedToPrecipitation,
-            (latestMinTemp != null && tomorrowMinTemp != null)
-                ? Math.abs(tomorrowMinTemp - latestMinTemp)
-                : null,
-            temperatureChanged);
-
-        return changedToPrecipitation || temperatureChanged;
+        log.info("[WeatherBatchWriter] 알림 전송 locationId={} targetCount={} reason={}",
+            location.getId(),
+            profileIds.size(),
+            decision.reason());
+        for (UUID profileId : profileIds) {
+            notificationService.createWeatherNotification(profileId, decision.reason());
+        }
     }
+
+
+    private NotificationDecision evaluateNotification(Weather latestTodayWeather,
+        Weather tomorrowWeather) {
+        log.info("[WeatherBatchWriter] 알림생성용 날씨 비교");
+
+        if (latestTodayWeather == null || tomorrowWeather == null) {
+            return NotificationDecision.create(false, null);
+        }
+
+        PrecipitationType todayPrecipitation = latestTodayWeather.getPrecipitationType();
+        PrecipitationType tomorrowPrecipitation = tomorrowWeather.getPrecipitationType();
+        SkyStatus todaySky = latestTodayWeather.getSkyStatus();
+        SkyStatus tomorrowSky = tomorrowWeather.getSkyStatus();
+
+        Double todayMinTemperature = latestTodayWeather.getTemperatureMin();
+        Double tomorrowMinTemperature = tomorrowWeather.getTemperatureMin();
+        Double temperatureDiff = (todayMinTemperature != null && tomorrowMinTemperature != null)
+            ? tomorrowMinTemperature - todayMinTemperature
+            : null;
+
+        boolean todayIsWet = todayPrecipitation != null
+            && todayPrecipitation != PrecipitationType.NONE;
+        boolean tomorrowIsWet = tomorrowPrecipitation != null
+            && tomorrowPrecipitation != PrecipitationType.NONE;
+        boolean todayIsCloudy = todaySky != null && todaySky != SkyStatus.CLEAR;
+        boolean tomorrowIsClear = (tomorrowSky != null && tomorrowSky == SkyStatus.CLEAR)
+            && !tomorrowIsWet;
+        boolean todayIsClear = (todaySky != null && todaySky == SkyStatus.CLEAR)
+            && !todayIsWet;
+
+        List<String> reasons = new ArrayList<>();
+
+        if ((todayIsWet || todayIsCloudy) && tomorrowIsClear) {
+            reasons.add("🌞 내일은 날씨가 화창해집니다.");
+        }
+        if (todayIsClear && tomorrowIsWet) {
+            reasons.add("☔️ 내일은 비가 오네요. 우산을 챙기세요.");
+        }
+        if (temperatureDiff != null && temperatureDiff <= -3) {
+            reasons.add("내일은 일교차가 큽니다. 두꺼운 옷을 대비하세요.");
+        } else if (temperatureDiff != null && temperatureDiff >= 3) {
+            reasons.add("내일은 오늘보다 더워집니다. 얇게 입으세요.");
+        }
+
+        log.info(
+            "[WeatherBatchWriter] 비교 결과 todayWet={} todayCloudy={} tomorrowClear={} tomorrowWet={} tempDiff={} reasons={}"
+            , todayIsWet, todayIsCloudy, tomorrowIsClear, tomorrowIsWet,
+            temperatureDiff, reasons);
+
+        if (reasons.isEmpty()) {
+            return NotificationDecision.create(false, null);
+        }
+
+        return NotificationDecision.create(true, String.join(" ", reasons));
+    }
+
 
     private WeatherFactory resolveFactory(Map<String, WeatherFactory> factories, String provider) {
         String beanName = switch (provider) {
@@ -197,5 +240,12 @@ public class WeatherBatchWriter implements ItemWriter<LocationWithProfileIds> {
                 "WeatherExternalAdapter 빈을 찾을 수 없습니다. beanName=" + beanName);
         }
         return adapter;
+    }
+
+    private record NotificationDecision(boolean shouldNotify, String reason) {
+
+        static NotificationDecision create(boolean shouldNotify, String reason) {
+            return new NotificationDecision(shouldNotify, reason);
+        }
     }
 }

@@ -3,7 +3,6 @@ package com.sprint.ootd5team.base.batch;
 import com.sprint.ootd5team.domain.location.dto.data.LocationWithProfileIds;
 import com.sprint.ootd5team.domain.location.service.LocationService;
 import com.sprint.ootd5team.domain.weather.service.WeatherService;
-import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
@@ -46,22 +45,9 @@ public class WeatherBatchDataReader implements ItemStreamReader<LocationWithProf
         }
         LocationWithProfileIds withProfileIds = iterator.next();
 
-        String baseDate = LocalDate.now(SEOUL_ZONE_ID).format(DATE_FORMATTER);
-        log.info("[WeatherBatchDataReader-read] 위도:{}, 경도:{}, 사용자 Id:{}",
+        log.info("[WeatherBatchDataReader] 위도:{}, 경도:{}, 사용자 Id:{}",
             withProfileIds.latitude(), withProfileIds.longitude(),
             withProfileIds.profileIds().toString());
-
-        // 사용자의 해당 하는 날씨 데이터가 이미 있으면 fetch 보낼 리스트에서 제외
-        boolean exists = weatherService.existsWeatherFor(baseDate, BASE_TIME,
-            withProfileIds.locationId());
-        if (exists) {
-            log.info("[WeatherBatchDataReader] 기존 날씨 데이터 존재 locationId={}",
-                withProfileIds.locationId());
-            return null;
-        }
-
-        log.info("[WeatherBatchDataReader] 신규 fetch 대상 locationId={}, profileCount={}",
-            withProfileIds.locationId(), withProfileIds.profileIds().size());
 
         return withProfileIds;
     }
@@ -74,7 +60,7 @@ public class WeatherBatchDataReader implements ItemStreamReader<LocationWithProf
         List<LocationWithProfileIds> locationWithProfileIds = locationService.findAllLocationUsingInProfileDistinct();
 
         iterator = locationWithProfileIds.iterator();
-        log.info("[WeatherBatchDataReader-open] 총 {}건의 Location 묶음을 로드",
+        log.info("[WeatherBatchDataReader] 총 {}건의 Location 묶음을 로드",
             locationWithProfileIds.size());
     }
 
