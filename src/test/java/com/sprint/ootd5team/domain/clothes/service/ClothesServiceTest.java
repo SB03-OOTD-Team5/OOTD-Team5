@@ -17,20 +17,20 @@ import com.sprint.ootd5team.base.exception.clothesattribute.AttributeValueNotAll
 import com.sprint.ootd5team.base.exception.file.FileSaveFailedException;
 import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.storage.FileStorage;
-import com.sprint.ootd5team.domain.clothes.fixture.ClothesFixture;
-import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDto;
-import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
-import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
-import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeValue;
-import com.sprint.ootd5team.domain.clothesattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesCreateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
+import com.sprint.ootd5team.domain.clothes.fixture.ClothesFixture;
 import com.sprint.ootd5team.domain.clothes.mapper.ClothesMapper;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeDto;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
+import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeValue;
+import com.sprint.ootd5team.domain.clothesattribute.repository.ClothesAttributeRepository;
 import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import java.io.IOException;
@@ -378,7 +378,7 @@ class ClothesServiceTest {
         given(clothesMapper.toDto(any(Clothes.class))).willReturn(expected);
 
         // when
-        ClothesDto result = clothesService.update(clothesId, request, null);
+        ClothesDto result = clothesService.update(ownerId, clothesId, request, null);
 
         // then
         assertThat(result.name()).isEqualTo("새로운셔츠");
@@ -412,7 +412,7 @@ class ClothesServiceTest {
         given(clothesMapper.toDto(any(Clothes.class))).willReturn(expected);
 
         // when
-        ClothesDto result = clothesService.update(clothesId, request, newImage);
+        ClothesDto result = clothesService.update(ownerId, clothesId, request, newImage);
 
         // then
         assertThat(result.imageUrl()).isEqualTo("new/image.png");
@@ -451,7 +451,7 @@ class ClothesServiceTest {
         given(clothesMapper.toDto(any(Clothes.class))).willReturn(expected);
 
         // when
-        ClothesDto result = clothesService.update(clothesId, request, null);
+        ClothesDto result = clothesService.update(ownerId, clothesId, request, null);
 
         // then
         assertThat(result.attributes()).extracting("value").contains("겨울");
@@ -466,7 +466,7 @@ class ClothesServiceTest {
         given(clothesRepository.findById(clothesId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> clothesService.update(clothesId, request, null))
+        assertThatThrownBy(() -> clothesService.update(ownerId, clothesId, request, null))
             .isInstanceOf(
                 com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException.class);
     }
@@ -512,7 +512,7 @@ class ClothesServiceTest {
         given(clothesMapper.toDto(any(Clothes.class))).willReturn(expected);
 
         // when
-        ClothesDto result = clothesService.update(clothesId, request, null);
+        ClothesDto result = clothesService.update(ownerId, clothesId, request, null);
 
         // then
         assertThat(result.attributes()).extracting("value").containsExactly("겨울");
