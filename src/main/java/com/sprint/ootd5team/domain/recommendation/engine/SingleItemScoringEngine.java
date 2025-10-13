@@ -2,7 +2,7 @@ package com.sprint.ootd5team.domain.recommendation.engine;
 
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
-import com.sprint.ootd5team.domain.recommendation.dto.RecommendationClothesDto;
+import com.sprint.ootd5team.domain.recommendation.dto.ClothesFilteredDto;
 import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
 import com.sprint.ootd5team.domain.recommendation.engine.model.ScoredClothes;
 import com.sprint.ootd5team.domain.recommendation.enums.ColorTone;
@@ -33,10 +33,12 @@ public class SingleItemScoringEngine {
      * 개별 의상 점수 계산
      */
     public double calculateSingleItemScore(
-        RecommendationClothesDto clothes,
+        ClothesFilteredDto clothes,
         WeatherInfoDto weather
     ) {
-        double score = 50.0;
+        double base = 50.0;
+        double score = base;
+
         score += scoreByShoes(clothes, weather);
         score += scoreByClothes(clothes, weather);
         score += scoreByColor(clothes, weather);
@@ -44,8 +46,13 @@ public class SingleItemScoringEngine {
         score += scoreByHumidity(clothes, weather);
         score += scoreByRainMaterial(clothes, weather);
 
-        log.debug("[SCORE] clothesId={}, type={}, total={}", clothes.clothesId(), clothes.type(),
-            score);
+        if (score != base) {
+            double delta = score - base;
+            String trend = delta > 0 ? "상승" : "하락";
+            log.debug("[SingleItemScoringEngine] '{}' ({}): 총점 {} ({}{}, {})\n",
+                clothes.name(), clothes.type(), String.format("%.1f", score),
+                delta > 0 ? "+" : "", String.format("%.1f", delta), trend);
+        }
         return score;
     }
 
@@ -53,14 +60,14 @@ public class SingleItemScoringEngine {
      * 타입별 상위 N개 반환
      */
     public List<ScoredClothes> getTopItemsByType(
-        List<RecommendationClothesDto> clothes,
+        List<ClothesFilteredDto> clothes,
         Weather weather,
         int limit
     ) {
-        log.debug("[getTopItemsByType] 전체 의상 수={}, limit={}", clothes.size(), limit);
+        log.debug("[SingleItemScoringEngine] 전체 의상 수={}, limit={}", clothes.size(), limit);
 
         var grouped = clothes.stream()
-            .collect(Collectors.groupingBy(RecommendationClothesDto::type));
+            .collect(Collectors.groupingBy(ClothesFilteredDto::type));
 
         grouped.forEach((type, group) ->
             log.debug("  - 타입={}, 그룹 크기={}", type, group.size())
@@ -78,39 +85,46 @@ public class SingleItemScoringEngine {
                 .limit(limit))
             .toList();
 
-        log.debug("[getTopItemsByType] 결과 의상 수={}", result.size());
+        log.debug("[SingleItemScoringEngine] 결과 의상 수={}", result.size());
         return result;
     }
 
     /* -------------------------------- 점수 계산 로직 -------------------------------- */
 
     /** 신발: 날씨(비/눈/계절) 기반 */
-    private double scoreByShoes(RecommendationClothesDto c, WeatherInfoDto w) {
+    private double scoreByShoes(ClothesFilteredDto c, WeatherInfoDto w) {
         double score = 0;
         PrecipitationType pType = w.precipitationType();
-        String shoeType = getAttr(c, "신발 종류");
+        String value = getAttr(c, "신발 종류");
+        if (value.isBlank()) {
+            return 0;
+        }
 
-        if ((pType.isRainy() || pType.isSnowy()) && shoeType.contains("장화")) {
+        if ((pType.isRainy() || pType.isSnowy()) && value.contains("장화")) {
             score += 10;
         }
 
         if (score != 0) {
-            log.debug("[scoreByShoes] {}: {} +{}", c.clothesId(), shoeType, score);
+            logScore("날씨기반 신발", c, score,
+                String.format("type='%s', weather=%s", value, w.precipitationType()));
         }
         return score;
     }
 
     /** 온도 / 두께 / 계절 기반 */
-    private double scoreByClothes(RecommendationClothesDto c, WeatherInfoDto w) {
+    private double scoreByClothes(ClothesFilteredDto c, WeatherInfoDto w) {
         double score = 0;
         double temp = w.currentTemperature();
-        String thickness = getAttr(c, "두께");
+        String value = getAttr(c, "두께");
+        if (value.isBlank()) {
+            return 0;
+        }
 
         // 온도 대비 두께
-        if (temp < 10 && thickness.contains("두꺼움")) {
+        if (temp < 10 && value.contains("두꺼움")) {
             score += 3;
         }
-        if (temp > 25 && thickness.contains("얇음")) {
+        if (temp > 25 && value.contains("얇음")) {
             score += 2;
         }
 
@@ -120,94 +134,107 @@ public class SingleItemScoringEngine {
         }
 
         if (score != 0) {
-            log.debug("[scoreByClothes] {}: temp={}, thickness={}, +{}",
-                c.clothesId(), temp, thickness, score);
+            logScore("온도기반 두께", c, score,
+                String.format("temp=%.1f°C, thickness='%s'", w.currentTemperature(), value));
         }
         return score;
     }
 
     /** 색상 기반 점수 */
-    private double scoreByColor(RecommendationClothesDto c, WeatherInfoDto w) {
+    private double scoreByColor(ClothesFilteredDto c, WeatherInfoDto w) {
         double score = 0;
         PrecipitationType pType = w.precipitationType();
-        String colorName = getAttr(c, "색상");
-        ColorTone tone = ColorTone.fromColorName(colorName);
+        String value = getAttr(c, "색상");
+        if (value.isBlank()) {
+            return 0;
+        }
 
-        if (pType.isClear() && tone.isBright(colorName)) {
+        ColorTone tone = ColorTone.fromColorName(value);
+
+        if (pType.isClear() && tone.isBright(value)) {
             score += 2;
         }
-        if (!pType.isClear() && tone.isBright(colorName)) {
+        if (!pType.isClear() && tone.isBright(value)) {
             score -= 2;
         }
-        if (pType.isRainy() && tone.isDark(colorName)) {
+        if (pType.isRainy() && tone.isDark(value)) {
             score += 1;
         }
 
         if (score != 0) {
-            log.debug("[scoreByColor] {}: color={}, tone={}, pType={}, +{}",
-                c.clothesId(), colorName, tone, pType, score);
+            logScore("하늘상태기반 색상", c, score,
+                String.format("color='%s', tone=%s, weather=%s", value, tone,
+                    w.precipitationType()));
         }
         return score;
     }
 
     /** 바람 세기 기반 (얇은 옷 감점, 두꺼운 옷 보너스) */
-    private double scoreByWind(RecommendationClothesDto c, WeatherInfoDto w) {
+    private double scoreByWind(ClothesFilteredDto c, WeatherInfoDto w) {
         double score = 0;
         WindspeedLevel wind = w.windSpeedLevel();
-        String thickness = getAttr(c, "두께");
+        String value = getAttr(c, "두께");
+        if (value.isBlank()) {
+            return 0;
+        }
 
-        if (wind == WindspeedLevel.STRONG && thickness.contains("얇음")) {
+        if (wind == WindspeedLevel.STRONG && value.contains("얇음")) {
             score -= 3;
         }
-        if (wind == WindspeedLevel.STRONG && thickness.contains("두꺼움")) {
+        if (wind == WindspeedLevel.STRONG && value.contains("두꺼움")) {
             score += 2;
         }
 
         if (score != 0) {
-            log.debug("[scoreByWind] {}: wind={}, thickness={}, +{}", c.clothesId(), wind,
-                thickness, score);
+            logScore("바람세기기반 두께", c, score,
+                String.format("wind=%s, thickness='%s'", w.windSpeedLevel(), value));
         }
         return score;
     }
 
     /** 습도 기반 (통풍 소재 보너스, 땀 배출 어려운 소재 감점) */
-    private double scoreByHumidity(RecommendationClothesDto c, WeatherInfoDto w) {
+    private double scoreByHumidity(ClothesFilteredDto c, WeatherInfoDto w) {
         double score = 0;
         double humidity = w.currentHumidity();
-        String material = getAttr(c, "소재");
+        String value = getAttr(c, "소재");
+        if (value.isBlank()) {
+            return 0;
+        }
 
-        if (humidity > 70 && (material.contains("리넨") || material.contains("면"))) {
+        if (humidity > 70 && (value.contains("리넨") || value.contains("면"))) {
             score += 3;
         }
-        if (humidity > 70 && material.contains("폴리에스터")) {
+        if (humidity > 70 && value.contains("폴리에스터")) {
             score -= 2;
         }
 
         if (score != 0) {
-            log.debug("[scoreByHumidity] {}: humidity={}, material={}, +{}", c.clothesId(),
-                humidity, material, score);
+            logScore("습도기반 소재", c, score,
+                String.format("humidity=%.1f%%, material='%s'", humidity, value));
         }
         return score;
     }
 
     /** 비/눈일 때 소재 기반 */
-    private double scoreByRainMaterial(RecommendationClothesDto c, WeatherInfoDto w) {
+    private double scoreByRainMaterial(ClothesFilteredDto c, WeatherInfoDto w) {
         double score = 0;
         PrecipitationType pType = w.precipitationType();
-        String material = getAttr(c, "소재");
+        String value = getAttr(c, "소재");
+        if (value.isBlank()) {
+            return 0;
+        }
 
         if (pType.isRainy() || pType.isSnowy()) {
-            if (material.contains("나일론") || material.contains("폴리에스터")) {
+            if (value.contains("나일론") || value.contains("폴리에스터")) {
                 score += 2;
             }
-            if (material.contains("면")) {
+            if (value.contains("면")) {
                 score -= 2;
             }
         }
 
         if (score != 0) {
-            log.debug("[scoreByRainMaterial] {}: precip={}, material={}, +{}", c.clothesId(), pType,
-                material, score);
+            logScore("강수기반 소재", c, score, String.format("precip=%s, material='%s'", pType, value));
         }
         return score;
     }
@@ -215,7 +242,7 @@ public class SingleItemScoringEngine {
     /**
      * DTO에서 속성값 조회
      */
-    private String getAttr(RecommendationClothesDto c, String key) {
+    private String getAttr(ClothesFilteredDto c, String key) {
         String val = c.attributes().stream()
             .filter(a -> a.definitionName().equals(key))
             .map(ClothesAttributeWithDefDto::value)
@@ -223,9 +250,23 @@ public class SingleItemScoringEngine {
             .orElse("");
 
         if (val.isEmpty()) {
-            log.trace("[getAttr] clothesId={}, key='{}' 속성 없음", c.clothesId(), key);
+            log.trace("[SingleItemScoringEngine] clothesId={}, name={}, key='{}' 속성 없음",
+                c.clothesId(), c.name(), key);
         }
 
         return val;
+    }
+
+    /**
+     * 점수 로그 출력 공통 메서드
+     */
+    private void logScore(String category, ClothesFilteredDto c, double score, String detail) {
+        if (score == 0) {
+            return;
+        }
+
+        String action = score > 0 ? "보너스" : "감점";
+        log.debug("[SingleItemScoringEngine] {}점수: name='{}', {} → {} {}점",
+            category, c.name(), detail, action, score);
     }
 }

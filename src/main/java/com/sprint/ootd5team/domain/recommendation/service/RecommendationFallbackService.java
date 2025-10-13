@@ -3,7 +3,7 @@ package com.sprint.ootd5team.domain.recommendation.service;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
-import com.sprint.ootd5team.domain.recommendation.dto.RecommendationClothesDto;
+import com.sprint.ootd5team.domain.recommendation.dto.ClothesFilteredDto;
 import com.sprint.ootd5team.domain.recommendation.mapper.RecommendationMapper;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,7 +42,7 @@ public class RecommendationFallbackService {
     private final RecommendationMapper recommendationMapper;
     private final Random random = new Random();
 
-    public List<RecommendationClothesDto> getRandomOutfit(UUID userId) {
+    public List<ClothesFilteredDto> getRandomOutfit(UUID userId) {
         List<Clothes> all = clothesRepository.findByOwner_Id(userId);
         if (all.isEmpty()) {
             log.warn("[Fallback] 사용자({})의 옷이 없습니다.", userId);
@@ -79,7 +79,7 @@ public class RecommendationFallbackService {
         log.debug("[Fallback] 랜덤 코디 생성 완료 ({}개)", selected.size());
 
         return selected.stream()
-            .map(recommendationMapper::toDto)
+            .map(recommendationMapper::toFilteredDto)
             .toList();
     }
 

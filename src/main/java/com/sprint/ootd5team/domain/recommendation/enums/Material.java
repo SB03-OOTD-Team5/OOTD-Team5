@@ -8,8 +8,10 @@ public enum Material {
     WOOL("울"),
     POLY("폴리"),
     NYLON("나일론"),
+    RAYON("레이온"),
+    FLEECE("기모"),
+    KNIT("니트"),
     LEATHER("가죽"),
-    DOWN("패딩"),
     DENIM("데님"),
     OTHER("기타");
 
@@ -39,20 +41,44 @@ public enum Material {
             return true;
         }
 
-        // 예시) 소재 질감이 비슷한 경우
-        if ((this == COTTON && other == LINEN)
-            || (this == POLY && other == NYLON)
-            || (this == WOOL && other == COTTON)) {
+        // 기타
+        if (this == OTHER || other == OTHER) {
             return true;
         }
 
-        // 안 어울리는 조합
-        if ((this == WOOL && other == LINEN)
-            || (this == DOWN && other == COTTON)
-            || (this == LEATHER && other == LINEN)) {
+        // 질감이 유사한 조합 (긍정)
+        if ((isLightFabric(this) && isLightFabric(other)) ||   // 면 ↔ 린넨 ↔ 레이온
+            (isSynthetic(this) && isSynthetic(other)) ||       // 폴리 ↔ 나일론
+            (isWarmFabric(this) && isWarmFabric(other)) ||     // 울 ↔ 니트 ↔ 기모
+            (isStructuredFabric(this) && isStructuredFabric(other))) { // 가죽 ↔ 데님
+            return true;
+        }
+
+        // 질감 대비
+        if ((isLightFabric(this) && isStructuredFabric(other)) ||
+            (isStructuredFabric(this) && isLightFabric(other)) ||
+            (this == LEATHER && other == LINEN) ||
+            (this == LEATHER && other == RAYON) ||
+            (this == WOOL && other == LINEN)) {
             return false;
         }
 
-        return true; // 기본은 허용
+        return true;
+    }
+
+    private boolean isLightFabric(Material m) {
+        return m == COTTON || m == LINEN || m == RAYON;
+    }
+
+    private boolean isSynthetic(Material m) {
+        return m == POLY || m == NYLON;
+    }
+
+    private boolean isWarmFabric(Material m) {
+        return m == WOOL || m == FLEECE || m == KNIT;
+    }
+
+    private boolean isStructuredFabric(Material m) {
+        return m == LEATHER || m == DENIM;
     }
 }

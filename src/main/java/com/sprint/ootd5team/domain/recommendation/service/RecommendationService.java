@@ -9,6 +9,7 @@ import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeValue
 import com.sprint.ootd5team.domain.extract.extractor.WebClothesExtractor;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
+import com.sprint.ootd5team.domain.recommendation.dto.ClothesFilteredDto;
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationClothesDto;
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationDto;
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
@@ -25,6 +26,7 @@ import com.sprint.ootd5team.domain.weather.entity.Weather;
 import com.sprint.ootd5team.domain.weather.exception.WeatherNotFoundException;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -65,30 +67,31 @@ public class RecommendationService {
         Weather weather = resolveWeather(userId, weatherId);
 
         // 의상 필터링
-        List<RecommendationClothesDto> filtered = getFilteredClothes(userId, profile, weather);
+        List<ClothesFilteredDto> filtered = getFilteredClothes(userId, profile, weather);
 
         // 필터링 실패시 fallback
         if (filtered.isEmpty()) {
-            log.warn("[Recommendation] 필터링 결과 없음 → fallback 랜덤 추천 적용");
+            log.warn("[RecommendationService] 필터링 결과 없음 → fallback 랜덤 추천 적용");
             return buildResult(weatherId, userId,
                 recommendationFallbackService.getRandomOutfit(userId));
         }
 
         // 추천 방식 선택
-        List<RecommendationClothesDto> selected = useAi
+        List<ClothesFilteredDto> selected = useAi
             ? recommendWithAi(filtered, profile, weather)
             : recommendWithAlgorithm(userId, filtered, weather);
 
         return buildResult(weatherId, userId, selected);
     }
 
+
     /* -------------------- 추천 로직 -------------------- */
 
     /**
      * llm 호출
      */
-    private List<RecommendationClothesDto> recommendWithAi(
-        List<RecommendationClothesDto> dtoList,
+    private List<ClothesFilteredDto> recommendWithAi(
+        List<ClothesFilteredDto> dtoList,
         Profile profile,
         Weather weather
     ) {
@@ -102,7 +105,7 @@ public class RecommendationService {
         List<UUID> response = llmRecommendationService.recommendOutfit(info, dtoList);
 
         if (response == null || response.isEmpty()) {
-            log.warn("[Recommendation] LLM 추천 결과 없음 → fallback 랜덤 추천 적용");
+            log.warn("[RecommendationService] LLM 추천 결과 없음 → fallback 랜덤 추천 적용");
             return recommendationFallbackService.getRandomOutfit(profile.getUser().getId());
         }
 
@@ -114,9 +117,9 @@ public class RecommendationService {
     /**
      * 내부 알고리즘 호출
      */
-    private List<RecommendationClothesDto> recommendWithAlgorithm(
+    private List<ClothesFilteredDto> recommendWithAlgorithm(
         UUID userId,
-        List<RecommendationClothesDto> dtoList,
+        List<ClothesFilteredDto> dtoList,
         Weather weather
     ) {
         log.debug("[RecommendationService] 내부 알고리즘 기반 추천 실행");
@@ -126,7 +129,7 @@ public class RecommendationService {
         List<OutfitScore> ranked = outfitCombinationGenerator.generateWithScoring(outfits);
 
         if (ranked.isEmpty()) {
-            log.warn("[Recommendation] 내부 알고리즘 추천 결과 없음 → fallback 랜덤 추천 적용");
+            log.warn("[RecommendationService] 내부 알고리즘 추천 결과 없음 → fallback 랜덤 추천 적용");
             return recommendationFallbackService.getRandomOutfit(userId);
         }
 
@@ -134,14 +137,13 @@ public class RecommendationService {
         return selected.outfit();
     }
 
-
     /* -------------------- 필터링 로직 -------------------- */
     @Transactional(readOnly = true)
-    public List<RecommendationClothesDto> getFilteredClothes(UUID userId, Profile profile,
+    public List<ClothesFilteredDto> getFilteredClothes(UUID userId, Profile profile,
         Weather weather) {
         return clothesRepository.findByOwner_Id(userId).stream()
             .filter(c -> matchesUserProfile(c, profile, weather))
-            .map(recommendationMapper::toDto)
+            .map(recommendationMapper::toFilteredDto)
             .toList();
     }
 
@@ -158,22 +160,24 @@ public class RecommendationService {
 
         // 4. 필터(온도민감도에 따른 계절만)
         boolean match = itemSeasons.matches(forecastSeason, sensitivity);
-        log.debug("[filter] clothesId={}, season(user={}, item={}) -> {}",
-            c.getId(), forecastSeason, itemSeasons, match);
-
+        if (match) {
+            log.debug(
+                "[RecommendationService] filter: clothesName={}, season(userForecast={}, item={}) -> {}",
+                c.getName(), forecastSeason, itemSeasons, match);
+        }
         return match;
     }
 
     private String extractAttribute(Clothes clothes, String attributeName) {
-        var cache = webClothesExtractor.getAttributeCache();
+        Map<String, ClothesAttribute> cache = webClothesExtractor.getAttributeCache();
         if (cache == null) {
-            log.warn("[Attribute] 캐시 미초기화: {}", attributeName);
+            log.warn("[RecommendationService] 캐시 미초기화: {}", attributeName);
             return null;
         }
 
         ClothesAttribute def = cache.get(attributeName);
         if (def == null) {
-            log.warn("[Attribute] '{}' 속성 정의 없음", attributeName);
+            log.warn("[RecommendationService] '{}' 속성 정의 없음", attributeName);
             return null;
         }
 
@@ -213,11 +217,15 @@ public class RecommendationService {
     }
 
     private RecommendationDto buildResult(UUID weatherId, UUID userId,
-        List<RecommendationClothesDto> clothes) {
+        List<ClothesFilteredDto> clothes) {
+        List<RecommendationClothesDto> converted = clothes.stream()
+            .map(recommendationMapper::toDto)
+            .toList();
+
         return RecommendationDto.builder()
             .weatherId(weatherId)
             .userId(userId)
-            .clothes(clothes)
+            .clothes(converted)
             .build();
     }
 }

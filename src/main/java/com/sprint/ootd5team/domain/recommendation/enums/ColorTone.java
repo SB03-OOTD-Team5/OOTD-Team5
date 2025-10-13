@@ -63,6 +63,7 @@ public enum ColorTone {
             return false;
         }
         String c = colorName.toLowerCase();
-        return c.contains("검") || c.contains("블랙") || c.contains("남색") || c.contains("진");
+        return c.contains("검") || c.contains("블랙") || c.contains("네이비") || c.contains("진")
+            || c.contains("그레이");
     }
 }
