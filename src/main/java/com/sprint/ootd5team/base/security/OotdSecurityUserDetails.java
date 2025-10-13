@@ -14,7 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 @EqualsAndHashCode(of = "userDto")
 @Getter
 @RequiredArgsConstructor
-public class OotdUserDetails implements UserDetails {
+public class OotdSecurityUserDetails implements UserDetails {
 
     private final UserDto userDto;
     private final String password;
@@ -31,7 +31,7 @@ public class OotdUserDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return userDto.name();
+        return userDto.email();
     }
 
     public UUID getUserId() { return userDto.id(); }

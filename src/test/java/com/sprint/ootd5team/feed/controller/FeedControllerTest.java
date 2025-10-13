@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.config.SecurityConfig;
 import com.sprint.ootd5team.base.security.JwtAuthenticationFilter;
-import com.sprint.ootd5team.base.security.OotdUserDetails;
+import com.sprint.ootd5team.base.security.OotdSecurityUserDetails;
 import com.sprint.ootd5team.base.security.service.AuthService;
 import com.sprint.ootd5team.domain.feed.controller.FeedController;
 import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
@@ -45,6 +45,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -61,7 +63,9 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest(controllers = FeedController.class,
     excludeAutoConfiguration = {
         SecurityAutoConfiguration.class,
-        SecurityFilterAutoConfiguration.class
+        SecurityFilterAutoConfiguration.class,
+        OAuth2ClientAutoConfiguration.class,
+        OAuth2ResourceServerAutoConfiguration.class
     },
     excludeFilters = {
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtAuthenticationFilter.class),
@@ -89,7 +93,7 @@ public class FeedControllerTest {
     void getFeeds_success() throws Exception {
         // given
         UUID testUserId = UUID.randomUUID();
-        OotdUserDetails ootdUser = createTestUser(testUserId, Role.USER);
+        OotdSecurityUserDetails ootdUser = createTestUser(testUserId, Role.USER);
         Authentication auth = new UsernamePasswordAuthenticationToken(ootdUser, null, ootdUser.getAuthorities());
 
         FeedDtoCursorResponse response = new FeedDtoCursorResponse(
@@ -132,7 +136,7 @@ public class FeedControllerTest {
         verify(feedService, times(1)).delete(feedId);
     }
 
-    private OotdUserDetails createTestUser(UUID userId, Role role) {
+    private OotdSecurityUserDetails createTestUser(UUID userId, Role role) {
         UserDto userDto = new UserDto(
             userId,
             Instant.now(),
@@ -142,7 +146,7 @@ public class FeedControllerTest {
             List.of(),
             false
         );
-        return new OotdUserDetails(userDto, "password");
+        return new OotdSecurityUserDetails(userDto, "password");
     }
 
     @Test

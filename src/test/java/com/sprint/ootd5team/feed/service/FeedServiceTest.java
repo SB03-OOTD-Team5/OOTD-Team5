@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -16,10 +18,12 @@ import com.sprint.ootd5team.base.errorcode.ErrorCode;
 import com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException;
 import com.sprint.ootd5team.base.exception.feed.FeedNotFoundException;
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
-import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
+import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
+import com.sprint.ootd5team.domain.feed.assembler.FeedDtoAssembler;
 import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
 import com.sprint.ootd5team.domain.feed.dto.data.OotdDto;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
@@ -31,6 +35,7 @@ import com.sprint.ootd5team.domain.feed.entity.Feed;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.feed.repository.feedClothes.FeedClothesRepository;
 import com.sprint.ootd5team.domain.feed.service.FeedServiceImpl;
+import com.sprint.ootd5team.domain.feed.validator.FeedValidator;
 import com.sprint.ootd5team.domain.follow.repository.FollowRepository;
 import com.sprint.ootd5team.domain.notification.event.type.multi.FeedCreatedEvent;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
@@ -52,7 +57,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
@@ -83,9 +87,11 @@ public class FeedServiceTest {
     private FollowRepository followRepository;
 
     @Mock
+    private FileStorage fileStorage;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    @InjectMocks
     private FeedServiceImpl feedService;
 
     private UUID userId;
@@ -116,6 +122,21 @@ public class FeedServiceTest {
             new PrecipitationDto(PrecipitationType.NONE, 0.0, 0.0),
             new TemperatureDto(20.0, -1.0, 18.0, 25.0)
         );
+
+        FeedDtoAssembler feedDtoAssembler = new FeedDtoAssembler(feedClothesRepository, fileStorage);
+        FeedValidator feedValidator = new FeedValidator(feedRepository, profileRepository, weatherRepository, clothesRepository);
+
+        feedService = new FeedServiceImpl(
+            feedRepository,
+            feedClothesRepository,
+            feedDtoAssembler,
+            eventPublisher,
+            followRepository,
+            feedValidator
+        );
+
+        lenient().when(fileStorage.resolveUrl(anyString()))
+            .thenAnswer(invocation -> "resolved-" + invocation.getArgument(0));
     }
 
     @Test
@@ -123,7 +144,7 @@ public class FeedServiceTest {
     void getFeeds_success() {
         // given
         UUID feedId = UUID.randomUUID();
-        FeedDto feedDto = new FeedDto(
+        FeedDto raw = new FeedDto(
             feedId,
             Instant.now(),
             Instant.now(),
@@ -139,7 +160,7 @@ public class FeedServiceTest {
         OotdDto ootdDto = new OotdDto(
             UUID.randomUUID(),
             "아디다스 트레이닝 팬츠",
-            "https://image.url/adidasPants.jpg",
+            "clothes/test.png",
             "하의",
             List.of(new ClothesAttributeWithDefDto(
                 UUID.randomUUID(),
@@ -150,7 +171,7 @@ public class FeedServiceTest {
         );
 
         when(feedRepository.findFeedDtos(request, userId))
-            .thenReturn(List.of(feedDto));
+            .thenReturn(List.of(raw));
         when(feedRepository.countFeeds(any(), any(), any(), any()))
             .thenReturn(10L);
         when(feedClothesRepository.findOotdsByFeedIds(anyList()))
@@ -159,11 +180,15 @@ public class FeedServiceTest {
         // when
         FeedDtoCursorResponse response = feedService.getFeeds(request, userId);
 
+        FeedDto enriched = response.data().get(0);
+
         // then
         assertThat(response.data()).hasSize(1);
+        assertThat(enriched.author().profileImageUrl()).startsWith("resolved-");
+        assertThat(enriched.ootds()).hasSize(1);
+        assertThat(enriched.ootds().get(0).imageUrl()).startsWith("resolved-");
         assertThat(response.totalCount()).isEqualTo(10L);
         assertThat(response.hasNext()).isFalse();
-        assertThat(response.data().get(0).ootds()).hasSize(1);
 
         verify(feedRepository, times(1)).findFeedDtos(request, userId);
         verify(feedRepository, times(1)).countFeeds(any(), any(), any(), any());
@@ -208,11 +233,13 @@ public class FeedServiceTest {
     void getFeed_success() {
         // given
         UUID feedId = UUID.randomUUID();
+        Feed feed = createFeed(feedId, userId, UUID.randomUUID(), "테스트 피드");
         FeedDto mockDto = new FeedDto(
             feedId, Instant.now(), Instant.now(), testAuthor, testWeather,
             List.of(), "테스트 피드", 10, 2, false
         );
 
+        when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         given(feedRepository.findFeedDtoById(feedId, userId)).willReturn(mockDto);
 
         // when
@@ -222,6 +249,8 @@ public class FeedServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(feedId);
         assertThat(result.content()).isEqualTo("테스트 피드");
+
+        verify(feedRepository).findById(feedId);
         verify(feedRepository).findFeedDtoById(feedId, userId);
     }
 
@@ -230,12 +259,14 @@ public class FeedServiceTest {
     void getFeed_notFound() {
         // given
         UUID feedId = UUID.randomUUID();
-        given(feedRepository.findFeedDtoById(feedId, userId)).willReturn(null);
+        when(feedRepository.findById(feedId)).thenReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> feedService.getFeed(feedId, userId))
             .isInstanceOf(FeedNotFoundException.class);
-        verify(feedRepository).findFeedDtoById(feedId, userId);
+
+        verify(feedRepository).findById(feedId);
+        verify(feedRepository, never()).findFeedDtoById(any(), any());
     }
 
     @Test

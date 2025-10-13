@@ -7,7 +7,7 @@ import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.base.security.JwtInformation;
 import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
-import com.sprint.ootd5team.base.security.OotdUserDetails;
+import com.sprint.ootd5team.base.security.OotdSecurityUserDetails;
 import com.sprint.ootd5team.domain.notification.event.type.single.RoleUpdatedEvent;
 import com.sprint.ootd5team.domain.user.dto.TemporaryPasswordCreatedEvent;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
@@ -57,9 +57,10 @@ public class AuthService {
         Role newRole = Role.valueOf(request.role());
         user.updateRole(newRole);
 
+        User save = userRepository.save(user);
+        jwtRegistry.invalidateJwtInformationByUserId(userId);
         eventPublisher.publishEvent(new RoleUpdatedEvent(user.getId(), oldRole.name(), newRole.name()));
-
-        return userMapper.toDto(userRepository.save(user));
+        return userMapper.toDto(save);
     }
 
     /**
@@ -99,16 +100,16 @@ public class AuthService {
         String username = tokenProvider.getEmailFromToken(refreshToken);
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-        if (!(userDetails instanceof OotdUserDetails ootdUserDetails)) {
+        if (!(userDetails instanceof OotdSecurityUserDetails ootdSecurityUserDetails)) {
             throw new OotdException(ErrorCode.INVALID_USER_DETAILS);
         }
 
         try {
-            String newAccessToken = tokenProvider.generateAccessToken(ootdUserDetails);
-            String newRefreshToken = tokenProvider.generateRefreshToken(ootdUserDetails);
+            String newAccessToken = tokenProvider.generateAccessToken(ootdSecurityUserDetails.getUserDto());
+            String newRefreshToken = tokenProvider.generateRefreshToken(ootdSecurityUserDetails.getUserDto());
 
             JwtInformation newJwtInformation = new JwtInformation(
-                ootdUserDetails.getUserDto(),
+                ootdSecurityUserDetails.getUserDto(),
                 newAccessToken,
                 newRefreshToken
             );
@@ -135,7 +136,7 @@ public class AuthService {
             throw new OotdException(ErrorCode.UNAUTHORIZED);
         }
         Object principal = authentication.getPrincipal();
-        if (principal instanceof OotdUserDetails userDetails) {
+        if (principal instanceof OotdSecurityUserDetails userDetails) {
             return userDetails.getUserId();
         }
         OotdException ex = new OotdException(ErrorCode.UNSUPPORTED_PRINCIPAL);
