@@ -1,255 +1,284 @@
 package com.sprint.ootd5team.domain.recommendation.engine;
 
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
-import com.sprint.ootd5team.domain.recommendation.dto.ClothesFilteredDto;
+import com.sprint.ootd5team.domain.recommendation.engine.model.ClothesScore;
 import com.sprint.ootd5team.domain.recommendation.engine.model.OutfitScore;
-import com.sprint.ootd5team.domain.recommendation.engine.model.ScoredClothes;
+import com.sprint.ootd5team.domain.recommendation.enums.ClothesStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-/**
- * 코디 조합 생성기
- * ----------------------------
- * - 필수 아이템: 상의/하의 or 원피스 + 신발
- * - 선택 아이템: 아우터, 악세사리, 언더웨어, 기타 등 (점수 기반 추가)
- * - 단품 점수(기본) + 조합 점수(OutfitCombinationEngine) 를 합산해 최종 코디 점수 산출
- * - 상위 N개 코디만 유지하여 반환
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OutfitCombinationGenerator {
 
-    private static final int MAX_TOP_OUTFITS = 10;              // 상위 최대 N개 조합만 유지
-    private static final int MAX_OPTIONAL_ITEMS_PER_OUTFIT = 5;      // optional 최대 포함 수
-    private static final int MAX_OPTIONAL_ITEMS_PER_TYPE = 5;      // optional 타입별 후보군 최대 포함 수
-    private static final int MAX_DUPLICATE_ALLOWED_PER_TYPE = 3;      // 여러 개 허용 되는 타입 최대 수
+    private static final int MAX_TOP_BOTTOM_BASE_SIZE = 10;  // 상의+하의 빔 폭
+    private static final int MAX_DRESS_BASE_SIZE = 5;        // 원피스 빔 폭
 
-    // 여러 개 착용 가능 타입
-    private static final Set<ClothesType> MULTI_ALLOWED_TYPES = Set.of(
-        ClothesType.ACCESSORY,
-        ClothesType.UNDERWEAR,
-        ClothesType.ETC
-    );
+    private static final double IMPROVEMENT_DELTA = 0.2;     // 선택 아이템 추가 시 최소 개선폭
+    private static final double DUPLICATE_TIE_DELTA = 0.2;   // 중복 충돌 시 점수 동률 허용 범위
 
-    private final OutfitCombinationEngine combinationEngine;
-
-    /**
-     * 단품 후보들을 받아 조합 생성 + 점수 기반 Top-N 코디 선정
-     */
-    public List<OutfitScore> generateWithScoring(List<ScoredClothes> candidates) {
-        log.debug("[OutfitCombinationGenerator] 코디 조합 생성 시작: 입력 의상 수 = {}", candidates.size());
-
-        // 필수 카테고리 분류
-        List<ScoredClothes> tops = filterByType(candidates, ClothesType.TOP);
-        List<ScoredClothes> bottoms = filterByType(candidates, ClothesType.BOTTOM);
-        List<ScoredClothes> dresses = filterByType(candidates, ClothesType.DRESS);
-
-        // 선택(optional) 아이템 필터링 및 점수순 정렬
-        Map<ClothesType, List<ScoredClothes>> optionalByType = candidates.stream()
-            .filter(c -> !Set.of(ClothesType.TOP, ClothesType.BOTTOM, ClothesType.DRESS)
-                .contains(c.item().type()))
+    public List<OutfitScore> generateWithScoring(List<ClothesScore> candidates) {
+        Map<ClothesType, List<ClothesScore>> grouped = candidates.stream()
             .collect(Collectors.groupingBy(c -> c.item().type()));
 
-        // 타입 별 상위 5개 추출
-        List<ScoredClothes> optionalCandidates = optionalByType.values().stream()
-            .flatMap(typeList -> typeList.stream()
-                .sorted(Comparator.comparingDouble(ScoredClothes::score).reversed())
-                .limit(MAX_OPTIONAL_ITEMS_PER_TYPE))
+        List<ClothesScore> tops = grouped.getOrDefault(ClothesType.TOP, List.of());
+        List<ClothesScore> bottoms = grouped.getOrDefault(ClothesType.BOTTOM, List.of());
+        List<ClothesScore> dresses = grouped.getOrDefault(ClothesType.DRESS, List.of());
+
+        // 단계 로그: 후보 수 요약
+        log.debug(
+            "[OutfitCombinationGenerator] [조합생성] tops={}, bottoms={}, dresses={}, optionalTypes={}",
+            tops.size(), bottoms.size(), dresses.size(),
+            grouped.keySet().stream().filter(t -> !isSkippableType(t)).map(Enum::name).toList());
+
+        List<OutfitScore> topBottomBase = buildTopBottomCombinations(tops, bottoms);
+        List<OutfitScore> dressBase = buildDressCombinations(dresses);
+
+        // 선택 아이템 확장 (타입별로 독립 확장)
+        for (ClothesType type : ClothesType.values()) {
+            if (isSkippableType(type)) {
+                continue;
+            }
+
+            List<ClothesScore> items = grouped.getOrDefault(type, List.of());
+            if (items.isEmpty()) {
+                continue;
+            }
+
+            int perBaseBeam = beamWidthForType(type, items.size());
+
+            topBottomBase = buildOptionalCombinations(topBottomBase, items,
+                MAX_TOP_BOTTOM_BASE_SIZE, type, perBaseBeam);
+            dressBase = buildOptionalCombinations(dressBase, items, MAX_DRESS_BASE_SIZE, type,
+                perBaseBeam);
+        }
+
+        // 병합 후 상위만 유지
+        List<OutfitScore> merged = new ArrayList<>(topBottomBase.size() + dressBase.size());
+        merged.addAll(topBottomBase);
+        merged.addAll(dressBase);
+
+        merged = merged.stream()
+            .sorted(Comparator.comparingDouble(OutfitScore::normalizedScore).reversed())
+            .limit(MAX_TOP_BOTTOM_BASE_SIZE + MAX_DRESS_BASE_SIZE)
+            .toList();
+
+        logStepResult("최종 결과 리스트", merged);
+        return merged;
+    }
+
+    private boolean isSkippableType(ClothesType type) {
+        return switch (type) {
+            case TOP, BOTTOM, DRESS -> true;
+            default -> false;
+        };
+    }
+
+    private List<OutfitScore> buildTopBottomCombinations(
+        List<ClothesScore> tops,
+        List<ClothesScore> bottoms
+    ) {
+        List<OutfitScore> result = new ArrayList<>();
+        for (ClothesScore top : tops) {
+            for (ClothesScore bottom : bottoms) {
+                OutfitScore outfit = new OutfitScore().add(top).add(bottom);
+                result.add(outfit);
+            }
+        }
+
+        List<OutfitScore> limited = result.stream()
+            .sorted(Comparator.comparingDouble(OutfitScore::normalizedScore).reversed())
+            .limit(MAX_TOP_BOTTOM_BASE_SIZE)
+            .toList();
+
+        log.debug("[OutfitCombinationGenerator] 총 {}건 -> 상위 {}건", result.size(), limited.size());
+        return limited;
+    }
+
+    private List<OutfitScore> buildDressCombinations(List<ClothesScore> dresses) {
+        List<OutfitScore> result = dresses.stream()
+            .map(dress -> new OutfitScore().add(dress))
+            .sorted(Comparator.comparingDouble(OutfitScore::normalizedScore).reversed())
+            .limit(MAX_DRESS_BASE_SIZE)
+            .toList();
+
+        log.debug("[OutfitCombinationGenerator] 총 {}건 -> 상위 {}건", dresses.size(), result.size());
+        return result;
+    }
+
+    private int beamWidthForType(ClothesType type, int candidateCount) {
+        return switch (type) {
+            case OUTER, SHOES -> Math.min(3, candidateCount);
+            case ACCESSORY, HAT, BAG, SCARF, SOCKS -> Math.min(1, candidateCount);
+            default -> Math.min(2, candidateCount);
+        };
+    }
+
+    private List<OutfitScore> buildOptionalCombinations(
+        List<OutfitScore> current,
+        List<ClothesScore> candidates,
+        int maxSize,
+        ClothesType addingType,
+        int perBaseBeamWidth
+    ) {
+        if (candidates.isEmpty() || current.isEmpty()) {
+            return current;
+        }
+        List<OutfitScore> evolved = new ArrayList<>(
+            Math.min(maxSize, current.size() * perBaseBeamWidth));
+        int mismatchCount = 0;
+        int duplicateHitCount = 0;
+        int improvedBaseCount = 0;
+
+        for (OutfitScore baseCombo : current) {
+            double baseScore = baseCombo.normalizedScore();
+
+            List<OutfitScore> improved = new ArrayList<>(perBaseBeamWidth);
+            for (ClothesScore item : candidates) {
+                if (isMismatch(baseCombo, item)) {
+                    mismatchCount++;
+                    continue;
+                }
+                OutfitScore newCombo = new OutfitScore(baseCombo).add(item);
+                double newScore = newCombo.normalizedScore();
+                if (newScore > baseScore + IMPROVEMENT_DELTA) {
+                    improved.add(newCombo);
+                }
+            }
+
+            // 상위 k개만 선택
+            if (!improved.isEmpty()) {
+                improvedBaseCount++;
+                List<OutfitScore> sortedImproved = improved.stream()
+                    .sorted(Comparator.comparingDouble(OutfitScore::normalizedScore).reversed())
+                    .limit(perBaseBeamWidth)
+                    .toList();
+
+                for (OutfitScore c : sortedImproved) {
+                    OutfitScore dup = findSimilar(evolved, c);
+                    if (dup == null) {
+                        evolved.add(c);
+                    } else {
+                        duplicateHitCount++;
+                    }
+                }
+            } else {
+                evolved.add(baseCombo);
+            }
+        }
+
+        List<OutfitScore> limited = evolved.stream()
+            .sorted(Comparator.comparingDouble(OutfitScore::normalizedScore).reversed())
+            .limit(maxSize)
             .toList();
 
         log.debug(
-            "[OutfitCombinationGenerator] 카테고리 분류 결과: TOP={}, BOTTOM={}, DRESS={}, optional={}\n",
-            tops.size(), bottoms.size(), dresses.size(), optionalCandidates.size());
+            "[선택확장/{}] 입력:{} -> 출력:{} (mismatch:{}, dupHit:{}, improvedBase:{}, perBaseBeam:{})",
+            addingType, current.size(), limited.size(), mismatchCount, duplicateHitCount,
+            improvedBaseCount, perBaseBeamWidth);
 
-        // 최소 힙으로 Top N개만 유지
-        PriorityQueue<OutfitScore> topCombinations = new PriorityQueue<>(
-            Comparator.comparingDouble(OutfitScore::score));
+        return limited;
+    }
 
-        // 상의 + 하의 조합
-        for (ScoredClothes top : tops) {
-            for (ScoredClothes bottom : bottoms) {
-                addCombination(topCombinations, List.of(top.item(), bottom.item()),
-                    optionalCandidates);
+    private OutfitScore findSimilar(List<OutfitScore> list, OutfitScore candidate) {
+        for (int i = 0; i < list.size(); i++) {
+            OutfitScore existing = list.get(i);
+            double overlap = calculateOverlap(existing, candidate);
+            if (overlap >= 0.5) {
+                double existingScore = existing.normalizedScore();
+                double candidateScore = candidate.normalizedScore();
+                double scoreDiff = Math.abs(existingScore - candidateScore);
+
+                if (scoreDiff < DUPLICATE_TIE_DELTA) {
+                    boolean replace = ThreadLocalRandom.current().nextBoolean();
+                    if (replace) {
+                        list.set(i, candidate);
+                        log.debug("[OutfitCombinationGenerator] [중복랜덤] 점수차 {} -> 교체됨: {}",
+                            String.format("%.2f", scoreDiff),
+                            candidate);
+                    } else {
+                        log.debug("[OutfitCombinationGenerator] [중복랜덤] 점수차 {} -> 기존 유지: {}",
+                            String.format("%.2f", scoreDiff),
+                            existing);
+                    }
+                } else if (candidateScore > existingScore) {
+                    list.set(i, candidate);
+                    log.debug("[OutfitCombinationGenerator] [중복교체] 기존보다 {} 높음 -> 교체됨",
+                        String.format("%.2f", candidateScore - existingScore));
+                }
+                return existing;
             }
         }
+        return null;
+    }
 
-        // 원피스 조합
-        for (ScoredClothes dress : dresses) {
-            addCombination(topCombinations, List.of(dress.item()), optionalCandidates);
+    private double calculateOverlap(OutfitScore a, OutfitScore b) {
+        Set<UUID> idsA = a.getItems().stream()
+            .map(i -> i.item().clothesId())
+            .collect(Collectors.toSet());
+        Set<UUID> idsB = b.getItems().stream()
+            .map(i -> i.item().clothesId())
+            .collect(Collectors.toSet());
+
+        int intersection = (int) idsA.stream().filter(idsB::contains).count();
+        int union = idsA.size() + idsB.size() - intersection;
+        return union == 0 ? 0 : (double) intersection / union;
+    }
+
+    // 스타일 규칙: 코디의 스타일/구성에 기반하여 필터링
+    private boolean isMismatch(OutfitScore combo, ClothesScore add) {
+        ClothesType addType = add.item().type();
+
+        boolean hasDress = combo.getItems().stream()
+            .anyMatch(i -> i.item().type() == ClothesType.DRESS);
+
+        // 현재 코디가 포멀한 경우: 모자/스카프/악세사리 제외
+        boolean comboIsFormal = combo.getStyles().contains(ClothesStyle.FORMAL);
+        if (comboIsFormal && (addType == ClothesType.HAT || addType == ClothesType.SCARF
+            || addType == ClothesType.ACCESSORY)) {
+            return true;
         }
 
-        // 점수 순 정렬
-        List<OutfitScore> sortedCombinations = topCombinations.stream()
-            .sorted(Comparator.comparingDouble(OutfitScore::score).reversed())
-            .toList();
-
-        // 중복 제거 (의상 ID 기준)
-        List<OutfitScore> uniqueCombinations = removeDuplicateCombinations(sortedCombinations);
-
-        // 상위 3개 요약 출력
-        logTopCombinations(uniqueCombinations, 3);
-
-        return uniqueCombinations;
-    }
-
-    /**
-     * 코디 조합 1개를 생성하고 점수 계산 후 큐에 추가
-     *
-     * @param topCombinations    Top-N 조합을 유지할 우선순위 큐
-     * @param baseItems          기본 조합 (상의+하의 or 원피스)
-     * @param optionalCandidates 추가 선택 가능한 아이템 목록
-     */
-    private void addCombination(
-        PriorityQueue<OutfitScore> topCombinations,
-        List<ClothesFilteredDto> baseItems,
-        List<ScoredClothes> optionalCandidates
-    ) {
-        // 조합 생성
-        List<ClothesFilteredDto> outfitItems = buildOutfitCombination(baseItems,
-            optionalCandidates);
-
-        // 단품 평균 점수 계산
-        double baseScore = calculateBaseAverageScore(outfitItems, optionalCandidates);
-
-        // 조합 점수 계산
-        double combinationScore = combinationEngine.calculateCombinationBonus(outfitItems);
-
-        // 최종 가중 점수 (단품 40% + 조합 60%)
-        double finalScore = baseScore * 0.4 + combinationScore * 0.6;
-
-        log.debug("[OutfitCombinationGenerator] [addCombination] 기본={}개, optional 후={}개, 조합점수={}",
-            baseItems.size(), outfitItems.size(), combinationScore);
-
-        // Top-N 큐에 추가
-        addToQueue(topCombinations, outfitItems, finalScore);
-    }
-
-    /**
-     * 선택(optional) 아이템 포함하여 코디 조합 생성
-     */
-    private List<ClothesFilteredDto> buildOutfitCombination(
-        List<ClothesFilteredDto> baseItems,
-        List<ScoredClothes> optionalItems
-    ) {
-        List<ClothesFilteredDto> outfitItems = new ArrayList<>(baseItems);
-        Map<ClothesType, Integer> typeCountMap = new HashMap<>();
-
-        for (ScoredClothes candidate : optionalItems) {
-            ClothesType type = candidate.item().type();
-            int currentCount = typeCountMap.getOrDefault(type, 0);
-
-            boolean canAdd =
-                (MULTI_ALLOWED_TYPES.contains(type)
-                    && currentCount < MAX_DUPLICATE_ALLOWED_PER_TYPE) ||
-                    (!MULTI_ALLOWED_TYPES.contains(type) && currentCount < 1);
-
-            if (canAdd) {
-                outfitItems.add(candidate.item());
-                typeCountMap.put(type, currentCount + 1);
-            }
-
-            // optional 개수 제한
-            if (outfitItems.size() - baseItems.size() >= MAX_OPTIONAL_ITEMS_PER_OUTFIT) {
-                break;
-            }
+        // 현재 코디가 스포츠/스트릿인 경우: "포멀 아우터" 배제
+        boolean comboIsSportyOrStreet = combo.getStyles().contains(ClothesStyle.SPORTY)
+            || combo.getStyles().contains(ClothesStyle.STREET);
+        if (comboIsSportyOrStreet
+            && addType == ClothesType.OUTER
+            && add.style() == ClothesStyle.FORMAL) {
+            return true;
         }
 
-        return outfitItems;
-    }
-
-    /**
-     * 단품 점수들의 평균 계산
-     */
-    private double calculateBaseAverageScore(
-        List<ClothesFilteredDto> outfitItems,
-        List<ScoredClothes> candidates
-    ) {
-        return outfitItems.stream()
-            .mapToDouble(item -> candidates.stream()
-                .filter(sc -> sc.item().clothesId().equals(item.clothesId()))
-                .mapToDouble(ScoredClothes::score)
-                .findFirst()
-                .orElse(0))
-            .average()
-            .orElse(0);
-    }
-
-    /**
-     * Top-N 큐 유지 (가장 낮은 점수 제거)
-     */
-    private void addToQueue(
-        PriorityQueue<OutfitScore> queue,
-        List<ClothesFilteredDto> items,
-        double score
-    ) {
-        queue.add(new OutfitScore(items, score));
-        if (queue.size() > MAX_TOP_OUTFITS) {
-            queue.poll();
+        // 원피스 코디에는 모자 배제
+        if (hasDress && addType == ClothesType.HAT) {
+            return true;
         }
+
+        return false;
     }
 
-    /**
-     * 동일 의상 조합(중복) 제거
-     */
-    private List<OutfitScore> removeDuplicateCombinations(List<OutfitScore> combinations) {
-        List<OutfitScore> unique = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
-
-        for (OutfitScore combo : combinations) {
-            String key = combo.outfit().stream()
-                .map(o -> o.clothesId().toString())
-                .sorted()
-                .reduce((a, b) -> a + "-" + b)
-                .orElse("");
-
-            if (seen.add(key)) {
-                unique.add(combo);
-            } else {
-                log.debug("[OutfitCombinationGenerator] 중복 조합 스킵: {}", key);
-            }
-        }
-        return unique;
-    }
-
-    /**
-     * 상위 N개 코디 요약 로그 출력
-     */
-    private void logTopCombinations(List<OutfitScore> combinations, int limit) {
-        List<OutfitScore> top = combinations.stream().limit(limit).toList();
-
-        String summary = top.stream()
+    private void logStepResult(String step, List<OutfitScore> combos) {
+        String summary = combos.stream()
             .map(c -> String.format("%.1f점 → %s",
-                c.score(),
-                c.outfit().stream()
-                    .map(o -> o.name() + "(" + o.type() + ")")
+                c.normalizedScore(),
+                c.getItems().stream()
+                    .map(o -> o.item().name() + "(" + o.item().type().name() + ")")
                     .collect(Collectors.joining(", "))))
             .collect(Collectors.joining("\n"));
-
         log.info("""
-            [OutfitCombinationGenerator] Summary: 상위 {}개 코디 추천 결과
+            [OutfitCombinationGenerator] {}
             =====================================
             {}
             =====================================
-            """, limit, summary);
-    }
-
-    /**
-     * 특정 타입의 의상만 필터링
-     */
-    private List<ScoredClothes> filterByType(List<ScoredClothes> all, ClothesType type) {
-        return all.stream()
-            .filter(c -> c.item().type() == type)
-            .collect(Collectors.toList());
+            """, step, summary);
     }
 }

@@ -21,13 +21,6 @@ public interface RecommendationInfoMapper {
     @Mapping(target = "temperatureSensitivity", source = "temperatureSensitivity")
     ProfileInfoDto toProfileInfoDto(Profile profile);
 
-    @Mapping(target = "precipitationType", source = "precipitationType")
-    @Mapping(target = "precipitationAmount", source = "precipitationAmount")
-    @Mapping(target = "currentHumidity", source = "humidity")
-    @Mapping(target = "currentTemperature", source = "temperature")
-    @Mapping(target = "minTemperature", source = "temperatureMin")
-    @Mapping(target = "maxTemperature", source = "temperatureMax")
-    @Mapping(target = "windSpeedLevel", source = "windspeedLevel")
     WeatherInfoDto toWeatherInfoDto(Weather weather);
 
     default int calculateAge(LocalDate birthDate) {

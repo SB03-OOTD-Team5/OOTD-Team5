@@ -9,9 +9,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,12 +35,13 @@ public class RecommendationFallbackService {
         ClothesType.DRESS,
         ClothesType.SHOES
     );
+
     // optional = 위 4개 타입을 제외한 나머지 모든 타입
     private static final Set<ClothesType> OPTIONAL_TYPES =
         EnumSet.complementOf(EnumSet.copyOf(EXCLUDED_MAIN_TYPES));
+
     private final ClothesRepository clothesRepository;
     private final RecommendationMapper recommendationMapper;
-    private final Random random = new Random();
 
     public List<ClothesFilteredDto> getRandomOutfit(UUID userId) {
         List<Clothes> all = clothesRepository.findByOwner_Id(userId);
@@ -55,7 +56,8 @@ public class RecommendationFallbackService {
         List<Clothes> shoes = filterByType(all, ClothesType.SHOES);
 
         List<Clothes> selected = new ArrayList<>();
-        boolean useDress = !dresses.isEmpty() && (tops.isEmpty() || random.nextBoolean());
+        boolean useDress =
+            !dresses.isEmpty() && (tops.isEmpty() || ThreadLocalRandom.current().nextBoolean());
 
         if (useDress) {
             selected.add(randomPick(dresses));
@@ -73,7 +75,7 @@ public class RecommendationFallbackService {
             .filter(c -> OPTIONAL_TYPES.contains(c.getType()) && !selected.contains(c))
             .toList();
         Collections.shuffle(optionals);
-        int optionalCount = optionals.isEmpty() ? 0 : random.nextInt(2) + 1;
+        int optionalCount = optionals.isEmpty() ? 0 : ThreadLocalRandom.current().nextInt(1, 3);
         selected.addAll(optionals.stream().limit(optionalCount).toList());
 
         log.debug("[Fallback] 랜덤 코디 생성 완료 ({}개)", selected.size());
@@ -84,7 +86,10 @@ public class RecommendationFallbackService {
     }
 
     private Clothes randomPick(List<Clothes> list) {
-        return list.get(random.nextInt(list.size()));
+        if (list.isEmpty()) {
+            throw new IllegalArgumentException("리스트가 비어있음");
+        }
+        return list.get(ThreadLocalRandom.current().nextInt(list.size()));
     }
 
     private List<Clothes> filterByType(List<Clothes> all, ClothesType type) {

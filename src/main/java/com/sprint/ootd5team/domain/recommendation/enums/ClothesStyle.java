@@ -27,42 +27,36 @@ public enum ClothesStyle {
             .orElse(OTHER);
     }
 
-    /**
-     * 스타일 조화 판단
-     */
-    public boolean isHarmoniousWith(ClothesStyle other) {
-        if (this == other) {
-            return true;
-        }
-
-        // 캐주얼은 대부분 어울림
-        if (this == CASUAL || other == CASUAL) {
-            return true;
-        }
-
-        // 기타는 통과
+    /** 기본 스타일 궁합 점수 */
+    public double getHarmonyScore(ClothesStyle other) {
         if (this == OTHER || other == OTHER) {
-            return true;
+            return 0.0;
+        }
+        if (this == other) {
+            return 2.5;
         }
 
-        // 보너스 조합
-        if ((this == STREET && other == SPORTY)
-            || (this == SPORTY && other == STREET)
-            || (this == VINTAGE && other == CLASSIC)
-            || (this == CLASSIC && other == VINTAGE)) {
-            return true;
+        // 유사 계열
+        if ((this == CASUAL && other == STREET) ||
+            (this == CASUAL && other == SPORTY) ||
+            (this == CLASSIC && other == FORMAL)) {
+            return 1.5;
         }
 
-        // 감점 조합
-        if ((this == FORMAL && other == STREET)
-            || (this == FORMAL && other == SPORTY)
-            || (this == CLASSIC && other == STREET)
-            || (this == STREET && other == CLASSIC)
-            || (this == FORMAL && other == VINTAGE)
-            || (this == VINTAGE && other == FORMAL)) {
-            return false;
+        // 중간 정도 어울림
+        if ((this == CASUAL && other == FORMAL) ||
+            (this == STREET && other == VINTAGE) ||
+            (this == SPORTY && other == CASUAL)) {
+            return 0.5;
         }
 
-        return true;
+        // 부조화
+        if ((this == FORMAL && other == STREET) ||
+            (this == FORMAL && other == SPORTY) ||
+            (this == CLASSIC && other == STREET)) {
+            return -2.0;
+        }
+
+        return 0.0;
     }
 }

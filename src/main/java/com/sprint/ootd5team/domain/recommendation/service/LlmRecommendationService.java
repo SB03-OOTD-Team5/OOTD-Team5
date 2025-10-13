@@ -34,9 +34,16 @@ public class LlmRecommendationService {
         String llmInput = buildLlmInput(info, clothes);
         Prompt prompt = buildPrompt(llmInput);
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> map = (Map<String, Object>) llmJsonClient.callJsonPrompt(prompt,
-            Map.class);
+        Map<String, Object> map;
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> tmp = (Map<String, Object>) llmJsonClient.callJsonPrompt(prompt,
+                Map.class);
+            map = tmp;
+        } catch (Exception e) {
+            log.warn("[LlmRecommendationService] LLM 호출 실패 → 빈 결과 반환", e);
+            return List.of();
+        }
 
         Object rawIds = map.get("ids");
         if (!(rawIds instanceof List<?> list)) {

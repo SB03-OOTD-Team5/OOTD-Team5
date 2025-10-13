@@ -1,5 +1,8 @@
 package com.sprint.ootd5team.domain.clothes.enums;
 
+import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
+import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
+import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
 import java.util.regex.Pattern;
 
 public enum ClothesType {
@@ -23,7 +26,9 @@ public enum ClothesType {
      * - 매칭 실패 시 ETC 반환
      */
     public static ClothesType fromString(String raw) {
-        if (raw == null || raw.isBlank()) return ClothesType.ETC;
+        if (raw == null || raw.isBlank()) {
+            return ClothesType.ETC;
+        }
         String normalized = raw.trim().toLowerCase();
 
         if (matches(normalized, "상의|top|shirt|t-?shirt|tee")) {
@@ -68,8 +73,36 @@ public enum ClothesType {
      * - 단어 경계(\b) 포함해서 토큰 단위로 매칭
      */
     private static boolean matches(String input, String regex) {
-        return Pattern.compile("\\b(" + regex + ")\\b", Pattern.CASE_INSENSITIVE)
+        return Pattern.compile("(" + regex + ")",
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CHARACTER_CLASS)
             .matcher(input)
             .find();
+    }
+
+    public double getWeatherScore(WeatherInfoDto weatherInfoDto) {
+        double score = 0.0;
+
+        double temperature = weatherInfoDto.temperature();
+        PrecipitationType precip = weatherInfoDto.precipitationType();
+        WindspeedLevel level = weatherInfoDto.windSpeedLevel();
+
+        switch (this) {
+            case OUTER, SCARF -> {
+                if (precip.isSnowy()) {
+                    score += 3;
+                }
+                if (temperature < 16) {
+                    score += 2;
+                }
+                if (temperature < 4) {
+                    score += 5;
+                }
+                if (WindspeedLevel.STRONG.equals(level)) {
+                    score += 5;
+                }
+            }
+        }
+
+        return score;
     }
 }

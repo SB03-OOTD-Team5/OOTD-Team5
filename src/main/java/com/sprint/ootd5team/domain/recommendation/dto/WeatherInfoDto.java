@@ -5,13 +5,13 @@ import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
 
 public record WeatherInfoDto(
     PrecipitationType precipitationType,
-    double precipitationAmount,
+    double precipitationProbability,
 
-    double currentHumidity,
+    double humidity,
 
-    double currentTemperature,
-    double minTemperature,
-    double maxTemperature,
+    double temperature,
+    double temperatureMin,
+    double temperatureMax,
 
     WindspeedLevel windSpeedLevel
 ) {

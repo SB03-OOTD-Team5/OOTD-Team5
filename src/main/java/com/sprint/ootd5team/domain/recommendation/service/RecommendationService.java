@@ -1,7 +1,6 @@
 package com.sprint.ootd5team.domain.recommendation.service;
 
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
-import com.sprint.ootd5team.base.exception.user.UserNotFoundException;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
 import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
@@ -15,8 +14,8 @@ import com.sprint.ootd5team.domain.recommendation.dto.RecommendationDto;
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
 import com.sprint.ootd5team.domain.recommendation.engine.OutfitCombinationGenerator;
 import com.sprint.ootd5team.domain.recommendation.engine.SingleItemScoringEngine;
+import com.sprint.ootd5team.domain.recommendation.engine.model.ClothesScore;
 import com.sprint.ootd5team.domain.recommendation.engine.model.OutfitScore;
-import com.sprint.ootd5team.domain.recommendation.engine.model.ScoredClothes;
 import com.sprint.ootd5team.domain.recommendation.enums.Season;
 import com.sprint.ootd5team.domain.recommendation.enums.SeasonSet;
 import com.sprint.ootd5team.domain.recommendation.mapper.RecommendationInfoMapper;
@@ -27,8 +26,8 @@ import com.sprint.ootd5team.domain.weather.exception.WeatherNotFoundException;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,6 +43,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class RecommendationService {
+
+    private static final int MAX_ITEMS_PER_TYPE = 5;       // 타입별 의상 후보 개수
 
     private final UserRepository userRepository;
     private final WeatherRepository weatherRepository;
@@ -64,7 +65,7 @@ public class RecommendationService {
     @Transactional(readOnly = true)
     public RecommendationDto getRecommendation(UUID weatherId, UUID userId, boolean useAi) {
         Profile profile = getProfile(userId);
-        Weather weather = resolveWeather(userId, weatherId);
+        Weather weather = resolveWeather(profile, weatherId);
 
         // 의상 필터링
         List<ClothesFilteredDto> filtered = getFilteredClothes(userId, profile, weather);
@@ -116,6 +117,7 @@ public class RecommendationService {
 
     /**
      * 내부 알고리즘 호출
+     * - 단품 Top-N 선별 → 조합/랭킹 → 상위 조합 중 무작위 1개 선택
      */
     private List<ClothesFilteredDto> recommendWithAlgorithm(
         UUID userId,
@@ -124,8 +126,8 @@ public class RecommendationService {
     ) {
         log.debug("[RecommendationService] 내부 알고리즘 기반 추천 실행");
 
-        List<ScoredClothes> outfits = singleItemScoringEngine.getTopItemsByType(dtoList, weather,
-            10);
+        List<ClothesScore> outfits = singleItemScoringEngine.getTopItemsByType(dtoList, weather,
+            MAX_ITEMS_PER_TYPE);
         List<OutfitScore> ranked = outfitCombinationGenerator.generateWithScoring(outfits);
 
         if (ranked.isEmpty()) {
@@ -133,11 +135,19 @@ public class RecommendationService {
             return recommendationFallbackService.getRandomOutfit(userId);
         }
 
-        OutfitScore selected = ranked.get(new Random().nextInt(ranked.size()));
-        return selected.outfit();
+        OutfitScore selected = ranked.get(ThreadLocalRandom.current().nextInt(ranked.size()));
+
+        return selected.getItems().stream()
+            .map(ClothesScore::item)
+            .toList();
     }
 
     /* -------------------- 필터링 로직 -------------------- */
+
+    /**
+     * 사용자/날씨 기반으로 의상을 사전 필터링
+     * - 현재는 '계절' 속성 기준으로 필터링
+     */
     @Transactional(readOnly = true)
     public List<ClothesFilteredDto> getFilteredClothes(UUID userId, Profile profile,
         Weather weather) {
@@ -156,9 +166,15 @@ public class RecommendationService {
 
         // 3. 필터링할 옷 속성 가져오기(계절)
         String seasonValue = extractAttribute(c, "계절");
-        SeasonSet itemSeasons = SeasonSet.fromString(seasonValue);
+        if (seasonValue == null || seasonValue.isBlank()) {
+            log.debug(
+                "[RecommendationService] filter: clothesName={}, season attr missing → included",
+                c.getName());
+            return false; // 속성 누락 시 미포함
+        }
 
         // 4. 필터(온도민감도에 따른 계절만)
+        SeasonSet itemSeasons = SeasonSet.fromString(seasonValue);
         boolean match = itemSeasons.matches(forecastSeason, sensitivity);
         if (match) {
             log.debug(
@@ -197,18 +213,21 @@ public class RecommendationService {
             .orElseThrow(() -> ProfileNotFoundException.withUserId(userId));
     }
 
-    private Weather resolveWeather(UUID userId, UUID weatherId) {
-        userRepository.findById(userId)
-            .orElseThrow(() -> UserNotFoundException.withId(userId));
-
-        Profile profile = getProfile(userId);
-
+    /**
+     * - weatherId가 있으면 최우선 사용(실시간 위치값으로 간주)
+     * - 없으면 프로필 위치의 최신 예보 사용
+     */
+    private Weather resolveWeather(Profile profile, UUID weatherId) {
+        if (weatherId != null) {
+            return getWeatherOrThrow(weatherId);
+        }
         if (profile.getLocation() != null) {
             return weatherRepository.findFirstByLocationIdOrderByForecastedAtDesc(
                     profile.getLocation().getId())
-                .orElseGet(() -> getWeatherOrThrow(weatherId));
+                .orElseThrow(() -> new WeatherNotFoundException(
+                    "latest weather not found for profile location"));
         }
-        return getWeatherOrThrow(weatherId);
+        throw new WeatherNotFoundException("missing weatherId and profile location");
     }
 
     private Weather getWeatherOrThrow(UUID weatherId) {
