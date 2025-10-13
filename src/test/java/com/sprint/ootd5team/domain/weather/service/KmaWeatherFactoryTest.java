@@ -77,7 +77,8 @@ class KmaWeatherFactoryTest {
             locationService);
 
         when(locationService.findOrCreateLocation(lat, lon)).thenReturn(location);
-        when(kmaApiAdapter.resolveIssueTime(any())).thenReturn(LocalTime.of(6, 0), LocalTime.of(12, 0));
+        when(kmaApiAdapter.resolveIssueTime(any())).thenReturn(LocalTime.of(6, 0));
+        when(kmaApiAdapter.resolveTargetTime(any())).thenReturn(LocalTime.of(9, 0));
         when(weatherRepository.findAllByLocationIdAndForecastedAtAndForecastAtIn(eq(locationId),
             any(),
             any())).thenReturn(List.of(cached, cached, cached, cached, cached));
@@ -125,8 +126,9 @@ class KmaWeatherFactoryTest {
         when(locationService.findOrCreateLocation(lat, lon)).thenReturn(location);
         when(weatherRepository.findAllByLocationIdAndForecastedAtAndForecastAtIn(eq(locationId),
             any(),
-            any())).thenReturn(Collections.emptyList());
-        when(kmaApiAdapter.resolveIssueTime(any())).thenReturn(LocalTime.of(23, 0), LocalTime.of(12, 0));
+            any())).thenReturn(Collections.emptyList(), List.of(newWeather));
+        when(kmaApiAdapter.resolveIssueTime(any())).thenReturn(LocalTime.of(23, 0));
+        when(kmaApiAdapter.resolveTargetTime(any())).thenReturn(LocalTime.of(9, 0));
         KmaResponse dto = buildSimpleResponse(baseDate, baseTime, baseDate, "0000");
         when(kmaApiAdapter.getWeather(eq(lat), eq(lon), anyString(), anyString(), eq(1000)))
             .thenReturn(dto);
@@ -134,7 +136,7 @@ class KmaWeatherFactoryTest {
         when(
             weatherRepository.findAllByLocationIdAndForecastedAtAndForecastAtBetween(eq(locationId),
                 any(),
-                any(), any())).thenReturn(List.of(newWeather));
+                any(), any())).thenReturn(Collections.emptyList());
 
         List<Weather> result = factory.findOrCreateWeathers(lat, lon);
 
@@ -161,7 +163,8 @@ class KmaWeatherFactoryTest {
         KmaWeatherFactory factory = new KmaWeatherFactory(weatherRepository, kmaApiAdapter,
             locationService);
 
-        when(kmaApiAdapter.resolveIssueTime(any())).thenReturn(LocalTime.of(2, 0), LocalTime.of(12, 0));
+        when(kmaApiAdapter.resolveIssueTime(any())).thenReturn(LocalTime.of(2, 0));
+        when(kmaApiAdapter.resolveTargetTime(any())).thenReturn(LocalTime.of(9, 0));
         ForecastIssueContext issueContext = factory.createForecastIssueContext(
             ZonedDateTime.now(ZoneId.of("Asia/Seoul")));
         assertThrows(WeatherNotFoundException.class,

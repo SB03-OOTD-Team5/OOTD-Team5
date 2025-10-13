@@ -185,8 +185,8 @@ class WeatherServiceKmaTest {
         when(weatherRepository.existsByLocationIdAndForecastedAt(eq(locationId), any()))
             .thenReturn(true);
 
-        boolean exists = weatherService.existsWeatherFor(LocalDate.parse("20250925"),
-            LocalTime.parse("0600"), locationId);
+        boolean exists = weatherService.existsWeatherFor(LocalDate.now(ZoneId.of("Asia/Seoul")),
+            LocalTime.now(ZoneId.of("Asia/Seoul")), locationId);
         assertTrue(exists);
     }
 }
