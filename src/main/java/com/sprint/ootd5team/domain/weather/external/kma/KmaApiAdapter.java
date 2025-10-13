@@ -115,7 +115,7 @@ public class KmaApiAdapter implements WeatherExternalAdapter<KmaResponse> {
         BigDecimal longitude, int limit) {
         GridXY kmaXY = convertGridXY(latitude, longitude);
         try {
-            log.debug(
+            log.info(
                 "[KMA] 날씨 호출 longitude:{},latitude:{},x:{},y:{},base date:{},base time:{}",
                 longitude, latitude,
                 kmaXY.x(), kmaXY.y(), baseDate, baseTime);

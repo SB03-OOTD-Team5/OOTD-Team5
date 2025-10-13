@@ -69,7 +69,7 @@ public class OpenWeatherFactory implements
         List<Weather> newWeathers = createWeathers(openWeatherResponse, cachedWeathers,
             issueContext, location);
         weatherRepository.saveAll(newWeathers);
-        log.debug(" [OpenWeather] 신규 생성 건수:{}", newWeathers.size());
+        log.info(" [OpenWeather] 신규 생성 건수:{}", newWeathers.size());
 
         return findWeathers(location, issueContext);
     }
@@ -77,7 +77,7 @@ public class OpenWeatherFactory implements
     // 5일치 데이터 찾기
     @Override
     public List<Weather> findWeathers(Location location, ForecastIssueContext issueContext) {
-        log.debug(" [OpenWeather] findWeathers 시작. issueContext:{}, targetForecasts:{}",
+        log.info(" [OpenWeather] findWeathers 시작. issueContext:{}, targetForecasts:{}",
             issueContext.getIssueAt().atZone(ZoneId.of("Asia/Seoul")),
             issueContext.getTargetForecasts().stream()
                 .map(i -> i.atZone(ZoneId.of("Asia/Seoul")).toString())
@@ -88,7 +88,7 @@ public class OpenWeatherFactory implements
             .findAllByLocationIdAndForecastedAtAndForecastAtIn(location.getId(),
                 issueContext.getIssueAt(),
                 issueContext.getTargetForecasts());
-        log.debug(" [OpenWeather] 기존 날씨 데이터 총 {}건, ids:{}", cached.size(),
+        log.info(" [OpenWeather] 기존 날씨 데이터 총 {}건, ids:{}", cached.size(),
             cached.stream()
                 .map(e -> e.getId().toString())
                 .collect(Collectors.joining(", ")));
@@ -98,7 +98,7 @@ public class OpenWeatherFactory implements
     @Override
     public List<Weather> createWeathers(OpenWeatherResponse response,
         List<Weather> cachedWeathers, ForecastIssueContext issueContext, Location location) {
-        log.debug(" [OpenWeather] 날씨 dto 생성 시작");
+        log.info(" [OpenWeather] 날씨 dto 생성 시작");
         List<ForecastItem> allItems = response.list().stream()
             .sorted(Comparator.comparing(ForecastItem::dt)).toList();
         if (allItems.isEmpty()) {
@@ -110,13 +110,13 @@ public class OpenWeatherFactory implements
         for (ForecastItem item : allItems) {
             Instant targetAt = extractForecastAt(item.dt());
             if (targetAt == null) {
-                log.debug(" [OpenWeather] forecastAt 추출 실패, skip");
+                log.info(" [OpenWeather] forecastAt 추출 실패, skip");
                 continue;
             }
 
             Weather yesterdayWeather = findYesterdayWeather(cachedByDate, location,
                 LocalDate.ofInstant(targetAt, SEOUL_ZONE_ID));
-            log.debug(" [OpenWeather] yesterdayWeather 객체:{}", yesterdayWeather);
+            log.info(" [OpenWeather] yesterdayWeather 객체:{}", yesterdayWeather);
 
             Optional<Weather> weather = convertToWeather(item, location, issueContext, targetAt,
                 yesterdayWeather
@@ -138,7 +138,7 @@ public class OpenWeatherFactory implements
                 continue;
             }
             result.add(created);
-            log.debug(" [OpenWeather] 신규 예보 생성 forecastedAt:{}, forecastAt:{}",
+            log.info(" [OpenWeather] 신규 예보 생성 forecastedAt:{}, forecastAt:{}",
                 created.getForecastedAt(), created.getForecastAt());
         }
 
@@ -156,7 +156,7 @@ public class OpenWeatherFactory implements
         ZonedDateTime targetDateTime = getZonedDateTime(referenceDate, targetTime);
         ForecastIssueContext issueContext = ForecastIssueContext.of(issueDateTime, targetDateTime,
             WEATHER_REQUESTED_CNT);
-        log.debug(
+        log.info(
             " [OpenWeather] issueContext - issueDateTime:{}, targetDateTime:{}, targetDates:{}",
             issueContext.getIssueDateTime(), issueContext.getTargetDateTime(),
             issueContext.getTargetForecasts().stream().map(
@@ -167,18 +167,18 @@ public class OpenWeatherFactory implements
     private Optional<Weather> convertToWeather(ForecastItem item, Location location,
         ForecastIssueContext issueContext, Instant targetAt, Weather yesterdayWeather) {
         if (item == null) {
-            log.debug(" [OpenWeather] forecast item null, skip");
+            log.info(" [OpenWeather] forecast item null, skip");
             return Optional.empty();
         }
         if (targetAt == null) {
-            log.debug(" [OpenWeather] forecastAt null, skip");
+            log.info(" [OpenWeather] forecastAt null, skip");
             return Optional.empty();
         }
 
         Instant issueAt = issueContext.getIssueAt();
         OpenWeatherResponse.Main main = item.main();
         if (main == null) {
-            log.debug(" [OpenWeather] main 데이터 없음 forecastAt:{}", targetAt);
+            log.info(" [OpenWeather] main 데이터 없음 forecastAt:{}", targetAt);
             return Optional.empty();
         }
 
@@ -235,7 +235,7 @@ public class OpenWeatherFactory implements
     private Weather findYesterdayWeather(Map<LocalDate, Weather> cachedWeather, Location location,
         LocalDate baseDate) {
         LocalDate yesterday = baseDate.minusDays(1);
-        log.debug(" [OpenWeather] yesterday 날짜:{}", yesterday);
+        log.info(" [OpenWeather] yesterday 날짜:{}", yesterday);
 
         if (cachedWeather.containsKey(yesterday)) {
             return cachedWeather.get(yesterday);

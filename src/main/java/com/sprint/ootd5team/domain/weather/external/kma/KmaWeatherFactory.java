@@ -75,7 +75,7 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
         List<Weather> newWeathers = createWeathers(kmaResponse, cachedWeathers,
             issueContext, location);
         weatherRepository.saveAll(newWeathers);
-        log.debug("[KMA] 신규 생성 건수:{}", newWeathers.size());
+        log.info("[KMA] 신규 생성 건수:{}", newWeathers.size());
 
         return findWeathers(location, issueContext);
     }
@@ -93,7 +93,7 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
             referenceDate, targetTime);
         ForecastIssueContext issueContext = ForecastIssueContext.of(issueDateTime, targetDateTime,
             WEATHER_REQUESTED_CNT);
-        log.debug(
+        log.info(
             "[KMA] issueContext - issueDateTime:{}, targetDateTime:{}, targetDates:{}",
             issueContext.getIssueDateTime(), issueContext.getTargetDateTime(),
             issueContext.getTargetForecasts().stream().map(
@@ -112,7 +112,7 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
             .findAllByLocationIdAndForecastedAtAndForecastAtIn(location.getId(), issueAt,
                 targetAtList);
 
-        log.debug("[KMA] 시간포함 일치하는 날씨 데이터 총 {}건, ids:{}", exactMatches.size(),
+        log.info("[KMA] 시간포함 일치하는 날씨 데이터 총 {}건, ids:{}", exactMatches.size(),
             exactMatches.stream()
                 .map(e -> e.getId().toString())
                 .collect(Collectors.joining(", ")));
@@ -157,7 +157,7 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
 
         enrichedResults.sort(Comparator.comparing(Weather::getForecastAt));
 
-        log.debug("[KMA] 최종반환 건수:{}건 ", enrichedResults.size());
+        log.info("[KMA] 최종반환 건수:{}건 ", enrichedResults.size());
 
         return enrichedResults;
     }
@@ -165,7 +165,7 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
     @Override
     public List<Weather> createWeathers(KmaResponse response, List<Weather> cachedWeathers,
         ForecastIssueContext issueContext, Location location) {
-        log.debug("[KMA] 날씨 dto 생성 시작");
+        log.info("[KMA] 날씨 dto 생성 시작");
 
         List<WeatherItem> allItems = response.response().body().items().weatherItems();
         if (allItems == null || allItems.isEmpty()) {
@@ -189,7 +189,7 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
 
             Weather yesterdayWeather = findYesterdayWeather(cachedByDate, location,
                 LocalDate.ofInstant(targetAt, SEOUL_ZONE_ID));
-            log.debug("[KMA] yesterdayWeather 객체:{}", yesterdayWeather);
+            log.info("[KMA] yesterdayWeather 객체:{}", yesterdayWeather);
 
             Weather created = convertToWeather(items, location,
                 issueContext, yesterdayWeather);
@@ -206,7 +206,7 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
             }
 
             result.add(created);
-            log.debug("[KMA] 신규 예보 생성 forecastedAt:{}, forecastAt:{}",
+            log.info("[KMA] 신규 예보 생성 forecastedAt:{}, forecastAt:{}",
                 created.getForecastedAt(), created.getForecastAt());
         }
 
@@ -232,7 +232,7 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
                 && Objects.equals(existing.getForecastedAt(), created.getForecastedAt())
                 && Objects.equals(existingForecastDate, createdForecastDate);
 
-        log.debug("[KMA] 기존 예보와 중복 확인.\n"
+        log.info("[KMA] 기존 예보와 중복 확인.\n"
                 + "<기존> forecastedAt:{}, forecastAt:{}, id:{}, 계산된날:{}\n"
                 + "<NEW>  forecastedAt:{}, forecastAt:{},        계산된날:{}\n"
                 + "isExist:{}"
@@ -306,7 +306,7 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
     private Weather findYesterdayWeather(Map<LocalDate, Weather> cachedWeather, Location location,
         LocalDate baseDate) {
         LocalDate yesterday = baseDate.minusDays(1);
-        log.debug("[KMA] yesterday 날짜:{}", yesterday);
+        log.info("[KMA] yesterday 날짜:{}", yesterday);
 
         if (cachedWeather.containsKey(yesterday)) {
             return cachedWeather.get(yesterday);
@@ -326,7 +326,7 @@ public class KmaWeatherFactory implements WeatherFactory<ForecastIssueContext, K
     private Weather convertToWeather(
         List<WeatherItem> targetDateItems, Location location,
         ForecastIssueContext issueContext, Weather yesterdayWeather) {
-        log.debug("[KMA] convertToWeather 시작");
+        log.info("[KMA] convertToWeather 시작");
         WeatherItem anyItem = targetDateItems.get(0);
         Instant forecastedAt = issueContext.getIssueAt();
         Instant forecastAt = toInstant(anyItem.fcstDate(),
