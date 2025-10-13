@@ -72,7 +72,7 @@ public class ClothesServiceImpl implements ClothesService {
      * @param limit   조회할 데이터 개수
      * @return ClothesDtoCursorResponse (데이터, nextCursor, nextIdAfter, hasNext 등 포함)
      */
-    @Cacheable(value = "'clothesByUser:' + #ownerId", key = "#type?.name() ?: 'ALL'")
+    @Cacheable(value = "clothesByUser", key = "#ownerId + ':' + (#type?.name() ?: 'ALL')")
     @Transactional(readOnly = true)
     @Override
     public ClothesDtoCursorResponse getClothes(
@@ -137,7 +137,7 @@ public class ClothesServiceImpl implements ClothesService {
      * @throws UserNotFoundException   주어진 ownerId 에 해당하는 사용자가 없는 경우
      * @throws FileSaveFailedException 이미지 업로드에 실패한 경우
      */
-    @CacheEvict(value = "'clothesByUser:' + #request.ownerId", allEntries = true)
+    @CacheEvict(value = "clothesByUser", key = "#request.ownerId + ':*'", allEntries = true)
     @Transactional
     @Override
     public ClothesDto create(ClothesCreateRequest request, MultipartFile image) {
@@ -219,7 +219,7 @@ public class ClothesServiceImpl implements ClothesService {
      * 이미지: 새 파일 업로드 후 기존 파일 삭제
      * 속성: 요청된 속성과 현재 속성을 비교하여 추가/수정/삭제
      */
-    @CacheEvict(value = "'clothesByUser:' + #ownerId", allEntries = true)
+    @CacheEvict(value = "clothesByUser", key = "#ownerId + ':*'", allEntries = true)
     @Transactional
     @Override
     public ClothesDto update(UUID ownerId, UUID clothesId, ClothesUpdateRequest request, MultipartFile image) {
