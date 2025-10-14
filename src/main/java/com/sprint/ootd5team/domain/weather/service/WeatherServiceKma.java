@@ -47,12 +47,16 @@ public class WeatherServiceKma implements WeatherService {
 
         // 파라미터로 위경도 넘어오지 않으면 프로필에 있는 위치값 사용, 프로필에 위치값 없으면 기본값 사용
         BigDecimal resolvedLat =
-            latitude == null ? profile.getLocation().getLatitude() == null ? DEFAULT_LAT
-                : profile.getLocation().getLatitude()
+            latitude == null || latitude.equals(BigDecimal.ZERO) ?
+                profile.getLocation() == null
+                    ? DEFAULT_LAT
+                    : profile.getLocation().getLatitude()
                 : latitude;
         BigDecimal resolvedLon =
-            longitude == null ? profile.getLocation().getLongitude() == null ? DEFAULT_LON
-                : profile.getLocation().getLongitude()
+            longitude == null || longitude.equals(BigDecimal.ZERO) ?
+                profile.getLocation() == null
+                    ? DEFAULT_LON
+                    : profile.getLocation().getLongitude()
                 : longitude;
         log.info("[KMA] 요청 좌표({}, {}) -> 사용 좌표({}, {})", latitude, longitude,
             resolvedLat, resolvedLon);
