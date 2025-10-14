@@ -9,6 +9,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface LocationRepository extends JpaRepository<Location, UUID> {
-
+    
     Optional<Location> findByLatitudeAndLongitude(BigDecimal latitude, BigDecimal longitude);
 }

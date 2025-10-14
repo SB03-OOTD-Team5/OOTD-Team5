@@ -33,6 +33,8 @@ public enum ErrorCode {
     WEATHER_KMA_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "기상청 데이터를 분석하는데 실패했습니다."),
     WEATHER_METEO_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "Open-Meteo 데이터를 가져오는데 실패했습니다."),
     WEATHER_METEO_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Open-Meteo 데이터를 분석하는데 실패했습니다."),
+    WEATHER_OPEN_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "Open-Weather 데이터를 가져오는데 실패했습니다."),
+    WEATHER_OPEN_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Open-Weather 데이터를 분석하는데 실패했습니다."),
 
     //위치 관련 에러코드
     LOCATION_NOT_FOUND(HttpStatus.NOT_FOUND, "해당하는 위치 데이터가 없습니다"),

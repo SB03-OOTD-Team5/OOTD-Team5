@@ -57,17 +57,21 @@ spring:
       max-file-size: 50MB        # 스프링 전역 업로드 허용 파일 크기
       max-request-size: 50MB     # 요청 전체 크기
 
+  batch: # 앱 실행시 Job 기본 실행 설정
+    job:
+      enabled: false
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
-#    로컬 실행 시: KAFKA_BOOTSTRAP_SERVERS=localhost:29092
-#    Docker 실행 시: KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    #    로컬 실행 시: KAFKA_BOOTSTRAP_SERVERS=localhost:29092
+    #    Docker 실행 시: KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 
-# Confluent Cloud
-#    bootstrap-servers: pkc-xxxxxx.ap-northeast-2.aws.confluent.cloud:9092
-#    properties:
-#      security.protocol: SASL_SSL
-#      sasl.mechanism: PLAIN
-#      sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="API_KEY" password="API_SECRET";
+    # Confluent Cloud
+    #    bootstrap-servers: pkc-xxxxxx.ap-northeast-2.aws.confluent.cloud:9092
+    #    properties:
+    #      security.protocol: SASL_SSL
+    #      sasl.mechanism: PLAIN
+    #      sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="API_KEY" password="API_SECRET";
     consumer:
       group-id: ootd.notification
       auto-offset-reset: earliest
@@ -101,7 +105,7 @@ app:
 #외부 API key 설정
 weather:
   api-client:
-    provider: ${WEATHER_API_CLIENT:kma} # 기본값=kma, 2순위API='meteo'
+    provider: ${WEATHER_API_CLIENT:kma} # 기본값=kma, 들어올수있는값 openWeather,meteo
   kakao:
     base-url: https://dapi.kakao.com/v2/local/geo/coord2regioncode.json
     client-secret: ${KAKAO_CLIENT_SECRET}
@@ -109,6 +113,9 @@ weather:
     base-url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getVilageFcst
     #base-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst
     client-secret: ${KMA_CLIENT_SECRET}
+  openWeather:
+    base-url: api.openweathermap.org/data/2.5/forecast
+    client-secret: ${OPEN_WEATHER_CLIENT_SECRET}
 
 # Swagger UI
 springdoc:

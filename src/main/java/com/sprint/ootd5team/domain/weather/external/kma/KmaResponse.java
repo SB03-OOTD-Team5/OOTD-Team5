@@ -9,7 +9,7 @@ import java.util.List;
  */
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record KmaResponseDto(Response response) {
+public record KmaResponse(Response response) {
 
     public static record Response(
         @JsonProperty("header") Header header,
