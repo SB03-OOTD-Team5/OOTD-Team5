@@ -36,7 +36,13 @@ public class LlmExtractionService {
 
         Prompt prompt = buildPrompt(llmInput, candidateList);
 
-        return llmJsonClient.callJsonPrompt(prompt, ClothesExtraInfo.class);
+        ClothesExtraInfo result = llmJsonClient.callJsonPrompt(prompt, ClothesExtraInfo.class);
+        if (result == null) {
+            log.warn("[LlmExtractionService] LLM 응답이 null입니다.");
+            throw LlmFailedException.emptyResponse();
+        }
+
+        return result;
     }
 
     /** LLM에 넘길 입력 데이터 */

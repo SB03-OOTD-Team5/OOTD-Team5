@@ -1,10 +1,10 @@
 package com.sprint.ootd5team.domain.recommendation.enums.type;
 
+import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
 import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
 import com.sprint.ootd5team.domain.recommendation.enums.ClothesStyle;
 import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -27,79 +27,95 @@ public enum ShoesType {
         this.keywords = keywords;
     }
 
-    /** 문자열 기반 추론 (속성값 또는 이름) */
-    public static ShoesType fromString(String value) {
-        if (value == null || value.isBlank()) {
-            return OTHER;
-        }
-        String lower = value.toLowerCase();
-        return Arrays.stream(values())
-            .filter(type -> type.keywords.stream().anyMatch(lower::contains))
-            .findFirst()
-            .orElse(OTHER);
-    }
-
     /** 날씨 기반 의상 단품 점수 */
-    public double getWeatherScore(WeatherInfoDto weatherInfoDto) {
+    public double getWeatherScore(RecommendationInfoDto info) {
         double score = 0.0;
 
-        double temperature = weatherInfoDto.temperature();
+        double feels = info.personalFeelsTemp();
+
+        WeatherInfoDto weatherInfoDto = info.weatherInfo();
         PrecipitationType precip = weatherInfoDto.precipitationType();
-        WindspeedLevel level = weatherInfoDto.windSpeedLevel();
-        double precipitationProbability = weatherInfoDto.precipitationProbability();
+        double rainProb = weatherInfoDto.precipitationProbability();
+        WindspeedLevel wind = weatherInfoDto.windSpeedLevel();
 
         switch (this) {
             case RAIN_BOOTS -> {
-                if (precip.isRainy() || precip.isSnowy()) {
-                    score += 10;
+                if (precip.isRainy() || precip.isSnowy() || rainProb > 0.4) {
+                    score += 7;
                 }
-                if (temperature < 10) {
-                    score += 3;
+                if (feels < 10) {
+                    score += 2;
                 }
-                if (precipitationProbability > 0.5) {
-                    score += 3;
+                if (feels > 25) {
+                    score -= 3;
                 }
             }
+
             case BOOTS -> {
-                if (precip.isRainy() || precip.isSnowy()) {
+                if (feels <= 5) {
+                    score += 5;
+                } else if (feels <= 10) {
                     score += 3;
-                }
-                if (temperature < 5) {
-                    score += 6;
-                }
-                if (temperature < 10) {
-                    score += 5;
-                }
-            }
-            case SANDALS -> {
-                if (temperature > 25) {
-                    score += 5;
+                } else if (feels > 20) {
+                    score -= 3;
                 }
                 if (precip.isRainy() || precip.isSnowy()) {
-                    score -= 3;
-                }
-                if (WindspeedLevel.STRONG.equals(level)) {
-                    score -= 3;
+                    score += 1;
                 }
             }
+
+            /** 여름용 샌들 */
+            case SANDALS -> {
+                if (feels >= 25) {
+                    score += 5;
+                } else if (feels >= 20) {
+                    score += 2;
+                } else {
+                    score -= 2;
+                }
+                if (precip.isRainy() || precip.isSnowy() || rainProb > 0.4) {
+                    score -= 3;
+                }
+                if (WindspeedLevel.STRONG.equals(wind)) {
+                    score -= 2;
+                }
+            }
+
+            /** 스니커즈 */
             case SNEAKERS -> {
+                if (feels >= 12 && feels <= 25) {
+                    score += 4;
+                } else if (feels < 5 || feels > 28) {
+                    score -= 1;
+                }
                 if (precip.isRainy() || precip.isSnowy()) {
                     score -= 2;
                 }
-                if (temperature >= 15 && temperature <= 25) {
+            }
+
+            /** 로퍼 */
+            case LOAFERS -> {
+                if (feels >= 15 && feels <= 25) {
                     score += 2;
                 }
+                if (precip.isRainy() || rainProb > 0.4) {
+                    score -= 2;
+                }
             }
-            case LOAFERS -> {
-                if (precip.isRainy()) {
+
+            /** 힐 */
+            case HEELS -> {
+                if (feels >= 18 && feels <= 25) {
+                    score += 2;
+                }
+                if (precip.isRainy() || precip.isSnowy()) {
+                    score -= 3;
+                }
+                if (WindspeedLevel.STRONG.equals(wind)) {
                     score -= 1;
                 }
             }
-            case HEELS -> {
-                if (precip.isRainy() || precip.isSnowy()) {
-                    score -= 2;
-                }
-            }
+
             default -> {
             }
         }

@@ -51,17 +51,51 @@ public class LlmJsonClient {
 
     /** JSON 객체 추출 */
     private String extractJsonObject(String response) {
-        int depth = 0, start = -1;
+        int start = -1;
+        int depth = 0;
+        boolean inString = false;
+        boolean escaped = false;
+        char opening = 0, closing = 0;
+
         for (int i = 0; i < response.length(); i++) {
             char ch = response.charAt(i);
-            if (ch == '{') {
-                if (depth == 0) start = i;
+
+            // 문자열 상태 처리
+            if (inString) {
+                if (escaped) {
+                    escaped = false;
+                } else if (ch == '\\') {
+                    escaped = true;
+                } else if (ch == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+
+            // 문자열 시작
+            if (ch == '"') {
+                inString = true;
+                continue;
+            }
+
+            // JSON 객체 시작
+            if ((ch == '{' || ch == '[') && depth == 0) {
+                start = i;
+                opening = ch;
+                closing = (ch == '{') ? '}' : ']';
+            }
+
+            if (ch == opening) {
                 depth++;
-            } else if (ch == '}') {
-                if (--depth == 0 && start >= 0)
-                    return response.substring(start, i + 1).trim();
+            } else if (ch == closing) {
+                depth--;
+            }
+
+            if (depth == 0 && start >= 0 && opening != 0) {
+                return response.substring(start, i + 1).trim();
             }
         }
+
         return null;
     }
 }

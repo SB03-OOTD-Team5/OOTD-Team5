@@ -1,26 +1,35 @@
 package com.sprint.ootd5team.domain.recommendation.enums;
 
+import com.sprint.ootd5team.base.util.DateTimeUtils;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import lombok.Getter;
 
+@Getter
 public enum Season {
-    SPRING,
-    SUMMER,
-    AUTUMN,
-    WINTER,
-    OTHER;
+    SPRING(17.0, "봄",    new String[]{"spring"}),
+    SUMMER(24.0, "여름",  new String[]{"summer"}),
+    AUTUMN(15.0, "가을",  new String[]{"autumn", "fall"}),
+    WINTER(0.0,  "겨울",  new String[]{"winter"}),
+    OTHER(20.0, "사계절", new String[]{"기타", "전체", "all", "all-season"});
 
-    /**
-     * 월 → 계절 변환
-     * (예보 시점을 기준으로 계절 판단)
-     */
+    private final double averageTemperature;
+    private final String displayName;
+    private final String[] aliases;
+
+    Season(double averageTemperature, String displayName, String[] aliases) {
+        this.averageTemperature = averageTemperature;
+        this.displayName = displayName;
+        this.aliases = aliases;
+    }
+
+    /** 월 → 계절 변환 */
     public static Season from(Instant instant) {
         if (instant == null) {
             return OTHER;
         }
 
-        LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        LocalDateTime dateTime = LocalDateTime.ofInstant(instant, DateTimeUtils.SEOUL_ZONE_ID);
         int month = dateTime.getMonthValue();
 
         return switch (month) {
@@ -33,15 +42,10 @@ public enum Season {
     }
 
     /** 인접 계절인지 판단 */
-    public boolean isAdjacentTo(Season other) {
-        return (this == SPRING && other == SUMMER)
-            || (this == SUMMER && other == AUTUMN)
-            || (this == AUTUMN && other == WINTER)
-            || (this == WINTER && other == SPRING);
-    }
-
-    /** 2단계 인접 계절 (봄→겨울, 여름→봄 등) */
-    public boolean isSecondAdjacentTo(Season other) {
+    public boolean is(Season other) {
+        if (other == null) {
+            return false;
+        }
         return switch (this) {
             case SPRING -> (other == WINTER || other == SUMMER);
             case SUMMER -> (other == SPRING || other == AUTUMN);
@@ -49,35 +53,5 @@ public enum Season {
             case WINTER -> (other == AUTUMN || other == SPRING);
             default -> false;
         };
-    }
-
-    /**
-     * 현재 Season(=기준 계절, 예보된 계절) 기준으로
-     * 의상 Season이 사용자의 온도 민감도 범위 내에 있는지 판단
-     */
-    public boolean isWithinComfortRange(Season itemSeason, double sensitivity) {
-        if (itemSeason == null) {
-            return false;
-        }
-
-        // 민감도 높음 → 동일 계절만 허용
-        if (sensitivity == 5) {
-            return this == itemSeason;
-        }
-
-        // 민감도 중간 → 인접 계절 허용
-        if (sensitivity >= 2 && sensitivity <= 4) {
-            return this == itemSeason || this.isAdjacentTo(itemSeason);
-        }
-
-        // 민감도 낮음 → 2단계 인접까지 허용
-        if (sensitivity == 1) {
-            return this == itemSeason
-                || this.isAdjacentTo(itemSeason)
-                || this.isSecondAdjacentTo(itemSeason);
-        }
-
-        // 기본값 (정의되지 않은 감도일 경우 동일 계절만 허용)
-        return this == itemSeason;
     }
 }

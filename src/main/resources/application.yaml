@@ -61,6 +61,11 @@ spring:
     job:
       enabled: false
 
+  jpa:
+    properties:
+      hibernate:
+        hibernate.default_batch_fetch_size: 50
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     #    로컬 실행 시: KAFKA_BOOTSTRAP_SERVERS=localhost:29092

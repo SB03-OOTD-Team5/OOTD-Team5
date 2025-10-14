@@ -2,6 +2,7 @@ package com.sprint.ootd5team.domain.clothes.service;
 
 import static org.springframework.util.StringUtils.hasText;
 
+import com.sprint.ootd5team.base.cache.CacheEvictHelper;
 import com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException;
 import com.sprint.ootd5team.base.exception.clothes.ClothesSaveFailedException;
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundException;
@@ -34,7 +35,6 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -58,6 +58,7 @@ public class ClothesServiceImpl implements ClothesService {
     private final FileStorage fileStorage;
     private final UserRepository userRepository;
     private final ClothesAttributeRepository attributeRepository;
+    private final CacheEvictHelper cacheEvictHelper;
 
     @Value("${ootd.storage.s3.prefix.clothes}")
     private String clothesPrefix;
@@ -72,7 +73,12 @@ public class ClothesServiceImpl implements ClothesService {
      * @param limit   조회할 데이터 개수
      * @return ClothesDtoCursorResponse (데이터, nextCursor, nextIdAfter, hasNext 등 포함)
      */
-    @Cacheable(value = "clothesByUser", key = "#ownerId + ':' + (#type?.name() ?: 'ALL')")
+    @Cacheable(
+        value = "clothesByUser",
+        key = "#ownerId + ':' + (#type != null ? #type.name() : 'ALL') + ':' + #limit + ':' + (#direction != null ? #direction.name() : 'DESC')",
+        condition = "#cursor == null && #idAfter == null",
+        sync = true
+    )
     @Transactional(readOnly = true)
     @Override
     public ClothesDtoCursorResponse getClothes(
@@ -83,7 +89,8 @@ public class ClothesServiceImpl implements ClothesService {
         int limit,
         Sort.Direction direction
     ) {
-        log.info("[ClothesService] 옷 목록 조회 시작: ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
+        log.info(
+            "[ClothesService] 옷 목록 조회 시작: ownerId={}, type={}, cursor={}, idAfter={}, limit={}",
             ownerId, type, cursor, idAfter, limit);
 
         // 다음 페이지 여부 확인
@@ -110,7 +117,9 @@ public class ClothesServiceImpl implements ClothesService {
                 nextCursor, nextIdAfter);
         }
 
-        long totalCount = clothesRepository.countByOwner_Id(ownerId);
+        long totalCount = (type == null)
+            ? clothesRepository.countByOwner_Id(ownerId)
+            : clothesRepository.countByOwner_IdAndType(ownerId, type);
 
         ClothesDtoCursorResponse response = new ClothesDtoCursorResponse(
             dtoList,
@@ -137,7 +146,6 @@ public class ClothesServiceImpl implements ClothesService {
      * @throws UserNotFoundException   주어진 ownerId 에 해당하는 사용자가 없는 경우
      * @throws FileSaveFailedException 이미지 업로드에 실패한 경우
      */
-    @CacheEvict(value = "clothesByUser", key = "#request.ownerId + ':*'", allEntries = true)
     @Transactional
     @Override
     public ClothesDto create(ClothesCreateRequest request, MultipartFile image) {
@@ -177,6 +185,7 @@ public class ClothesServiceImpl implements ClothesService {
             clothesRepository.save(clothes);
             log.info("[ClothesService] Clothes 저장 완료: clothesId={}, ownerId={}",
                 clothes.getId(), ownerId);
+            cacheEvictHelper.evictClothesByOwner(ownerId);
             return clothesMapper.toDto(clothes);
         } catch (RuntimeException e) {
             deleteFileSafely(imageUrl, "의상 저장 실패 롤백");
@@ -215,14 +224,14 @@ public class ClothesServiceImpl implements ClothesService {
 
     /**
      * 의상 정보 수정
-     *
+     * <p>
      * 이미지: 새 파일 업로드 후 기존 파일 삭제
      * 속성: 요청된 속성과 현재 속성을 비교하여 추가/수정/삭제
      */
-    @CacheEvict(value = "clothesByUser", key = "#ownerId + ':*'", allEntries = true)
     @Transactional
     @Override
-    public ClothesDto update(UUID ownerId, UUID clothesId, ClothesUpdateRequest request, MultipartFile image) {
+    public ClothesDto update(UUID ownerId, UUID clothesId, ClothesUpdateRequest request,
+        MultipartFile image) {
         Clothes clothes = clothesRepository.findById(clothesId)
             .orElseThrow(() -> ClothesNotFoundException.withId(clothesId));
         log.info("[clothes] 수정 요청 - clothesId: {}, ownerId: {}", clothesId, ownerId);
@@ -259,6 +268,8 @@ public class ClothesServiceImpl implements ClothesService {
         if (newAttributes != null) {
             applyAttributes(clothes, request.attributes());
         }
+
+        cacheEvictHelper.evictClothesByOwner(ownerId);
 
         log.info("[clothes] 수정 완료 - clothesId: {}, name: {}, type: {}, imageUrl: {}",
             clothesId, clothes.getName(), clothes.getType(), clothes.getImageUrl());
@@ -336,7 +347,9 @@ public class ClothesServiceImpl implements ClothesService {
      * @param reason 삭제 사유 (로그 용도)
      */
     private void deleteFileSafely(String key, String reason) {
-        if (!hasText(key)) return;
+        if (!hasText(key)) {
+            return;
+        }
         try {
             fileStorage.delete(key);
             log.info("[clothes] 파일 삭제 성공 - key={}, reason={}", key, reason);
@@ -349,7 +362,6 @@ public class ClothesServiceImpl implements ClothesService {
      * 의상 삭제
      * 이미지 파일 삭제는 {@link #deleteFileSafely(String, String)}에서 처리
      */
-    @CacheEvict(value = "'clothesByUser:' + #ownerId", allEntries = true)
     @Transactional
     @Override
     public void delete(UUID ownerId, UUID clothesId) {
@@ -365,6 +377,7 @@ public class ClothesServiceImpl implements ClothesService {
 
         deleteFileSafely(clothes.getImageUrl(), "의상 삭제");
         clothesRepository.deleteById(clothesId);
+        cacheEvictHelper.evictClothesByOwner(ownerId);
         log.info("[clothes] 삭제 완료 - ownerId={}", ownerId);
     }
 

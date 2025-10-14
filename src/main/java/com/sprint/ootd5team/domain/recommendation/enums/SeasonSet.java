@@ -38,15 +38,6 @@ public class SeasonSet {
         return new SeasonSet(result);
     }
 
-    /** 현재 계절이 이 의상에 포함되는지 */
-    public boolean matches(Season forecast, double sensitivity) {
-        return seasons.stream()
-            .anyMatch(s ->
-                s == Season.OTHER // ‘사계절’ 또는 ‘기타’는 항상 통과
-                    || forecast.isWithinComfortRange(s, sensitivity)
-            );
-    }
-
     @Override
     public String toString() {
         return seasons.toString();

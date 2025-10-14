@@ -1,7 +1,5 @@
 package com.sprint.ootd5team.domain.recommendation.enums;
 
-import java.util.Arrays;
-
 public enum ClothesStyle {
     CASUAL("캐주얼"),
     FORMAL("포멀"),
@@ -17,14 +15,8 @@ public enum ClothesStyle {
         this.displayName = displayName;
     }
 
-    public static ClothesStyle fromString(String value) {
-        if (value == null || value.isBlank()) {
-            return OTHER;
-        }
-        return Arrays.stream(values())
-            .filter(s -> value.contains(s.displayName))
-            .findFirst()
-            .orElse(OTHER);
+    private static boolean isPair(ClothesStyle a, ClothesStyle b, ClothesStyle x, ClothesStyle y) {
+        return (a == x && b == y) || (a == y && b == x);
     }
 
     /** 기본 스타일 궁합 점수 */
@@ -37,23 +29,22 @@ public enum ClothesStyle {
         }
 
         // 유사 계열
-        if ((this == CASUAL && other == STREET) ||
-            (this == CASUAL && other == SPORTY) ||
-            (this == CLASSIC && other == FORMAL)) {
+        if (isPair(this, other, CASUAL, STREET) ||
+            isPair(this, other, CASUAL, SPORTY) ||
+            isPair(this, other, CLASSIC, FORMAL)) {
             return 1.5;
         }
 
-        // 중간 정도 어울림
-        if ((this == CASUAL && other == FORMAL) ||
-            (this == STREET && other == VINTAGE) ||
-            (this == SPORTY && other == CASUAL)) {
+        // 중간
+        if (isPair(this, other, CASUAL, FORMAL) ||
+            isPair(this, other, STREET, VINTAGE)) {
             return 0.5;
         }
 
         // 부조화
-        if ((this == FORMAL && other == STREET) ||
-            (this == FORMAL && other == SPORTY) ||
-            (this == CLASSIC && other == STREET)) {
+        if (isPair(this, other, FORMAL, STREET) ||
+            isPair(this, other, FORMAL, SPORTY) ||
+            isPair(this, other, CLASSIC, STREET)) {
             return -2.0;
         }
 

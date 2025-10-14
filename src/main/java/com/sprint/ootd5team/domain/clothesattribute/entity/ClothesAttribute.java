@@ -13,6 +13,7 @@ import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 /**
  * 의상 속성 엔티티
@@ -33,6 +34,7 @@ public class ClothesAttribute extends BaseEntity {
 	private String name;            //속성명
 
 	@OneToMany(mappedBy = "attribute", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+	@BatchSize(size = 50)
 	private List<ClothesAttributeDef> defs = new ArrayList<>(); // 카테고리의 허용값 목록
 
 	public ClothesAttribute(String name) {

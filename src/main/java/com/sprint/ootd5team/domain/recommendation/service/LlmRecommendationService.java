@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,7 +55,17 @@ public class LlmRecommendationService {
         return list.stream()
             .filter(String.class::isInstance)
             .map(String.class::cast)
-            .map(UUID::fromString)
+            .map(s -> {
+                try {
+                    return UUID.fromString(s);
+                } catch (IllegalArgumentException ex) {
+                    log.warn("[LlmRecommendationService] 잘못된 UUID 무시: {}", s);
+                    return null;
+                }
+            })
+            .filter(Objects::nonNull)
+            .distinct()
+            .limit(10)
             .toList();
     }
 

@@ -71,9 +71,11 @@ public class RecommendationFallbackService {
         }
 
         // optional (나머지 모든 타입 중 일부 랜덤)
-        List<Clothes> optionals = all.stream()
-            .filter(c -> OPTIONAL_TYPES.contains(c.getType()) && !selected.contains(c))
-            .toList();
+        List<Clothes> optionals = new ArrayList<>(
+            all.stream()
+                .filter(c -> OPTIONAL_TYPES.contains(c.getType()) && !selected.contains(c))
+                .toList()
+        );
         Collections.shuffle(optionals);
         int optionalCount = optionals.isEmpty() ? 0 : ThreadLocalRandom.current().nextInt(1, 3);
         selected.addAll(optionals.stream().limit(optionalCount).toList());

@@ -1,9 +1,9 @@
 package com.sprint.ootd5team.domain.recommendation.enums.type;
 
+import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
 import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
 import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -25,74 +25,74 @@ public enum OuterType {
         this.keywords = keywords;
     }
 
-    /** 문자열 기반 추론 (속성값 또는 이름) */
-    public static OuterType fromString(String value) {
-        if (value == null || value.isBlank()) {
-            return OTHER;
-        }
-        String lower = value.toLowerCase();
-        return Arrays.stream(values())
-            .filter(type -> type.keywords.stream().anyMatch(lower::contains))
-            .findFirst()
-            .orElse(OTHER);
-    }
-
     /** 날씨 기반 점수 계산 */
-    public double getWeatherScore(WeatherInfoDto w) {
+    public double getWeatherScore(RecommendationInfoDto info) {
         double score = 0.0;
-        double temp = w.temperature();
-        double humidity = w.humidity();
+
+        double feels = info.personalFeelsTemp();
+
+        WeatherInfoDto w = info.weatherInfo();
         WindspeedLevel windSpeedLevel = w.windSpeedLevel();
         double rainProb = w.precipitationProbability();
         PrecipitationType precip = w.precipitationType();
 
         switch (this) {
             case CARDIGAN -> {
-                if (temp >= 12 && temp <= 22) {
+                if (feels >= 12 && feels <= 22) {
                     score += 4;
+                } else if (feels < 10) {
+                    score -= 2;
                 }
                 if (rainProb > 0.5) {
-                    score -= 2;
+                    score -= 1;
                 }
             }
             case JACKET -> {
-                if (temp >= 9 && temp <= 17) {
-                    score += 3;
+                if (feels >= 9 && feels <= 17) {
+                    score += 4;
+                } else if (feels < 7) {
+                    score += 1;
                 }
                 if (precip.isRainy() || precip.isSnowy()) {
                     score -= 2;
                 }
             }
             case TRENCH_COAT -> {
-                if (temp >= 9 && temp <= 11) {
-                    score += 4;
+                if (feels >= 8 && feels <= 12) {
+                    score += 5;
                 }
-                if (rainProb > 0.4 || precip.isRainy()) {
-                    score += 1;
+                if (precip.isRainy() || rainProb > 0.4) {
+                    score += 2;
                 }
             }
             case COAT -> {
-                if (temp >= 5 && temp <= 8) {
+                if (feels <= 8 && feels >= 2) {
                     score += 4;
-                }
-                if (temp < 5) {
+                } else if (feels < 2) {
                     score += 2;
+                } else if (feels > 15) {
+                    score -= 2;
                 }
-                if (humidity > 80) {
-                    score -= 1;
+                if (precip.isSnowy()) {
+                    score += 1;
                 }
             }
             case PADDING -> {
-                if (temp < 5) {
+                if (feels < 5) {
                     score += 6;
-                }
-                if (WindspeedLevel.STRONG.equals(windSpeedLevel)) {
-                    score += 2;
+                } else if (feels < 10) {
+                    score += 3;
+                } else {
+                    score -= 3;
                 }
                 if (precip.isSnowy() || precip.isRainy()) {
-                    score += 1.5;
+                    score += 1;
+                }
+                if (WindspeedLevel.STRONG.equals(windSpeedLevel)) {
+                    score += 1;
                 }
             }
+
             default -> {
             }
         }

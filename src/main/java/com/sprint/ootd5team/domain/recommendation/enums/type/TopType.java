@@ -1,8 +1,6 @@
 package com.sprint.ootd5team.domain.recommendation.enums.type;
 
-import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
-import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
-import java.util.Arrays;
+import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
 import java.util.List;
 
 /**
@@ -25,62 +23,36 @@ public enum TopType {
         this.keywords = keywords;
     }
 
-    public static TopType fromString(String value) {
-        if (value == null || value.isBlank()) {
-            return OTHER;
-        }
-        String lower = value.toLowerCase();
-        return Arrays.stream(values())
-            .filter(t -> t.keywords.stream().anyMatch(lower::contains))
-            .findFirst()
-            .orElse(OTHER);
-    }
-
     /** 날씨 기반 점수 */
-    public double getWeatherScore(WeatherInfoDto w) {
-        double temp = w.temperature();
-        double humidity = w.humidity();
-        double rainProb = w.precipitationProbability();
-        PrecipitationType precip = w.precipitationType();
-
+    public double getWeatherScore(RecommendationInfoDto info) {
+        double feels = info.personalFeelsTemp();
         double score = 0;
 
         switch (this) {
             case T_SHIRT, BLOUSE -> {
-                if (temp >= 23) {
-                    score += 5;
-                }
-                if (temp < 15) {
-                    score -= 3;
-                }
+                if (feels >= 23) score += 5;
+                else if (feels >= 18) score += 2;
+                else score -= 3;
             }
+
             case SHIRT -> {
-                if (temp >= 17 && temp <= 25) {
-                    score += 3;
-                }
-                if (rainProb > 0.5) {
-                    score -= 1;
-                }
+                if (feels >= 16 && feels <= 25) score += 4;
+                else if (feels < 10) score -= 2;
             }
+
             case KNIT -> {
-                if (temp <= 15) {
-                    score += 4;
-                }
-                if (humidity > 80) {
-                    score -= 1;
-                }
+                if (feels <= 15) score += 4;
+                else if (feels <= 10) score += 5;
+                else score -= 2;
             }
+
+            // 후드/맨투맨 (간절기)
             case HOODIE, SWEATSHIRT -> {
-                if (temp <= 18 && temp >= 10) {
-                    score += 3;
-                }
-                if (temp < 10) {
-                    score += 1;
-                }
-                if (precip.isRainy()) {
-                    score -= 1;
-                }
+                if (feels >= 10 && feels <= 18) score += 4;
+                else if (feels < 8) score += 2;
+                else score -= 2;
             }
+
             default -> {
             }
         }

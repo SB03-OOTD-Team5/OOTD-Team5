@@ -101,7 +101,7 @@ public class OutfitCombinationGenerator {
             .limit(MAX_TOP_BOTTOM_BASE_SIZE)
             .toList();
 
-        log.debug("[OutfitCombinationGenerator] 총 {}건 -> 상위 {}건", result.size(), limited.size());
+        log.debug("[OutfitCombinationGenerator] 상의&하의 기본 조합: 총 {}건 -> 상위 {}건", result.size(), limited.size());
         return limited;
     }
 
@@ -112,7 +112,7 @@ public class OutfitCombinationGenerator {
             .limit(MAX_DRESS_BASE_SIZE)
             .toList();
 
-        log.debug("[OutfitCombinationGenerator] 총 {}건 -> 상위 {}건", dresses.size(), result.size());
+        log.debug("[OutfitCombinationGenerator] 원피스 기본 조합: 총 {}건 -> 상위 {}건", dresses.size(), result.size());
         return result;
     }
 
@@ -213,8 +213,8 @@ public class OutfitCombinationGenerator {
                     }
                 } else if (candidateScore > existingScore) {
                     list.set(i, candidate);
-                    log.debug("[OutfitCombinationGenerator] [중복교체] 기존보다 {} 높음 -> 교체됨",
-                        String.format("%.2f", candidateScore - existingScore));
+                    log.debug("[OutfitCombinationGenerator] [중복교체] 기존보다 {} 높음 -> 교체됨: {}",
+                        String.format("%.2f", candidateScore - existingScore), existing);
                 }
                 return existing;
             }

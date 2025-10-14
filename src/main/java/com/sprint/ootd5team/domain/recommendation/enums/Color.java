@@ -1,9 +1,11 @@
 package com.sprint.ootd5team.domain.recommendation.enums;
 
+import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
 import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
 import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
-import java.util.Arrays;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public enum Color {
     NAVY("네이비", new String[]{"navy"}, ColorTone.COOL),
     SKY_BLUE("스카이블루", new String[]{"skyblue", "하늘색"}, ColorTone.COOL),
@@ -37,40 +39,6 @@ public enum Color {
         this.tone = tone;
     }
 
-    /**
-     * 문자열 색상명 → Enum 변환
-     */
-    public static Color fromString(String value) {
-        if (value == null || value.isBlank()) {
-            return OTHER;
-        }
-
-        String normalized = value.trim().toLowerCase();
-
-        // 완전 일치 우선
-        for (Color color : values()) {
-            if (normalized.equals(color.displayName.toLowerCase())) {
-                return color;
-            }
-            for (String alias : color.aliases) {
-                if (normalized.equals(alias.toLowerCase())) {
-                    return color;
-                }
-            }
-        }
-
-        // 부분 일치 (e.g., "연베이지", "하늘색 니트")
-        for (Color color : values()) {
-            if (normalized.contains(color.displayName.toLowerCase()) ||
-                Arrays.stream(color.aliases)
-                    .anyMatch(alias -> normalized.contains(alias.toLowerCase()))) {
-                return color;
-            }
-        }
-
-        return OTHER;
-    }
-
     public ColorTone tone() {
         return tone;
     }
@@ -96,9 +64,11 @@ public enum Color {
     }
 
     /** 날씨 기반 의상 단품 점수 */
-    public double getWeatherScore(WeatherInfoDto weather) {
+    public double getWeatherScore(RecommendationInfoDto info) {
         double score = 0.0;
-        double temp = weather.temperature();
+        double temp = info.personalFeelsTemp();
+
+        WeatherInfoDto weather = info.weatherInfo();
         PrecipitationType precip = weather.precipitationType();
         double precipProb = weather.precipitationProbability();
 
