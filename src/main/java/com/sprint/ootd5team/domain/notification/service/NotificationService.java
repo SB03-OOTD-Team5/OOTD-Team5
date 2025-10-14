@@ -26,4 +26,6 @@ public interface NotificationService {
     );
 
     void delete(UUID receiverId, UUID notificationId);
+
+    void createWeatherNotification(UUID profileId, String content);
 }
