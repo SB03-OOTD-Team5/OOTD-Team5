@@ -23,7 +23,9 @@ public enum ClothesType {
      * - 매칭 실패 시 ETC 반환
      */
     public static ClothesType fromString(String raw) {
-        if (raw == null || raw.isBlank()) return ClothesType.ETC;
+        if (raw == null || raw.isBlank()) {
+            return ClothesType.ETC;
+        }
         String normalized = raw.trim().toLowerCase();
 
         if (matches(normalized, "상의|top|shirt|t-?shirt|tee")) {
@@ -68,7 +70,8 @@ public enum ClothesType {
      * - 단어 경계(\b) 포함해서 토큰 단위로 매칭
      */
     private static boolean matches(String input, String regex) {
-        return Pattern.compile("\\b(" + regex + ")\\b", Pattern.CASE_INSENSITIVE)
+        return Pattern.compile("(" + regex + ")",
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CHARACTER_CLASS)
             .matcher(input)
             .find();
     }

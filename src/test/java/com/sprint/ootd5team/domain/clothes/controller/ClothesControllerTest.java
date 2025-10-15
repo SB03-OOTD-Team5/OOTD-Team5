@@ -178,6 +178,7 @@ class ClothesControllerTest {
         // given
         UUID clothesId = UUID.randomUUID();
         UUID attributeId = UUID.randomUUID();
+        given(authService.getCurrentUserId()).willReturn(ownerId);
 
         String requestJson = """
             {
@@ -212,7 +213,7 @@ class ClothesControllerTest {
             ))
         );
 
-        given(clothesService.update(eq(clothesId), any(), any(MultipartFile.class)))
+        given(clothesService.update(eq(ownerId), eq(clothesId), any(), any(MultipartFile.class)))
             .willReturn(updatedDto);
 
         // when
@@ -230,7 +231,7 @@ class ClothesControllerTest {
             .andExpect(jsonPath("$.imageUrl").value("clothes/uuid_new_coat.png"))
             .andExpect(jsonPath("$.attributes[0].value").value("봄"));
 
-        verify(clothesService).update(eq(clothesId), any(), any(MultipartFile.class));
+        verify(clothesService).update(eq(ownerId), eq(clothesId), any(), any(MultipartFile.class));
     }
 
     @Test
