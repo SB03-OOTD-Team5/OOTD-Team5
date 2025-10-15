@@ -1,17 +1,24 @@
 package com.sprint.ootd5team.domain.weather.external.kma;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.ootd5team.base.util.DateTimeUtils;
 import com.sprint.ootd5team.domain.weather.exception.ConvertCoordFailException;
 import com.sprint.ootd5team.domain.weather.exception.WeatherKmaFetchException;
 import com.sprint.ootd5team.domain.weather.exception.WeatherKmaParseException;
+import com.sprint.ootd5team.domain.weather.external.WeatherExternalAdapter;
 import com.sprint.ootd5team.domain.weather.external.kma.KmaGridConverter.GridXY;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.Duration;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.Exceptions;
 
 /**
  * @class KmaApiAdapter
@@ -19,12 +26,18 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 @Slf4j
 @Component
-public class KmaApiAdapter {
+public class KmaApiAdapter implements WeatherExternalAdapter<KmaResponse> {
 
-    private static final ZoneId SEOUL_ZONE_ID = ZoneId.of("Asia/Seoul");
-    private static final String[] baseTimes = {"2300", "2000", "1700", "1400", "1100", "0800",
-        "0500",
-        "0200"};
+    private static final LocalTime[] ISSUE_TIMES = {
+        LocalTime.of(23, 0),
+        LocalTime.of(20, 0),
+        LocalTime.of(17, 0),
+        LocalTime.of(14, 0),
+        LocalTime.of(11, 0),
+        LocalTime.of(8, 0),
+        LocalTime.of(5, 0),
+        LocalTime.of(2, 0)};
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(6); // 타임아웃 대기시간 설정
     private final WebClient kmaWebClient;
     private final ObjectMapper mapper;
 
@@ -35,44 +48,60 @@ public class KmaApiAdapter {
     }
 
     /**
-     * @param baseDate  예보 기준 날짜(yyyyMMdd)
-     * @param baseTime  예보 기준 시간(HHmm)
      * @param latitude  위도
      * @param longitude 경도
+     * @param issueDate 예보 기준 날짜(yyyyMMdd)
+     * @param issueTime 예보 기준 시간(HHmm)
      * @return 파싱된 기상청 응답 DTO
      * @brief 주어진 날짜/시간과 좌표로 기상청 API에서 날씨 예보 데이터를 조회한다
      */
-    public KmaResponseDto getKmaWeather(String baseDate, String baseTime, BigDecimal latitude,
-        BigDecimal longitude) {
-        String responseJson = requestJsonFromKma(baseDate, baseTime, latitude, longitude);
-        KmaResponseDto kmaResponseDto = parseToKmaResponseDto(responseJson);
-        validateKmaData(kmaResponseDto);
-        return kmaResponseDto;
+    @Override
+    public KmaResponse getWeather(BigDecimal latitude, BigDecimal longitude, String issueDate,
+        String issueTime, int limit) {
+        // 1. fetchRowData
+        String responseJson = fetchRawData(issueDate, issueTime, latitude, longitude, limit);
+        // 2. parseToResponse
+        KmaResponse response = parseToKmaResponseDto(responseJson);
+        //3. validate response
+        validateKmaData(response);
+        return response;
     }
 
-    /**
-     * @param baseDate 예보 기준 날짜(yyyyMMdd)
-     * @return 기상청에서 요구하는 base time 문자열
-     * @brief 현재 시각을 기준으로 기상청 API 호출에 사용할 base time을 계산한다
-     */
-    public String getBaseTime(String baseDate) {
-        // 발표 시간 파라미터 현재 시간 기준으로 자동 설정
-        LocalDateTime now = LocalDateTime.now(SEOUL_ZONE_ID);
-
-        String baseTime = "0200";
-        for (String t : baseTimes) {
-            int hh = Integer.parseInt(t.substring(0, 2));
-            int mm = Integer.parseInt(t.substring(2, 4));
-            LocalDateTime cand = now.withHour(hh).withMinute(mm).withSecond(0).withNano(0);
-            if (now.isAfter(cand.plusMinutes(10))) {
-                baseTime = t;
+    // reference 시간과 가장 가까운 발행 시각(reference보다 이전 시간 가져옴)
+    public LocalTime resolveIssueTime(ZonedDateTime reference) {
+        LocalTime issueTime = ISSUE_TIMES[ISSUE_TIMES.length - 1];
+        for (LocalTime candidate : ISSUE_TIMES) {
+            ZonedDateTime candidateTime = ZonedDateTime
+                .of(reference.toLocalDate(), candidate, DateTimeUtils.SEOUL_ZONE_ID);
+            if (reference.isAfter(candidateTime.plusMinutes(10))) {
+                issueTime = candidate;
                 break;
             }
         }
-
-        return baseTime;
+        log.debug("발행 시각 계산 결정 reference:{}, issueTime:{}", reference, issueTime);
+        return issueTime;
     }
 
+    // 현재시간과 가장 가까운 예보 시각(reference보다 이후 시간 가져옴)
+    public LocalTime resolveTargetTime(ZonedDateTime reference) {
+        List<LocalTime> sortedTimes = Arrays.stream(ISSUE_TIMES)
+            .sorted()
+            .toList();
+
+        for (LocalTime candidate : sortedTimes) {
+            ZonedDateTime candidateTime = ZonedDateTime.of(reference.toLocalDate(), candidate,
+                DateTimeUtils.SEOUL_ZONE_ID);
+            if (reference.isBefore(candidateTime)) {
+                log.debug("[OpenWeatherAdapter] 다음 예보 기준 시각 결정 reference:{}, issueTime:{}",
+                    reference,
+                    candidate);
+                return candidate;
+            }
+        }
+
+        // 오늘 모든 issueTime이 지났으면 → 마지막 시간 21:00 반환
+        return ISSUE_TIMES[0];
+    }
 
     /**
      * @param baseDate  예보 기준 날짜(yyyyMMdd)
@@ -82,20 +111,19 @@ public class KmaApiAdapter {
      * @return 기상청 응답 JSON 문자열
      * @brief 기상청 API를 호출해 원시 JSON 문자열을 가져온다
      */
-    private String requestJsonFromKma(String baseDate, String baseTime, BigDecimal latitude,
-        BigDecimal longitude) {
+    private String fetchRawData(String baseDate, String baseTime, BigDecimal latitude,
+        BigDecimal longitude, int limit) {
         GridXY kmaXY = convertGridXY(latitude, longitude);
-
         try {
-            log.debug(
-                "[Weather] 날씨 정보 조회 요청 longitude:{},latitude:{},x:{},y:{},base date:{},base time:{}",
+            log.info(
+                "[KMA] 날씨 호출 longitude:{},latitude:{},x:{},y:{},base date:{},base time:{}",
                 longitude, latitude,
                 kmaXY.x(), kmaXY.y(), baseDate, baseTime);
 
-            String response = kmaWebClient.get()
+            return kmaWebClient.get()
                 .uri(uriBuilder -> uriBuilder
                     .queryParam("pageNo", 1)
-                    .queryParam("numOfRows", 1000)
+                    .queryParam("numOfRows", limit)
                     .queryParam("base_date", baseDate)
                     .queryParam("base_time", baseTime)
                     .queryParam("nx", kmaXY.x())
@@ -105,13 +133,17 @@ public class KmaApiAdapter {
                     clientResponse -> clientResponse.bodyToMono(String.class)
                 )
                 .block();
-            log.debug("[Weather] 날씨 정보 Fetch 완료");
 
-            return response;
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
+            Throwable cause = Exceptions.unwrap(e);
+            if (cause instanceof TimeoutException) {
+                log.warn("[KMA] API 호출 타임아웃", cause);
+                throw new WeatherKmaFetchException("KMA 응답이 지연되었습니다.");
+            }
             throw new WeatherKmaFetchException();
         }
     }
+
 
     /**
      * @param latitude  위도
@@ -122,7 +154,7 @@ public class KmaApiAdapter {
     private GridXY convertGridXY(BigDecimal latitude, BigDecimal longitude) {
         try {
             GridXY gridXY = KmaGridConverter.toGrid(longitude, latitude);
-            log.debug("[Weather] 좌표변환완료: x:{},y:{}", gridXY.x(), gridXY.y());
+            log.debug("[KMA] 좌표변환완료: x:{},y:{}", gridXY.x(), gridXY.y());
             return gridXY;
         } catch (Exception e) {
             ConvertCoordFailException ex = new ConvertCoordFailException();
@@ -137,9 +169,9 @@ public class KmaApiAdapter {
      * @return 파싱된 기상청 DTO
      * @brief 기상청 응답 JSON을 DTO로 파싱한다
      */
-    private KmaResponseDto parseToKmaResponseDto(String responseJson) {
+    private KmaResponse parseToKmaResponseDto(String responseJson) {
         try {
-            return mapper.readValue(responseJson, KmaResponseDto.class);
+            return mapper.readValue(responseJson, KmaResponse.class);
         } catch (Exception e) {
             throw new WeatherKmaParseException(e.getMessage());
         }
@@ -149,7 +181,7 @@ public class KmaApiAdapter {
      * @param kmaDto 기상청 응답 DTO
      * @brief 기상청 응답 코드가 성공인지 검증한다
      */
-    private void validateKmaData(KmaResponseDto kmaDto) {
+    private void validateKmaData(KmaResponse kmaDto) {
         if (!kmaDto.response().header().resultCode().equals("00")) {
             throw new WeatherKmaParseException(kmaDto.response().header().resultMsg());
         }

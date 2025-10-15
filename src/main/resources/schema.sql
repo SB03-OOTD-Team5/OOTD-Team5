@@ -1,5 +1,22 @@
 
 /****** 사용자 & 인증 ******/
+
+-- 위치 테이블
+CREATE TABLE IF NOT EXISTS tbl_locations
+(
+    id                        UUID                     PRIMARY KEY,
+    latitude                  NUMERIC(8, 4)            NOT NULL,
+    longitude                 NUMERIC(8, 4)            NOT NULL,
+    x_coord                   INTEGER,
+    y_coord                   INTEGER,
+    location_names            VARCHAR(100),
+    location_code             VARCHAR(20),
+    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
+    -- constraints
+    CONSTRAINT uq_locations UNIQUE (latitude,longitude)
+
+);
+
 -- 사용자 테이블
 CREATE TABLE IF NOT EXISTS tbl_users
 (
@@ -180,25 +197,11 @@ CREATE TABLE IF NOT EXISTS tbl_weathers
     CONSTRAINT check_sky_status CHECK (sky_status IN ('CLEAR','MOSTLY_CLOUDY','CLOUDY')),
     CONSTRAINT check_precipitation_type CHECK (precipitation_type IN ('NONE','RAIN','RAIN_SNOW','SNOW','SHOWER')),
     CONSTRAINT check_windspeed_level CHECK (windspeed_level IN ('WEAK','MODERATE','STRONG')),
-    CONSTRAINT fk_tbl_weathers_locations FOREIGN KEY (location_id) REFERENCES tbl_locations (id) ON DELETE CASCADE
-);
-
-/****** 위치 ******/
--- 위치 테이블
-CREATE TABLE IF NOT EXISTS tbl_locations
-(
-    id                        UUID                     PRIMARY KEY,
-    latitude                  NUMERIC(8, 4)            NOT NULL,
-    longitude                 NUMERIC(8, 4)            NOT NULL,
-    x_coord                   INTEGER,
-    y_coord                   INTEGER,
-    location_names            VARCHAR(100),
-    location_code             VARCHAR(20),
-    created_at                TIMESTAMP WITH TIME ZONE NOT NULL,
-    -- constraints
-    CONSTRAINT uq_locations UNIQUE (latitude,longitude)
+    CONSTRAINT fk_tbl_weathers_locations FOREIGN KEY (location_id) REFERENCES tbl_locations (id) ON DELETE CASCADE,
+    CONSTRAINT ux_location_forecasted_forecast UNIQUE (location_id, forecasted_at,forecast_at)
 
 );
+
 
 /****** DM ******/
 -- DM 채팅방
@@ -251,6 +254,86 @@ CREATE TABLE IF NOT EXISTS tbl_notifications
     CONSTRAINT check_level CHECK (level IN ('INFO', 'WARNING', 'ERROR')),
     CONSTRAINT fk_user_notification FOREIGN KEY (receiver_id) REFERENCES tbl_users (id) ON DELETE CASCADE
 );
+
+/* 배치 테이블 생성 */
+
+CREATE TABLE BATCH_JOB_INSTANCE  (
+     JOB_INSTANCE_ID BIGINT  NOT NULL PRIMARY KEY ,
+     VERSION BIGINT ,
+     JOB_NAME VARCHAR(100) NOT NULL,
+     JOB_KEY VARCHAR(32) NOT NULL,
+     constraint JOB_INST_UN unique (JOB_NAME, JOB_KEY)
+) ;
+
+CREATE TABLE BATCH_JOB_EXECUTION  (
+      JOB_EXECUTION_ID BIGINT  NOT NULL PRIMARY KEY ,
+      VERSION BIGINT  ,
+      JOB_INSTANCE_ID BIGINT NOT NULL,
+      CREATE_TIME TIMESTAMP NOT NULL,
+      START_TIME TIMESTAMP DEFAULT NULL ,
+      END_TIME TIMESTAMP DEFAULT NULL ,
+      STATUS VARCHAR(10) ,
+      EXIT_CODE VARCHAR(2500) ,
+      EXIT_MESSAGE VARCHAR(2500) ,
+      LAST_UPDATED TIMESTAMP,
+      constraint JOB_INST_EXEC_FK foreign key (JOB_INSTANCE_ID)
+          references BATCH_JOB_INSTANCE(JOB_INSTANCE_ID)
+) ;
+
+CREATE TABLE BATCH_JOB_EXECUTION_PARAMS  (
+     JOB_EXECUTION_ID BIGINT NOT NULL ,
+     PARAMETER_NAME VARCHAR(100) NOT NULL ,
+     PARAMETER_TYPE VARCHAR(100) NOT NULL ,
+     PARAMETER_VALUE VARCHAR(2500) ,
+     IDENTIFYING CHAR(1) NOT NULL ,
+     constraint JOB_EXEC_PARAMS_FK foreign key (JOB_EXECUTION_ID)
+         references BATCH_JOB_EXECUTION(JOB_EXECUTION_ID)
+) ;
+
+CREATE TABLE BATCH_STEP_EXECUTION  (
+       STEP_EXECUTION_ID BIGINT  NOT NULL PRIMARY KEY ,
+       VERSION BIGINT NOT NULL,
+       STEP_NAME VARCHAR(100) NOT NULL,
+       JOB_EXECUTION_ID BIGINT NOT NULL,
+       CREATE_TIME TIMESTAMP NOT NULL,
+       START_TIME TIMESTAMP DEFAULT NULL ,
+       END_TIME TIMESTAMP DEFAULT NULL ,
+       STATUS VARCHAR(10) ,
+       COMMIT_COUNT BIGINT ,
+       READ_COUNT BIGINT ,
+       FILTER_COUNT BIGINT ,
+       WRITE_COUNT BIGINT ,
+       READ_SKIP_COUNT BIGINT ,
+       WRITE_SKIP_COUNT BIGINT ,
+       PROCESS_SKIP_COUNT BIGINT ,
+       ROLLBACK_COUNT BIGINT ,
+       EXIT_CODE VARCHAR(2500) ,
+       EXIT_MESSAGE VARCHAR(2500) ,
+       LAST_UPDATED TIMESTAMP,
+       constraint JOB_EXEC_STEP_FK foreign key (JOB_EXECUTION_ID)
+           references BATCH_JOB_EXECUTION(JOB_EXECUTION_ID)
+) ;
+
+CREATE TABLE BATCH_STEP_EXECUTION_CONTEXT  (
+       STEP_EXECUTION_ID BIGINT NOT NULL PRIMARY KEY,
+       SHORT_CONTEXT VARCHAR(2500) NOT NULL,
+       SERIALIZED_CONTEXT TEXT ,
+       constraint STEP_EXEC_CTX_FK foreign key (STEP_EXECUTION_ID)
+           references BATCH_STEP_EXECUTION(STEP_EXECUTION_ID)
+) ;
+
+CREATE TABLE BATCH_JOB_EXECUTION_CONTEXT  (
+      JOB_EXECUTION_ID BIGINT NOT NULL PRIMARY KEY,
+      SHORT_CONTEXT VARCHAR(2500) NOT NULL,
+      SERIALIZED_CONTEXT TEXT ,
+      constraint JOB_EXEC_CTX_FK foreign key (JOB_EXECUTION_ID)
+          references BATCH_JOB_EXECUTION(JOB_EXECUTION_ID)
+) ;
+
+CREATE SEQUENCE BATCH_STEP_EXECUTION_SEQ MAXVALUE 9223372036854775807 NO CYCLE;
+CREATE SEQUENCE BATCH_JOB_EXECUTION_SEQ MAXVALUE 9223372036854775807 NO CYCLE;
+CREATE SEQUENCE BATCH_JOB_SEQ MAXVALUE 9223372036854775807 NO CYCLE;
+
 
 /* 인덱스 설정 */
 -- tbl_weathers index
@@ -307,30 +390,7 @@ CREATE INDEX IF NOT EXISTS idx_follows_followee_id
 CREATE INDEX IF NOT EXISTS idx_follows_follower_id
     ON tbl_follows(follower_id);
 
-
-/* tbl_profiles - name 컬럼 추가 & 수정 */
-
--- 컬럼 없으면 추가
-ALTER TABLE tbl_profiles ADD COLUMN IF NOT EXISTS name VARCHAR(50);
-
---  NULL인 행만 데이터 채우기
-UPDATE tbl_profiles p
-SET name = (
-    SELECT u.name
-    FROM tbl_users u
-    WHERE u.id = p.user_id
-)
-WHERE p.name IS NULL;
-
-ALTER TABLE tbl_profiles ALTER COLUMN name SET NOT NULL;
-
-ALTER TABLE tbl_locations
-    ADD CONSTRAINT uq_locations UNIQUE (latitude, longitude);
-
-ALTER TABLE tbl_locations
-    ADD COLUMN location_code VARCHAR(20);
-
--- tbl_notifications_receiver index
+-- tbl_notifications index
 CREATE INDEX IF NOT EXISTS idx_notifications_receiver_created
     ON tbl_notifications (receiver_id, created_at DESC);
 
