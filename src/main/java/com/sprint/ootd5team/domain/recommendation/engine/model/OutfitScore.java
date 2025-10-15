@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -21,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
  * 계산하여 totalScore에 누적
  * - normalizedScore()는 누적 조화 점수에 조합 수준 보정
  */
-@ToString
 @Slf4j
 @Getter
 @AllArgsConstructor
@@ -163,12 +161,8 @@ public class OutfitScore {
 
     @Override
     public String toString() {
-        String itemSummary = items.stream()
+        return items.stream()
             .map(i -> i.item().name() + "(" + i.item().type().name() + ")")
             .collect(Collectors.joining(", "));
-
-        return String.format(
-            itemSummary
-        );
     }
 }

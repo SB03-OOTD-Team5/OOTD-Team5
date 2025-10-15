@@ -15,13 +15,15 @@ import org.mapstruct.Named;
 public interface RecommendationInfoMapper {
 
     @Mapping(target = "personalFeelsTemp",
-        expression = "java(weatherInfo.apparentTemperature().calculatePersonalFeelsLike(profileInfo.temperatureSensitivity()))")
+        expression = "java(computePersonalFeelsTemp(weatherInfo, profileInfo))")
     RecommendationInfoDto toDto(WeatherInfoDto weatherInfo, ProfileInfoDto profileInfo);
 
     @Mapping(target = "age", source = "birthDate", qualifiedByName = "calculateAge")
     @Mapping(target = "temperatureSensitivity", source = "temperatureSensitivity", qualifiedByName = "defaultSensitivity")
     ProfileInfoDto toProfileInfoDto(Profile profile);
 
+    @Mapping(target = "precipitationProbability",
+        expression = "java(normalizePrecipitationProbability(weather.getPrecipitationProbability()))")
     @Mapping(target = "apparentTemperature", source = "weather")
     WeatherInfoDto toWeatherInfoDto(Weather weather);
 
@@ -33,5 +35,19 @@ public interface RecommendationInfoMapper {
     @Named("defaultSensitivity")
     default int defaultSensitivity(Integer sensitivity) {
         return (sensitivity == null) ? 3 : sensitivity;
+    }
+
+    @Named("normalizePrecipitationProbability")
+    default double normalizePrecipitationProbability(double value) {
+        if (Double.isNaN(value)) return 0.0;
+        if (value > 1.0) return value / 100.0;
+        return Math.max(0.0, Math.min(1.0, value));
+    }
+
+    @Named("computePersonalFeelsTemp")
+    default double computePersonalFeelsTemp(WeatherInfoDto weatherInfo, ProfileInfoDto profileInfo) {
+        if (weatherInfo == null || weatherInfo.apparentTemperature() == null) return 0D;
+        int sens = (profileInfo == null) ? 3 : defaultSensitivity(profileInfo.temperatureSensitivity());
+        return weatherInfo.apparentTemperature().calculatePersonalFeelsLike(sens);
     }
 }

@@ -52,10 +52,11 @@ public record ApparentTemperatureDto(
 
     /** Stull 습구온도 추정식 */
     private static double calculateWetBulbTemperature(double ta, double rh) {
-        return ta * Math.atan(0.151977 * Math.sqrt(rh + 8.313659))
-            + Math.atan(ta + rh)
-            - Math.atan(rh - 1.67633)
-            + 0.00391838 * Math.pow(rh, 1.5) * Math.atan(0.023101 * rh)
+        double rhClamped = Math.max(0.0, Math.min(100.0, rh));
+        return ta * Math.atan(0.151977 * Math.sqrt(rhClamped + 8.313659))
+            + Math.atan(ta + rhClamped)
+            - Math.atan(rhClamped - 1.67633)
+            + 0.00391838 * Math.pow(rhClamped, 1.5) * Math.atan(0.023101 * rhClamped)
             - 4.686035;
     }
 

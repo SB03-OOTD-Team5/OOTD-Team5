@@ -112,7 +112,7 @@ weather:
     client-secret: ${KMA_CLIENT_SECRET}
   openWeather:
     base-url: api.openweathermap.org/data/2.5/forecast
-    client-secret: ${OPEN_WEATHER_CLIENT_SECRET}
+    client-secret: ${OPEN_WEATHER_CLIENT_SECRET:123}
 
 # Swagger UI
 springdoc:

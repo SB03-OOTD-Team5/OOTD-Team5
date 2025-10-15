@@ -7,6 +7,7 @@ import com.sprint.ootd5team.domain.recommendation.dto.ClothesFilteredDto;
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -65,7 +66,7 @@ public class LlmRecommendationService {
             })
             .filter(Objects::nonNull)
             .distinct()
-            .limit(10)
+            .limit(6)
             .toList();
     }
 
@@ -79,16 +80,13 @@ public class LlmRecommendationService {
             List<ClothesFilteredDto> limited = sampled.stream().limit(20).toList();
 
             // JSON 통합 구조 생성
-            Map<String, Object> payload = Map.of(
-                "profile", info.profileInfo(),
-                "weather", info.weatherInfo(),
-                "clothes", limited
-            );
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("profile", info != null ? info.profileInfo() : null);
+            payload.put("weather", info != null ? info.weatherInfo() : null);
+            payload.put("clothes", limited);
 
             // 직렬화
-            return objectMapper
-                .writerWithDefaultPrettyPrinter()
-                .writeValueAsString(payload);
+            return objectMapper.writeValueAsString(payload);
 
         } catch (JsonProcessingException e) {
             log.error("[LlmRecommendationService] JSON 직렬화 실패", e);

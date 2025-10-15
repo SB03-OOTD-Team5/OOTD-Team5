@@ -14,7 +14,7 @@ public record WeatherInfoDto(
     double precipitationProbability,
 
     // 바람 세기
-    WindspeedLevel windSpeedLevel,
+    WindspeedLevel windspeedLevel,
 
     //하늘 상태
     SkyStatus skyStatus,

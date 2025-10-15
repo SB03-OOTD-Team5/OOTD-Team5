@@ -178,6 +178,7 @@ class ClothesControllerTest {
         // given
         UUID clothesId = UUID.randomUUID();
         UUID attributeId = UUID.randomUUID();
+        given(authService.getCurrentUserId()).willReturn(ownerId);
 
         String requestJson = """
             {

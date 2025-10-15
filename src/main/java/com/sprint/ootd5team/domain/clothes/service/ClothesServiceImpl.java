@@ -236,6 +236,10 @@ public class ClothesServiceImpl implements ClothesService {
             .orElseThrow(() -> ClothesNotFoundException.withId(clothesId));
         log.info("[clothes] 수정 요청 - clothesId: {}, ownerId: {}", clothesId, ownerId);
 
+       if (!clothes.getOwner().getId().equals(ownerId)) {
+           throw new SecurityException("다른 사용자의 의상은 수정할 수 없습니다.");
+       }
+
         String newName = request.name();
         ClothesType newType = request.type();
         List<ClothesAttributeDto> newAttributes = request.attributes();

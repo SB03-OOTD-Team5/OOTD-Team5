@@ -10,6 +10,7 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.sprint.ootd5team.base.cache.CacheEvictHelper;
 import com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException;
 import com.sprint.ootd5team.base.exception.clothes.ClothesSaveFailedException;
 import com.sprint.ootd5team.base.exception.clothesattribute.AttributeNotFoundException;
@@ -68,6 +69,8 @@ class ClothesServiceTest {
     private UserRepository userRepository;
     @Mock
     private FileStorage fileStorage;
+    @Mock
+    private  CacheEvictHelper cacheEvictHelper;
 
     @InjectMocks
     private ClothesServiceImpl clothesService;
@@ -233,6 +236,7 @@ class ClothesServiceTest {
         assertThat(result.name()).isEqualTo("멋쟁이패딩");
         assertThat(result.type()).isEqualTo(ClothesType.OUTER);
         assertThat(result.imageUrl()).isEqualTo(imageUrl);
+        verify(cacheEvictHelper).evictClothesByOwner(eq(ownerId));
         verify(fileStorage).upload(any(), any(InputStream.class), eq("image/png"), any());
     }
 
@@ -253,6 +257,7 @@ class ClothesServiceTest {
         // then
         assertThat(result.imageUrl()).isNull();
         verify(clothesRepository).save(any(Clothes.class));
+        verify(cacheEvictHelper).evictClothesByOwner(eq(ownerId));
         verify(fileStorage, never()).upload(any(), any(), any(), any());
     }
 
@@ -383,6 +388,7 @@ class ClothesServiceTest {
         // then
         assertThat(result.name()).isEqualTo("새로운셔츠");
         assertThat(result.type()).isEqualTo(ClothesType.OUTER);
+        verify(cacheEvictHelper).evictClothesByOwner(eq(ownerId));
     }
 
     @Test
@@ -417,6 +423,7 @@ class ClothesServiceTest {
         // then
         assertThat(result.imageUrl()).isEqualTo("new/image.png");
         verify(fileStorage).delete("old/image.png");
+        verify(cacheEvictHelper).evictClothesByOwner(eq(ownerId));
     }
 
     @Test
@@ -455,6 +462,7 @@ class ClothesServiceTest {
 
         // then
         assertThat(result.attributes()).extracting("value").contains("겨울");
+        verify(cacheEvictHelper).evictClothesByOwner(eq(ownerId));
     }
 
     @Test
@@ -516,6 +524,7 @@ class ClothesServiceTest {
 
         // then
         assertThat(result.attributes()).extracting("value").containsExactly("겨울");
+        verify(cacheEvictHelper).evictClothesByOwner(eq(ownerId));
     }
 
     @Test
@@ -531,6 +540,7 @@ class ClothesServiceTest {
 
         // then
         verify(clothesRepository).deleteById(clothesId);
+        verify(cacheEvictHelper).evictClothesByOwner(eq(ownerId));
     }
 
     @Test
@@ -548,6 +558,7 @@ class ClothesServiceTest {
         // then
         verify(fileStorage).delete("image.png");
         verify(clothesRepository).deleteById(clothesId);
+        verify(cacheEvictHelper).evictClothesByOwner(eq(ownerId));
     }
 
     @Test
@@ -566,6 +577,7 @@ class ClothesServiceTest {
         // then
         verify(fileStorage).delete("image.png");
         verify(clothesRepository).deleteById(clothesId);
+        verify(cacheEvictHelper).evictClothesByOwner(eq(ownerId));
     }
 
     @Test
@@ -582,6 +594,7 @@ class ClothesServiceTest {
         // then
         verify(fileStorage, never()).delete(any());
         verify(clothesRepository).deleteById(clothesId);
+        verify(cacheEvictHelper).evictClothesByOwner(eq(ownerId));
     }
 
     @Test

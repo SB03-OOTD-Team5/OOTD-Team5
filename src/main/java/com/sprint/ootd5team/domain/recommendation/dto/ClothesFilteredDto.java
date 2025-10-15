@@ -38,5 +38,24 @@ public record ClothesFilteredDto(
     OuterType outerType,
     ShoesType shoesType
 ) {
-
+    /**
+     * 테스트나 단순 생성용 - 상위 5개 필드만 받는 생성자
+     */
+    public ClothesFilteredDto(
+        UUID clothesId,
+        String name,
+        String imageKey,
+        ClothesType type,
+        List<ClothesAttributeWithDefDto> attributes
+    ) {
+        this(
+            clothesId,
+            name,
+            imageKey,
+            type,
+            attributes,
+            null, null, null, null,
+            null, null, null, null
+        );
+    }
 }

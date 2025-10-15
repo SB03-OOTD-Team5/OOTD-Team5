@@ -27,11 +27,15 @@ public enum BottomType {
 
     /** 날씨 기반 점수 */
     public double getWeatherScore(RecommendationInfoDto info) {
+        if (info == null || info.weatherInfo() == null) return 0.0;
         double feels = info.personalFeelsTemp();
 
         WeatherInfoDto w = info.weatherInfo();
         double rainProb = w.precipitationProbability();
         PrecipitationType precip = w.precipitationType();
+
+        boolean isRainy = precip != null && precip.isRainy();
+        boolean isSnowy = precip != null && precip.isSnowy();
 
         double score = 0;
 
@@ -44,7 +48,7 @@ public enum BottomType {
                 } else {
                     score -= 3;
                 }
-                if (precip.isRainy() || rainProb > 0.4) {
+                if (isRainy || rainProb > 0.4) {
                     score -= 1;
                 }
             }
@@ -56,7 +60,7 @@ public enum BottomType {
                 } else {
                     score -= 3;
                 }
-                if (precip.isRainy() || precip.isSnowy()) {
+                if (isRainy || isSnowy) {
                     score -= 2;
                 }
             }

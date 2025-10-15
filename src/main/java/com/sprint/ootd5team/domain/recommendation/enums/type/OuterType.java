@@ -32,7 +32,7 @@ public enum OuterType {
         double feels = info.personalFeelsTemp();
 
         WeatherInfoDto w = info.weatherInfo();
-        WindspeedLevel windSpeedLevel = w.windSpeedLevel();
+        WindspeedLevel windSpeedLevel = w.windspeedLevel();
         double rainProb = w.precipitationProbability();
         PrecipitationType precip = w.precipitationType();
 

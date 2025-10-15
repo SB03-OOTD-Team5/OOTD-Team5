@@ -36,7 +36,7 @@ public enum ShoesType {
         WeatherInfoDto weatherInfoDto = info.weatherInfo();
         PrecipitationType precip = weatherInfoDto.precipitationType();
         double rainProb = weatherInfoDto.precipitationProbability();
-        WindspeedLevel wind = weatherInfoDto.windSpeedLevel();
+        WindspeedLevel wind = weatherInfoDto.windspeedLevel();
 
         switch (this) {
             case RAIN_BOOTS -> {

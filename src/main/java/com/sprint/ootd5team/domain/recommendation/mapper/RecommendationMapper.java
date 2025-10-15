@@ -16,6 +16,7 @@ import com.sprint.ootd5team.domain.recommendation.enums.type.ShoesType;
 import com.sprint.ootd5team.domain.recommendation.enums.type.TopType;
 import com.sprint.ootd5team.domain.recommendation.enums.util.EnumParser;
 import org.mapstruct.AfterMapping;
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -34,8 +35,11 @@ public abstract class RecommendationMapper {
 
     /** Clothes → ClothesFilteredDto (필터링용) */
     @Mapping(source = "id", target = "clothesId")
+    @Mapping(source = "name", target = "name")
     @Mapping(source = "imageUrl", target = "imageKey")
+    @Mapping(source = "type", target = "type")
     @Mapping(source = "clothesAttributeValues", target = "attributes")
+    @BeanMapping(ignoreByDefault = true)
     public abstract ClothesFilteredDto toFilteredDto(Clothes entity);
 
     @Named("resolveImageUrl")

@@ -72,10 +72,14 @@ public class SingleItemScoringEngine {
     /** 단품 날씨 점수 계산 */
     public double calculateSingleItemScore(RecommendationInfoDto info, ClothesFilteredDto c) {
         double shoesScore = c.shoesType() != null ? c.shoesType().getWeatherScore(info) : 0;
-        double outerScore = c.type() == ClothesType.OUTER ? c.outerType().getWeatherScore(info) : 0;
-        double topScore = c.type() == ClothesType.TOP ? c.topType().getWeatherScore(info) : 0;
-        double bottomScore = c.type() == ClothesType.BOTTOM ? c.bottomType().getWeatherScore(info) : 0;
-        double colorScore = c.colorTone() != null ? c.color().getWeatherScore(info) : 0;
+        double outerScore = (c.type() == ClothesType.OUTER && c.outerType() != null)
+            ? c.outerType().getWeatherScore(info) : 0;
+        double topScore = (c.type() == ClothesType.TOP && c.topType() != null)
+            ? c.topType().getWeatherScore(info) : 0;
+        double bottomScore = (c.type() == ClothesType.BOTTOM && c.bottomType() != null)
+            ? c.bottomType().getWeatherScore(info) : 0;
+        double colorScore = (c.colorTone() != null && c.color() != null)
+            ? c.color().getWeatherScore(info) : 0;
         double materialScore = c.material() != null ? c.material().getWeatherScore(info) : 0;
 
         double weighted = (shoesScore + outerScore + topScore + bottomScore + colorScore + materialScore) / 6.0;
