@@ -5,6 +5,9 @@
     <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
       <pattern>${LOG_PATTERN}</pattern>
     </encoder>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>DEBUG</level>
+    </filter>
   </appender>
 
   <!-- 디버그 로그를 위한 별도 로거 -->

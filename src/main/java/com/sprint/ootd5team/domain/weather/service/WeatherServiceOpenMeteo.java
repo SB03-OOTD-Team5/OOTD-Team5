@@ -92,7 +92,7 @@ public class WeatherServiceOpenMeteo implements WeatherService {
      * 위도 값이 비어 있으면 프로필이나 기본 좌표를 사용한다.
      */
     private BigDecimal resolveLatitude(BigDecimal latitude, Profile profile) {
-        if (latitude != null) {
+        if (latitude != null && !latitude.equals(BigDecimal.ZERO)) {
             return latitude;
         }
         if (profile.getLocation() != null && profile.getLocation().getLatitude() != null) {
@@ -105,7 +105,7 @@ public class WeatherServiceOpenMeteo implements WeatherService {
      * 경도 값이 없을 때 프로필 좌표나 기본값으로 대체한다.
      */
     private BigDecimal resolveLongitude(BigDecimal longitude, Profile profile) {
-        if (longitude != null) {
+        if (longitude != null && !longitude.equals(BigDecimal.ZERO)) {
             return longitude;
         }
         if (profile.getLocation() != null && profile.getLocation().getLongitude() != null) {
