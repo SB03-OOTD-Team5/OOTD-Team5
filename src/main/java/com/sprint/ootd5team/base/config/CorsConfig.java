@@ -14,8 +14,8 @@ public class CorsConfig {
     private static final List<String> ALLOWED_ORIGINS = List.of(
         "http://localhost:8080",
         "http://localhost:5173",
-        "http://55td-alb-1586356795.ap-northeast-2.elb.amazonaws.com",
-        "https://55td-alb-1586356795.ap-northeast-2.elb.amazonaws.com"
+        "http://ootd-today.duckdns.org",
+        "https://ootd-today.duckdns.org"
     );
 
     @Bean
