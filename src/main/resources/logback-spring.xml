@@ -43,7 +43,7 @@
       <totalSizeCap>1GB</totalSizeCap>
     </rollingPolicy>
   </appender>
-  
+
   <!-- 로그 레벨별 색상 설정 -->
   <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="TRACE_FILE">
     <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">

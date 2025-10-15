@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.domain.extract.provider;
+package com.sprint.ootd5team.base.llm;
 
 import org.springframework.ai.chat.prompt.Prompt;
 

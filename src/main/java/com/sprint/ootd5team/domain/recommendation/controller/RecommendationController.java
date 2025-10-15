@@ -25,11 +25,14 @@ public class RecommendationController implements RecommendationApi {
 
     @GetMapping
     @Override
-    public ResponseEntity<RecommendationDto> getRecommendation(@RequestParam UUID weatherId) {
+    public ResponseEntity<RecommendationDto> getRecommendation(
+        @RequestParam UUID weatherId,
+        @RequestParam(required = false, defaultValue = "false") boolean useAi
+    ) {
         log.info("[RecommendationController] 추천 조회 수신: weatherId={} ", weatherId);
         UUID userId = authService.getCurrentUserId();
         RecommendationDto recommendationDto = recommendationService.getRecommendation(weatherId,
-            userId);
+            userId, useAi);
 
         return ResponseEntity
             .status(HttpStatus.OK)
