@@ -1,36 +1,56 @@
 services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.1
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-    ports:
-      - "2181:2181"
-
-  kafka:
-    image: confluentinc/cp-kafka:7.6.1
-    container_name: kafka
-    ports:
-      - "9092:9092"   # 내부 컨테이너/네트워크용
-      - "29092:29092" # 호스트 PC 접근용
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+  reverse-proxy:
+    image: nginx:1.27-alpine
+    container_name: reverse-proxy
+    restart: unless-stopped
     depends_on:
-      - zookeeper
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
+      - backend
     ports:
-      - "8090:8080"
+      - "3000:80"
+    networks:
+      - backend-net
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./src/main/resources/static:/usr/share/nginx/html:ro
+
+  backend:
+    build:
+      context: .
+    restart: unless-stopped
     environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-    depends_on:
-      - kafka
+      # --- AWS RDS PostgreSQL 설정 ---
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+
+      # --- ElasticCache Redis 설정 ---
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+
+      # --- Confluent Cloud Kafka 설정 ---
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      SPRING_KAFKA_PROPERTIES_SASL_MECHANISM: PLAIN
+      SPRING_KAFKA_PROPERTIES_SECURITY_PROTOCOL: SASL_SSL
+      SPRING_KAFKA_PROPERTIES_SASL_JAAS_CONFIG: >
+        org.apache.kafka.common.security.plain.PlainLoginModule required
+        username="${CONFLUENT_KAFKA_API_KEY}"
+        password="${CONFLUENT_KAFKA_API_SECRET}";
+
+      # --- Kafka Producer / Consumer 설정 ---
+      SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+      SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+      SPRING_KAFKA_CONSUMER_KEY_DESERIALIZER: org.apache.kafka.common.serialization.StringDeserializer
+      SPRING_KAFKA_CONSUMER_VALUE_DESERIALIZER: org.apache.kafka.common.serialization.StringDeserializer
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+
+    expose:
+      - "8080"
+    networks:
+      - backend-net
+    deploy:
+      replicas: 2
+
+
+networks:
+  backend-net:
+    driver: bridge

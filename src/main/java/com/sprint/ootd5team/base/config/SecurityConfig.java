@@ -30,6 +30,7 @@ import org.springframework.security.access.expression.method.MethodSecurityExpre
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -105,6 +106,9 @@ public class SecurityConfig {
     )
         throws Exception {
         http
+            // cors 설정
+            .cors(Customizer.withDefaults())  // CorsConfigurationSource Bean 자동 적용
+
             // csrf 설정
             .csrf(csrf -> {
                 if(csrfEnabled){
