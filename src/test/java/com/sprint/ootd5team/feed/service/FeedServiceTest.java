@@ -4,53 +4,43 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.sprint.ootd5team.base.errorcode.ErrorCode;
 import com.sprint.ootd5team.base.exception.clothes.ClothesNotFoundException;
 import com.sprint.ootd5team.base.exception.feed.FeedNotFoundException;
 import com.sprint.ootd5team.base.exception.profile.ProfileNotFoundException;
-import com.sprint.ootd5team.base.storage.FileStorage;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
-import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
-import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
-import com.sprint.ootd5team.domain.clothesattribute.dto.ClothesAttributeWithDefDto;
 import com.sprint.ootd5team.domain.feed.assembler.FeedDtoAssembler;
 import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
-import com.sprint.ootd5team.domain.feed.dto.data.OotdDto;
+import com.sprint.ootd5team.domain.feed.dto.data.FeedSearchResult;
 import com.sprint.ootd5team.domain.feed.dto.enums.SortDirection;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedCreateRequest;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedUpdateRequest;
 import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
 import com.sprint.ootd5team.domain.feed.entity.Feed;
+import com.sprint.ootd5team.domain.feed.event.producer.FeedEventProducer;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.feed.repository.feedClothes.FeedClothesRepository;
+import com.sprint.ootd5team.domain.feed.search.FeedSearchService;
 import com.sprint.ootd5team.domain.feed.service.FeedServiceImpl;
 import com.sprint.ootd5team.domain.feed.validator.FeedValidator;
 import com.sprint.ootd5team.domain.follow.repository.FollowRepository;
 import com.sprint.ootd5team.domain.notification.event.type.multi.FeedCreatedEvent;
-import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import com.sprint.ootd5team.domain.user.dto.AuthorDto;
-import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.weather.dto.data.PrecipitationDto;
 import com.sprint.ootd5team.domain.weather.dto.data.TemperatureDto;
 import com.sprint.ootd5team.domain.weather.dto.data.WeatherSummaryDto;
 import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.enums.SkyStatus;
-import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,68 +65,56 @@ public class FeedServiceTest {
     private FeedClothesRepository feedClothesRepository;
 
     @Mock
-    private ProfileRepository profileRepository;
+    private FeedDtoAssembler feedDtoAssembler;
 
     @Mock
-    private WeatherRepository weatherRepository;
+    private FeedValidator feedValidator;
 
     @Mock
-    private ClothesRepository clothesRepository;
+    private FeedEventProducer feedEventProducer;
+
+    @Mock
+    private FeedSearchService feedSearchService;
 
     @Mock
     private FollowRepository followRepository;
 
     @Mock
-    private FileStorage fileStorage;
-
-    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     private FeedServiceImpl feedService;
-
     private UUID userId;
     private FeedListRequest request;
-    private AuthorDto testAuthor;
-    private WeatherSummaryDto testWeather;
+    private AuthorDto author;
+    private WeatherSummaryDto weather;
 
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
 
         request = new FeedListRequest(
-            null,
-            null,
-            1,
-            "createdAt",
-            SortDirection.ASCENDING,
-            null,
-            SkyStatus.CLOUDY,
-            PrecipitationType.NONE,
-            null
+            null, null, 1, "createdAt",
+            SortDirection.ASCENDING, null, SkyStatus.CLOUDY, PrecipitationType.NONE, null
         );
 
-        testAuthor = new AuthorDto(UUID.randomUUID(), "nickname", "profileUrl");
-        testWeather = new WeatherSummaryDto(
+        author = new AuthorDto(UUID.randomUUID(), "nickname", "profileUrl");
+        weather = new WeatherSummaryDto(
             UUID.randomUUID(),
             SkyStatus.CLOUDY,
             new PrecipitationDto(PrecipitationType.NONE, 0.0, 0.0),
             new TemperatureDto(20.0, -1.0, 18.0, 25.0)
         );
 
-        FeedDtoAssembler feedDtoAssembler = new FeedDtoAssembler(feedClothesRepository, fileStorage);
-        FeedValidator feedValidator = new FeedValidator(feedRepository, profileRepository, weatherRepository, clothesRepository);
-
         feedService = new FeedServiceImpl(
             feedRepository,
             feedClothesRepository,
             feedDtoAssembler,
+            feedSearchService,
+            feedValidator,
+            feedEventProducer,
             eventPublisher,
-            followRepository,
-            feedValidator
+            followRepository
         );
-
-        lenient().when(fileStorage.resolveUrl(anyString()))
-            .thenAnswer(invocation -> "resolved-" + invocation.getArgument(0));
     }
 
     @Test
@@ -144,55 +122,48 @@ public class FeedServiceTest {
     void getFeeds_success() {
         // given
         UUID feedId = UUID.randomUUID();
-        FeedDto raw = new FeedDto(
-            feedId,
-            Instant.now(),
-            Instant.now(),
-            testAuthor,
-            testWeather,
-            List.of(),
-            "content test",
-            5,
-            2,
-            false
-        );
 
-        OotdDto ootdDto = new OotdDto(
-            UUID.randomUUID(),
-            "아디다스 트레이닝 팬츠",
-            "clothes/test.png",
-            "하의",
-            List.of(new ClothesAttributeWithDefDto(
-                UUID.randomUUID(),
-                "색상",
-                List.of("빨강", "파랑", "초록"),
-                "초록"
-            ))
-        );
+        FeedDto raw = dummyFeedDto(feedId);
 
         when(feedRepository.findFeedDtos(request, userId))
             .thenReturn(List.of(raw));
         when(feedRepository.countFeeds(any(), any(), any(), any()))
             .thenReturn(10L);
-        when(feedClothesRepository.findOotdsByFeedIds(anyList()))
-            .thenReturn(Map.of(feedId, List.of(ootdDto)));
+        when(feedDtoAssembler.enrich(List.of(raw)))
+            .thenReturn(List.of(raw));
 
         // when
-        FeedDtoCursorResponse response = feedService.getFeeds(request, userId);
-
-        FeedDto enriched = response.data().get(0);
+        FeedDtoCursorResponse feedDtoCursorResponse = feedService.getFeeds(request, userId);
 
         // then
-        assertThat(response.data()).hasSize(1);
-        assertThat(enriched.author().profileImageUrl()).startsWith("resolved-");
-        assertThat(enriched.ootds()).hasSize(1);
-        assertThat(enriched.ootds().get(0).imageUrl()).startsWith("resolved-");
-        assertThat(response.totalCount()).isEqualTo(10L);
-        assertThat(response.hasNext()).isFalse();
+        assertThat(feedDtoCursorResponse.data()).hasSize(1);
+        assertThat(feedDtoCursorResponse.totalCount()).isEqualTo(10L);
+        assertThat(feedDtoCursorResponse.hasNext()).isFalse();
 
-        verify(feedRepository, times(1)).findFeedDtos(request, userId);
-        verify(feedRepository, times(1)).countFeeds(any(), any(), any(), any());
-        verify(feedClothesRepository, times(1)).findOotdsByFeedIds(anyList());
+        verify(feedRepository).findFeedDtos(request, userId);
+        verify(feedDtoAssembler).enrich(List.of(raw));
+    }
+
+    @Test
+    @DisplayName("키워드 검색 요청 시 FeedSearchService가 호출됨")
+    void getFeeds_withKeyword_callsElasticsearch() {
+        // given
+        FeedListRequest feedListRequest = new FeedListRequest(
+            null, null, 5, "createdAt", SortDirection.DESCENDING, "코디", null, null, null
+        );
+        FeedSearchResult feedSearchResult = new FeedSearchResult(
+            List.of(UUID.randomUUID()), "cursor", UUID.randomUUID(), false, 10
+        );
+
+        when(feedSearchService.searchByKeyword(feedListRequest)).thenReturn(feedSearchResult);
+        when(feedRepository.findFeedDtosByIds(eq(feedListRequest), anyList(), any())).thenReturn(List.of(mock(FeedDto.class)));
+        when(feedDtoAssembler.enrich(anyList())).thenReturn(List.of(mock(FeedDto.class)));
+
+        // when
+        feedService.getFeeds(feedListRequest, userId);
+
+        // then
+        verify(feedSearchService).searchByKeyword(feedListRequest);
     }
 
     @Test
@@ -204,13 +175,13 @@ public class FeedServiceTest {
 
         FeedDto feed1 = new FeedDto(
             feedId1, Instant.now().minusSeconds(3600), Instant.now().minusSeconds(3600),
-            testAuthor, testWeather, List.of(),
+            author, weather, List.of(),
             "내용1", 1, 0, false
         );
 
         FeedDto feed2 = new FeedDto(
             feedId2, Instant.now(), Instant.now(),
-            testAuthor, testWeather, List.of(),
+            author, weather, List.of(),
             "내용2", 2, 0, false
         );
 
@@ -233,25 +204,23 @@ public class FeedServiceTest {
     void getFeed_success() {
         // given
         UUID feedId = UUID.randomUUID();
-        Feed feed = createFeed(feedId, userId, UUID.randomUUID(), "테스트 피드");
-        FeedDto mockDto = new FeedDto(
-            feedId, Instant.now(), Instant.now(), testAuthor, testWeather,
-            List.of(), "테스트 피드", 10, 2, false
-        );
+        Feed feed = createFeed(feedId);
+        FeedDto mockDto = mock(FeedDto.class);
 
-        when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
-        given(feedRepository.findFeedDtoById(feedId, userId)).willReturn(mockDto);
+        when(feedValidator.getFeedOrThrow(feedId)).thenReturn(feed);
+        when(feedRepository.findFeedDtoById(feedId, userId)).thenReturn(mockDto);
+        when(feedDtoAssembler.enrich(List.of(mockDto))).thenReturn(List.of(mockDto));
 
         // when
         FeedDto result = feedService.getFeed(feedId, userId);
 
         // then
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(feedId);
-        assertThat(result.content()).isEqualTo("테스트 피드");
+        assertThat(result).isEqualTo(mockDto);
 
-        verify(feedRepository).findById(feedId);
+        verify(feedValidator).getFeedOrThrow(feedId);
         verify(feedRepository).findFeedDtoById(feedId, userId);
+        verify(feedDtoAssembler).enrich(List.of(mockDto));
     }
 
     @Test
@@ -259,200 +228,51 @@ public class FeedServiceTest {
     void getFeed_notFound() {
         // given
         UUID feedId = UUID.randomUUID();
-        when(feedRepository.findById(feedId)).thenReturn(Optional.empty());
+
+        when(feedValidator.getFeedOrThrow(feedId))
+            .thenThrow(FeedNotFoundException.withId(feedId));
 
         // when & then
         assertThatThrownBy(() -> feedService.getFeed(feedId, userId))
             .isInstanceOf(FeedNotFoundException.class);
 
-        verify(feedRepository).findById(feedId);
+        verify(feedValidator).getFeedOrThrow(feedId);
         verify(feedRepository, never()).findFeedDtoById(any(), any());
     }
 
     @Test
-    @DisplayName("피드 삭제 성공")
-    void deleteFeed_success() {
-        // given
-        UUID feedId = UUID.randomUUID();
-        Feed feed = createFeed(feedId, userId, UUID.randomUUID(), "테스트 피드");
-
-        when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
-
-        // when
-        feedService.delete(feedId);
-
-        // then
-        verify(feedRepository).findById(feedId);
-        verify(feedRepository).delete(feed);
-    }
-
-    @Test
-    @DisplayName("피드 삭제 실패 - 존재하지 않는 feedId")
-    void deleteFeed_notFound() {
-        // given
-        UUID feedId = UUID.randomUUID();
-
-        when(feedRepository.findById(feedId)).thenReturn(Optional.empty());
-
-        // when & then
-        assertThatThrownBy(() -> feedService.delete(feedId))
-            .isInstanceOf(FeedNotFoundException.class)
-            .satisfies(ex -> {
-                FeedNotFoundException fnf = (FeedNotFoundException) ex;
-                assertThat(fnf.getErrorCode()).isEqualTo(ErrorCode.FEED_NOT_FOUND);
-                assertThat(fnf.getDetails()).containsEntry("feedId", feedId);
-            });
-
-        verify(feedRepository).findById(feedId);
-        verify(feedRepository, never()).delete(any());
-    }
-
-    @Test
-    @DisplayName("피드 수정 성공")
-    void updateFeed_success() {
-        // given
-        UUID feedId = UUID.randomUUID();
-        Feed feed = createFeed(feedId, userId, UUID.randomUUID(), "수정 전 내용");
-        FeedUpdateRequest request = new FeedUpdateRequest("수정된 내용");
-
-        FeedDto updatedDto = new FeedDto(
-            feedId,
-            Instant.now(),
-            Instant.now(),
-            testAuthor,
-            testWeather,
-            List.of(),
-            "수정된 내용",
-            10,
-            2,
-            true
-        );
-
-        OotdDto ootd = new OotdDto(
-            UUID.randomUUID(),
-            "나이키 반팔 티셔츠",
-            "https://image.url/nikeShirt.jpg",
-            "상의",
-            List.of()
-        );
-
-        when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
-        when(feedRepository.findFeedDtoById(feedId, userId)).thenReturn(updatedDto);
-        when(feedClothesRepository.findOotdsByFeedIds(List.of(feedId)))
-            .thenReturn(Map.of(feedId, List.of(ootd)));
-
-        // when
-        FeedDto result = feedService.update(feedId, request, userId);
-
-        // then
-        assertThat(feed.getContent()).isEqualTo("수정된 내용");
-        assertThat(result.content()).isEqualTo("수정된 내용");
-        assertThat(result.ootds()).hasSize(1);
-
-        verify(feedRepository, times(1)).findById(feedId);
-        verify(feedRepository, times(1)).findFeedDtoById(feedId, userId);
-        verify(feedClothesRepository, times(1)).findOotdsByFeedIds(List.of(feedId));
-    }
-
-    @Test
-    @DisplayName("피드 수정 실패 - 존재하지 않는 feedId")
-    void updateFeed_notFound() {
-        // given
-        UUID feedId = UUID.randomUUID();
-        FeedUpdateRequest request = new FeedUpdateRequest("수정된 내용");
-
-        when(feedRepository.findById(feedId)).thenReturn(Optional.empty());
-
-        // when & then
-        assertThatThrownBy(() -> feedService.update(feedId, request, userId))
-            .isInstanceOf(FeedNotFoundException.class)
-            .satisfies(ex -> {
-                FeedNotFoundException fnf = (FeedNotFoundException) ex;
-                assertThat(fnf.getErrorCode()).isEqualTo(ErrorCode.FEED_NOT_FOUND);
-                assertThat(fnf.getDetails()).containsEntry("feedId", feedId);
-            });
-
-        verify(feedRepository).findById(feedId);
-        verify(feedRepository, never()).findFeedDtoById(any(), any());
-        verify(feedClothesRepository, never()).findOotdsByFeedIds(anyList());
-    }
-
-    @Test
-    @DisplayName("피드 생성 성공(알림 이벤트 발행 포함)")
+    @DisplayName("피드 생성 성공 시 FeedCreatedEvent, FeedIndexCreatedEvent 발행")
     void createFeed_success() {
         // given
         UUID authorId = UUID.randomUUID();
         UUID weatherId = UUID.randomUUID();
-        UUID clothesId1 = UUID.randomUUID();
-        UUID clothesId2 = UUID.randomUUID();
+        Set<UUID> clothesIds = Set.of(UUID.randomUUID());
 
-        FeedCreateRequest request = new FeedCreateRequest(
-            authorId,
-            weatherId,
-            Set.of(clothesId1, clothesId2),
-            "오늘의 피드"
-        );
+        FeedCreateRequest feedCreateRequest = new FeedCreateRequest(authorId, weatherId, clothesIds, "test content");
+        Feed feed = createFeed(UUID.randomUUID());
+        FeedDto feedDto = dummyFeedDto(feed.getId());
+        List<Clothes> clothesList = List.of(mock(Clothes.class));
 
-        when(profileRepository.existsByUserId(authorId)).thenReturn(true);
-        when(weatherRepository.existsById(weatherId)).thenReturn(true);
+        doNothing().when(feedValidator).validateAuthorAndWeather(authorId, weatherId);
+        when(feedValidator.validateClothes(clothesIds))
+            .thenReturn(clothesList);
+        when(feedRepository.save(any(Feed.class)))
+            .thenReturn(feed);
+        when(feedRepository.findFeedDtoById(any(), any()))
+            .thenReturn(feedDto);
+        when(feedDtoAssembler.enrich(anyList()))
+            .thenReturn(List.of(feedDto));
+        when(followRepository.findFollowerIds(any()))
+            .thenReturn(List.of(UUID.randomUUID()));
 
-        Clothes clothes1 = createClothes(clothesId1, "상의", ClothesType.TOP);
-        Clothes clothes2 = createClothes(clothesId2, "하의", ClothesType.BOTTOM);
-
-        when(clothesRepository.findAllById(Set.of(clothesId1, clothesId2)))
-            .thenReturn(List.of(clothes1, clothes2));
-
-        UUID feedId = UUID.randomUUID();
-        Feed feed = createFeed(feedId, authorId, weatherId, request.content());
-
-        when(feedRepository.save(any())).thenAnswer(invocation -> {
-            Feed saved = invocation.getArgument(0);
-            ReflectionTestUtils.setField(saved, "id", feedId);
-            return saved;
-        });
-
-        FeedDto projectedDto = new FeedDto(
-            feed.getId(),
-            Instant.now(),
-            Instant.now(),
-            testAuthor,
-            testWeather,
-            List.of(),
-            "오늘의 피드",
-            0L,
-            0L,
-            false
-        );
-        when(feedRepository.findFeedDtoById(feed.getId(), authorId)).thenReturn(projectedDto);
-
-        OotdDto ootd1 = new OotdDto(
-            clothes1.getId(),
-            clothes1.getName(),
-            clothes1.getImageUrl(),
-            clothes1.getType().name(),
-            List.of()
-        );
-
-        OotdDto ootd2 = new OotdDto(
-            clothes2.getId(),
-            clothes2.getName(),
-            clothes2.getImageUrl(),
-            clothes2.getType().name(),
-            List.of()
-        );
-        when(feedClothesRepository.findOotdsByFeedIds(List.of(feed.getId())))
-            .thenReturn(Map.of(feed.getId(), List.of(ootd1, ootd2)));
-
-         // when
-        FeedDto result = feedService.create(request, authorId);
+        // when
+        FeedDto result = feedService.create(feedCreateRequest, authorId);
 
         // then
-        assertThat(result.id()).isEqualTo(feedId);
-        assertThat(result.ootds()).hasSize(2);
-
+        assertThat(result).isNotNull();
         verify(feedRepository).save(any(Feed.class));
         verify(feedClothesRepository).saveAll(anyList());
-        // 알림 이벤트 발행 검증
+        verify(feedEventProducer).publishFeedIndexCreatedEvent(any());
         verify(eventPublisher).publishEvent(any(FeedCreatedEvent.class));
     }
 
@@ -463,17 +283,21 @@ public class FeedServiceTest {
         UUID authorId = UUID.randomUUID();
         UUID weatherId = UUID.randomUUID();
         FeedCreateRequest request = new FeedCreateRequest(
-            authorId,
-            weatherId,
-            Set.of(UUID.randomUUID()),
-            "내용"
+            authorId, weatherId, Set.of(UUID.randomUUID()), "내용"
         );
 
-        when(profileRepository.existsByUserId(authorId)).thenReturn(false);
+        doThrow(ProfileNotFoundException.withUserId(authorId))
+            .when(feedValidator)
+            .validateAuthorAndWeather(authorId, weatherId);
 
         // when & then
         assertThatThrownBy(() -> feedService.create(request, authorId))
             .isInstanceOf(ProfileNotFoundException.class);
+
+        verify(feedValidator).validateAuthorAndWeather(authorId, weatherId);
+        verify(feedValidator, never()).validateClothes(any());
+        verify(feedRepository, never()).save(any());
+        verify(feedEventProducer, never()).publishFeedIndexCreatedEvent(any());
     }
 
     @Test
@@ -492,32 +316,101 @@ public class FeedServiceTest {
             "내용"
         );
 
-        when(profileRepository.existsByUserId(authorId)).thenReturn(true);
-        when(weatherRepository.existsById(weatherId)).thenReturn(true);
-
-        Clothes clothes1 = createClothes(clothesId1, "상의", ClothesType.TOP);
-        when(clothesRepository.findAllById(anySet())).thenReturn(List.of(clothes1));
+        doNothing().when(feedValidator).validateAuthorAndWeather(authorId, weatherId);
+        doThrow(ClothesNotFoundException.withIds(Set.of(clothesId2)))
+            .when(feedValidator)
+            .validateClothes(Set.of(clothesId1, clothesId2));
 
         // when & then
         assertThatThrownBy(() -> feedService.create(request, authorId))
             .isInstanceOf(ClothesNotFoundException.class);
+
+        verify(feedValidator).validateAuthorAndWeather(authorId, weatherId);
+        verify(feedValidator).validateClothes(Set.of(clothesId1, clothesId2));
+        verify(feedRepository, never()).save(any());
+        verify(feedEventProducer, never()).publishFeedIndexCreatedEvent(any());
     }
 
-    private Clothes createClothes(UUID id, String name, ClothesType type) {
-        User dummyOwner = mock(User.class);
-        Clothes clothes = Clothes.builder()
-            .owner(dummyOwner)
-            .name(name)
-            .type(type)
-            .imageUrl(name + ".png")
-            .build();
-        ReflectionTestUtils.setField(clothes, "id", id);
-        return clothes;
+    @Test
+    @DisplayName("피드 수정 시 FeedContentUpdatedEvent 발행")
+    void updateFeed_success() {
+        // given
+        UUID feedId = UUID.randomUUID();
+        Feed feed = createFeed(feedId);
+
+        when(feedValidator.getFeedOrThrow(feedId)).thenReturn(feed);
+        when(feedRepository.findFeedDtoById(feedId, userId)).thenReturn(mock(FeedDto.class));
+        when(feedDtoAssembler.enrich(anyList())).thenReturn(List.of(mock(FeedDto.class)));
+
+        feedService.update(feedId, new FeedUpdateRequest("new content"), userId);
+
+        verify(feedEventProducer).publishFeedContentUpdatedEvent(any());
     }
 
-    private Feed createFeed(UUID id, UUID authorId, UUID weatherId, String content) {
-        Feed feed = Feed.of(authorId, weatherId, content);
+    @Test
+    @DisplayName("피드 수정 실패 - 존재하지 않는 feedId")
+    void updateFeed_notFound() {
+        // given
+        UUID feedId = UUID.randomUUID();
+
+        when(feedValidator.getFeedOrThrow(feedId))
+            .thenThrow(FeedNotFoundException.withId(feedId));
+
+        // when & then
+        assertThatThrownBy(() -> feedService.update(feedId, new FeedUpdateRequest("내용"), userId))
+            .isInstanceOf(FeedNotFoundException.class);
+
+        verify(feedValidator).getFeedOrThrow(feedId);
+        verify(feedRepository, never()).findFeedDtoById(any(), any());
+        verify(feedDtoAssembler, never()).enrich(anyList());
+        verify(feedEventProducer, never()).publishFeedContentUpdatedEvent(any());
+    }
+
+    @Test
+    @DisplayName("피드 삭제 성공")
+    void deleteFeed_success() {
+        // given
+        UUID feedId = UUID.randomUUID();
+        Feed feed = createFeed(feedId);
+
+        when(feedValidator.getFeedOrThrow(feedId)).thenReturn(feed);
+
+        // when
+        feedService.delete(feedId);
+
+        // then
+        verify(feedRepository).delete(feed);
+        verify(feedEventProducer).publishFeedDeletedEvent(any());
+    }
+
+    @Test
+    @DisplayName("피드 삭제 실패 - 존재하지 않는 feedId")
+    void deleteFeed_notFound() {
+        // given
+        UUID feedId = UUID.randomUUID();
+
+        when(feedValidator.getFeedOrThrow(feedId))
+            .thenThrow(FeedNotFoundException.withId(feedId));
+
+        // when & then
+        assertThatThrownBy(() -> feedService.delete(feedId))
+            .isInstanceOf(FeedNotFoundException.class);
+
+        verify(feedValidator).getFeedOrThrow(feedId);
+        verify(feedRepository, never()).delete(any());
+        verify(feedEventProducer, never()).publishFeedDeletedEvent(any());
+    }
+
+    private Feed createFeed(UUID id) {
+        Feed feed = Feed.of(UUID.randomUUID(), UUID.randomUUID(), "content");
         ReflectionTestUtils.setField(feed, "id", id);
         return feed;
+    }
+
+    private FeedDto dummyFeedDto(UUID id) {
+        return new FeedDto(
+            id, Instant.now(), Instant.now(),
+            author, weather, List.of(), "test", 1, 0, false
+        );
     }
 }

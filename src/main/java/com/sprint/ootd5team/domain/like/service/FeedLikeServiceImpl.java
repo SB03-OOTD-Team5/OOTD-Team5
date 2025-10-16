@@ -65,13 +65,13 @@ public class FeedLikeServiceImpl implements FeedLikeService {
 
         feedLikeRepository.deleteByFeedIdAndUserId(feedId, currentUserId);
 
-        publishLikeCountUpdatedEvent(feedId);
-
         int updatedRows = feedRepository.decrementLikeCount(feedId);
         if (updatedRows == 0) {
             log.error("[FeedLikeService] 좋아요 수 감소 실패");
             throw LikeCountUnderflowException.withFeedId(feedId);
         }
+
+        publishLikeCountUpdatedEvent(feedId);
     }
 
     private void publishLikeCountUpdatedEvent(UUID feedId) {
