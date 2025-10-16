@@ -97,6 +97,11 @@ spring:
           model: gemma:2b
           temperature: 0.7
 
+  elasticsearch:
+    uris: http://localhost:9200
+    indices:
+      feed: feeds-v5
+
 # SecurityConfig 비활성화/활성화 on off
 app:
   security:

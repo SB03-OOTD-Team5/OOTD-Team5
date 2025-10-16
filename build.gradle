@@ -110,6 +110,8 @@ dependencies {
     // Gemini
     implementation "org.springframework.ai:spring-ai-vertex-ai-gemini"
 
+    // Elasticsearch
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
 }
 
 tasks.named('test') {

@@ -34,3 +34,64 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
     depends_on:
       - kafka
+
+  elasticsearch:
+    image: elasticsearch:9.1.5
+    container_name: ootd-elasticsearch
+    environment:
+      - node.name=node1
+      - cluster.name=ootd-elasticsearch
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - path.repo=/usr/share/elasticsearch/backups
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - node1-data:/usr/share/elasticsearch/data
+      - node1-backups:/usr/share/elasticsearch/backups
+    command: >
+      bash -c "
+        if [ ! -d 'plugins/analysis-nori' ]; then
+          bin/elasticsearch-plugin install analysis-nori --batch;
+        fi;
+        exec /usr/local/bin/docker-entrypoint.sh elasticsearch
+      "
+    ports:
+      - 9200:9200
+    networks:
+      - ootd-elasticsearch
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    image: kibana:9.1.5
+    container_name: ootd-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+      - xpack.encryptedSavedObjects.encryptionKey=fhjskloppd678ehkdfdlliverpoolfcr
+    ports:
+      - 5601:5601
+    networks:
+      - ootd-elasticsearch
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+volumes:
+  node1-data:
+    driver: local
+  node1-backups:
+    driver: local
+
+networks:
+  ootd-elasticsearch:
+    driver: bridge
