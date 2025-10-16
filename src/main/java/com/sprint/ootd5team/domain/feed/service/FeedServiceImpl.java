@@ -4,25 +4,35 @@ import com.sprint.ootd5team.base.exception.feed.InvalidSortOptionException;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
 import com.sprint.ootd5team.domain.feed.assembler.FeedDtoAssembler;
 import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
+import com.sprint.ootd5team.domain.feed.dto.data.FeedSearchResult;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedCreateRequest;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedUpdateRequest;
 import com.sprint.ootd5team.domain.feed.dto.response.FeedDtoCursorResponse;
 import com.sprint.ootd5team.domain.feed.entity.Feed;
 import com.sprint.ootd5team.domain.feed.entity.FeedClothes;
+import com.sprint.ootd5team.domain.feed.event.producer.FeedEventProducer;
+import com.sprint.ootd5team.domain.feed.event.type.FeedContentUpdatedEvent;
+import com.sprint.ootd5team.domain.feed.event.type.FeedDeletedEvent;
+import com.sprint.ootd5team.domain.feed.event.type.FeedIndexCreatedEvent;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.feed.repository.feedClothes.FeedClothesRepository;
+import com.sprint.ootd5team.domain.feed.search.FeedSearchService;
 import com.sprint.ootd5team.domain.feed.validator.FeedValidator;
 import com.sprint.ootd5team.domain.follow.repository.FollowRepository;
 import com.sprint.ootd5team.domain.notification.event.type.multi.FeedCreatedEvent;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 @Slf4j
@@ -35,10 +45,12 @@ public class FeedServiceImpl implements FeedService {
     private final FeedRepository feedRepository;
     private final FeedClothesRepository feedClothesRepository;
     private final FeedDtoAssembler feedDtoAssembler;
+    private final FeedSearchService feedSearchService;
+    private final FeedValidator feedValidator;
+    private final FeedEventProducer feedEventProducer;
 
     private final ApplicationEventPublisher eventPublisher;
     private final FollowRepository followRepository;
-    private final FeedValidator feedValidator;
 
     /**
      * 새 피드를 생성한다.
@@ -71,6 +83,10 @@ public class FeedServiceImpl implements FeedService {
         FeedDto dto = feedRepository.findFeedDtoById(feed.getId(), currentUserId);
         publishFeedCreatedEvent(dto);
 
+        feedEventProducer.publishFeedIndexCreatedEvent(
+            new FeedIndexCreatedEvent(feed.getId(), feed.getContent(), feed.getCreatedAt())
+        );
+
         return feedDtoAssembler.enrich(List.of(dto)).get(0);
     }
 
@@ -91,46 +107,12 @@ public class FeedServiceImpl implements FeedService {
     public FeedDtoCursorResponse getFeeds(FeedListRequest request, UUID currentUserId) {
         log.info("[FeedService] 피드 목록 조회 시작 - userId:{}", currentUserId);
 
-        List<FeedDto> feedDtos = feedRepository.findFeedDtos(request, currentUserId);
-
-        boolean hasNext = feedDtos.size() > request.limit();
-        if (hasNext) {
-            feedDtos = feedDtos.subList(0, request.limit());
+        if (StringUtils.hasText(request.keywordLike())) {
+            log.info("[FeedService] ES 기반 피드 검색 - keywordLike:{}", request.keywordLike());
+            return getFeedsWithKeyword(request, currentUserId);
         }
-
-        String nextCursor = null;
-        UUID nextIdAfter = null;
-        if (hasNext && !feedDtos.isEmpty()) {
-            FeedDto lastFeedDto = feedDtos.get(feedDtos.size() - 1);
-
-            switch (request.sortBy()) {
-                case "createdAt" -> nextCursor = lastFeedDto.createdAt().toString();
-                case "likeCount" -> nextCursor = String.valueOf(lastFeedDto.likeCount());
-                default -> throw InvalidSortOptionException.withSortBy(request.sortBy());
-            }
-            nextIdAfter = lastFeedDto.id();
-        }
-        log.debug("[FeedService] nextCursor:{}, nextIdAfter:{}", nextCursor, nextIdAfter);
-
-        long totalCount = feedRepository.countFeeds(
-            request.keywordLike(),
-            request.skyStatusEqual(),
-            request.precipitationTypeEqual(),
-            request.authorIdEqual()
-        );
-        log.debug("[FeedService] totalCount:{}", totalCount);
-
-        List<FeedDto> data = feedDtoAssembler.enrich(feedDtos);
-
-        return new FeedDtoCursorResponse(
-            data,
-            nextCursor,
-            nextIdAfter,
-            hasNext,
-            totalCount,
-            request.sortBy(),
-            request.sortDirection().name()
-        );
+        log.info("[FeedService] 기본 피드 검색");
+        return getFeedsWithoutKeyword(request, currentUserId);
     }
 
     @Override
@@ -156,10 +138,14 @@ public class FeedServiceImpl implements FeedService {
     public FeedDto update(UUID feedId, FeedUpdateRequest request, UUID currentUserId) {
         log.info("[FeedService] 피드 수정 시작 - userId:{}", currentUserId);
 
-        Feed feed = feedValidator.getFeedOrThrow(feedId);
-        feed.updateContent(request.content());
+        String newContent = request.content();
 
-        log.debug("[FeedService] 피드 수정 완료 - feedId:{}, newContent:{}", feedId, feed.getContent());
+        Feed feed = feedValidator.getFeedOrThrow(feedId);
+        feed.updateContent(newContent);
+
+        log.debug("[FeedService] 피드 수정 완료 - feedId:{}, newContent:{}", feedId, newContent);
+
+        feedEventProducer.publishFeedContentUpdatedEvent(new FeedContentUpdatedEvent(feedId, newContent));
 
         FeedDto updated = feedRepository.findFeedDtoById(feedId, currentUserId);
         return feedDtoAssembler.enrich(List.of(updated)).get(0);
@@ -180,6 +166,90 @@ public class FeedServiceImpl implements FeedService {
         Feed feed = feedValidator.getFeedOrThrow(feedId);
 
         feedRepository.delete(feed);
+
+        feedEventProducer.publishFeedDeletedEvent(new FeedDeletedEvent(feedId));
+    }
+
+    private FeedDtoCursorResponse getFeedsWithKeyword(FeedListRequest request, UUID currentUserId) {
+        FeedSearchResult result = feedSearchService.searchByKeyword(request);
+
+        if (result.feedIds().isEmpty()) {
+            log.debug("[FeedService] keyword와 매칭된 피드가 없음");
+            return FeedDtoCursorResponse.empty(request.sortBy(), request.sortDirection().name());
+        }
+
+        List<FeedDto> feedDtos = feedRepository.findFeedDtosByIds(request, result.feedIds(), currentUserId);
+
+        Map<UUID, FeedDto> dtoMap = feedDtos.stream()
+            .collect(Collectors.toMap(FeedDto::id, dto -> dto));
+
+        List<FeedDto> ordered = result.feedIds().stream()
+            .map(dtoMap::get)
+            .filter(Objects::nonNull)
+            .toList();
+
+        List<FeedDto> enriched = feedDtoAssembler.enrich(ordered);
+
+        return new FeedDtoCursorResponse(
+            enriched,
+            result.nextCursor(),
+            result.nextIdAfter(),
+            result.hasNext(),
+            result.feedIds().size(),
+            request.sortBy(),
+            request.sortDirection().name()
+        );
+    }
+
+    private FeedDtoCursorResponse getFeedsWithoutKeyword(FeedListRequest request, UUID currentUserId) {
+        List<FeedDto> feedDtos = feedRepository.findFeedDtos(request, currentUserId);
+        log.info("[FeedService] 조회된 피드의 개수: {}", feedDtos.size());
+
+        return buildCursorResponse(feedDtos, request, false);
+    }
+
+    private FeedDtoCursorResponse buildCursorResponse(
+        List<FeedDto> feedDtos,
+        FeedListRequest request,
+        boolean isFromElasticsearch
+    ) {
+        boolean hasNext = feedDtos.size() > request.limit();
+        if (hasNext) feedDtos = feedDtos.subList(0, request.limit());
+
+        String nextCursor = null;
+        UUID nextIdAfter = null;
+
+        if (hasNext && !feedDtos.isEmpty()) {
+            FeedDto lastFeed = feedDtos.get(feedDtos.size() - 1);
+            nextIdAfter = lastFeed.id();
+
+            switch (request.sortBy()) {
+                case "createdAt" -> nextCursor = lastFeed.createdAt().toString();
+                case "likeCount" -> nextCursor = String.valueOf(lastFeed.likeCount());
+                default -> throw InvalidSortOptionException.withSortBy(request.sortBy());
+            }
+        }
+
+        List<FeedDto> enriched = feedDtoAssembler.enrich(feedDtos);
+
+        long totalCount = isFromElasticsearch
+            ? feedDtos.size()
+            : feedRepository.countFeeds(
+                request.keywordLike(),
+                request.skyStatusEqual(),
+                request.precipitationTypeEqual(),
+                request.authorIdEqual()
+            );
+
+        return new FeedDtoCursorResponse(
+            enriched,
+            nextCursor,
+            nextIdAfter,
+            hasNext,
+            totalCount,
+            request.sortBy(),
+            request.sortDirection().name()
+        );
     }
 
     private void publishFeedCreatedEvent(FeedDto dto) {
