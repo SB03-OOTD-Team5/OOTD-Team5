@@ -1,6 +1,6 @@
 package com.sprint.ootd5team.domain.extract.extractor;
 
-import com.sprint.ootd5team.base.exception.clothes.ClothesExtractionFailedException;
+import com.sprint.ootd5team.base.exception.clothes.LlmFailedException;
 
 
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
@@ -18,6 +18,7 @@ import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ import org.springframework.stereotype.Service;
  *
  * <p>속성(Attribute)은 서버 기동 시점에 캐시(Map)로 초기화하여, 요청 시 DB 조회를 반복하지 않음.</p>
  */
+@Getter
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -93,10 +95,11 @@ public class WebClothesExtractor implements ClothesExtractor {
                 .type(type)
                 .attributes(attributes)
                 .build();
-
+        } catch (LlmFailedException e) {
+            throw e;
         } catch (Exception e) {
             log.error("[WebClothesExtractor] 웹스크래핑 실패: {}", url, e);
-            ClothesExtractionFailedException exception = ClothesExtractionFailedException.withUrl(url);
+            LlmFailedException exception = LlmFailedException.withUrl(url);
             exception.initCause(e);
             throw exception;
         }

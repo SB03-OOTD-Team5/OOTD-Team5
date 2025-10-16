@@ -101,14 +101,8 @@ dependencies {
     // 웹 스크래핑
     implementation 'org.jsoup:jsoup:1.18.1'
 
-    // 공통
-    implementation "org.springframework.ai:spring-ai-core"
-
-    // Ollama
-    implementation "org.springframework.ai:spring-ai-ollama-spring-boot-starter"
-
     // Gemini
-    implementation "org.springframework.ai:spring-ai-vertex-ai-gemini"
+    implementation "org.springframework.ai:spring-ai-vertex-ai-gemini-spring-boot-starter"
 
     // Elasticsearch
     implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
