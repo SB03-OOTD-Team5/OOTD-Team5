@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.feed.search;
 
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -29,6 +30,6 @@ public class FeedDocument {
     private long likeCount;
 
     @Field(type = FieldType.Date, format = DateFormat.date_time)
-    private String createdAt;
+    private Instant createdAt;
 
 }

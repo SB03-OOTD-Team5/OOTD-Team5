@@ -195,7 +195,7 @@ public class FeedServiceImpl implements FeedService {
             result.nextCursor(),
             result.nextIdAfter(),
             result.hasNext(),
-            result.feedIds().size(),
+            result.totalCount(),
             request.sortBy(),
             request.sortDirection().name()
         );

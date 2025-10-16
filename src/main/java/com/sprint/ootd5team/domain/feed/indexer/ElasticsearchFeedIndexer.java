@@ -18,7 +18,7 @@ public class ElasticsearchFeedIndexer {
         FeedDocument document = FeedDocument.builder()
             .feedId(event.getFeedId())
             .content(event.getContent())
-            .createdAt(event.getCreatedAt().toString())
+            .createdAt(event.getCreatedAt())
             .build();
 
         operations.save(document);

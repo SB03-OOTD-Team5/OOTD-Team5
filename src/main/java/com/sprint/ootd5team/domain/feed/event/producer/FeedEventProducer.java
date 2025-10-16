@@ -53,7 +53,7 @@ public class FeedEventProducer {
 
         try {
             String payload = objectMapper.writeValueAsString(event);
-            kafkaTemplate.send("ootd.Feeds.LikeChanged", payload);
+            kafkaTemplate.send("ootd.Feeds.LikeUpdated", payload);
             log.info("[FeedEventProducer] Kafka - LikeChangedEvent 발행 완료: {}", payload);
 
         } catch (Exception e) {

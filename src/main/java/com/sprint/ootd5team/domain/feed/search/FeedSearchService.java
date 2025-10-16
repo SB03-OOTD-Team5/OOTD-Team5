@@ -5,6 +5,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import com.sprint.ootd5team.base.exception.feed.InvalidSortOptionException;
 import com.sprint.ootd5team.domain.feed.dto.data.FeedSearchResult;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +55,7 @@ public class FeedSearchService {
         }
 
         SearchHits<FeedDocument> hits = operations.search(builder.build(), FeedDocument.class);
+        long total = hits.getTotalHits();
         List<SearchHit<FeedDocument>> hitList = hits.getSearchHits();
 
         boolean hasNext = hitList.size() > request.limit();
@@ -67,19 +69,26 @@ public class FeedSearchService {
         UUID nextIdAfter = null;
         if (hasNext) {
             List<Object> sortValues = hitList.get(request.limit() - 1).getSortValues();
-            nextCursor = sortValues.get(0).toString();
+
+            if ("createdAt".equals(request.sortBy())) {
+                long millis = ((Number) sortValues.get(0)).longValue();
+                nextCursor = Instant.ofEpochMilli(millis).toString();
+            } else {
+                nextCursor = sortValues.get(0).toString();
+            }
+
             nextIdAfter = UUID.fromString(sortValues.get(1).toString());
         }
 
         log.info("[FeedSearchService] 검색 결과: totalHits={}, 반환된 feedIds={}", hits.getTotalHits(), feedIds.size());
 
-        return new FeedSearchResult(feedIds, nextCursor, nextIdAfter, hasNext);
+        return new FeedSearchResult(feedIds, nextCursor, nextIdAfter, hasNext, total);
     }
 
     private Object parseCursor(String sortBy, String raw) {
         return switch (sortBy) {
             case "likeCount" -> Long.parseLong(raw);
-            case "createdAt" -> raw;
+            case "createdAt" -> Instant.parse(raw).toEpochMilli();
             default -> throw InvalidSortOptionException.withSortBy(sortBy);
         };
     }
