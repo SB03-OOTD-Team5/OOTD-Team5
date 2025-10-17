@@ -64,7 +64,7 @@ public class FeedEventProducerTest {
 
         // then
         verify(objectMapper).writeValueAsString(feedContentUpdatedEvent);
-        verify(kafkaTemplate).send(eq("ootd.Feeds.Updated"), eq("payload"));
+        verify(kafkaTemplate).send(eq("ootd.Feeds.ContentUpdated"), eq("payload"));
     }
 
     @Test
