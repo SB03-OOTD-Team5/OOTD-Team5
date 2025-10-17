@@ -33,6 +33,8 @@ public enum ErrorCode {
     WEATHER_KMA_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "기상청 데이터를 분석하는데 실패했습니다."),
     WEATHER_METEO_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "Open-Meteo 데이터를 가져오는데 실패했습니다."),
     WEATHER_METEO_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Open-Meteo 데이터를 분석하는데 실패했습니다."),
+    WEATHER_OPEN_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "Open-Weather 데이터를 가져오는데 실패했습니다."),
+    WEATHER_OPEN_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Open-Weather 데이터를 분석하는데 실패했습니다."),
 
     //위치 관련 에러코드
     LOCATION_NOT_FOUND(HttpStatus.NOT_FOUND, "해당하는 위치 데이터가 없습니다"),
@@ -74,7 +76,6 @@ public enum ErrorCode {
     // Follow 관련 에러코드
     FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 팔로우입니다."),
     FOLLOW_ALREADY_DELETED(HttpStatus.NOT_FOUND, "이미 삭제된 팔로우입니다.");
-
     private final HttpStatus status;
     private final String message;
 

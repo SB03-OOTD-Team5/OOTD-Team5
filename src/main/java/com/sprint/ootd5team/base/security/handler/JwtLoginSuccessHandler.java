@@ -7,10 +7,8 @@ import com.sprint.ootd5team.base.security.JwtDto;
 import com.sprint.ootd5team.base.security.JwtInformation;
 import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
-import com.sprint.ootd5team.base.security.OotdUserDetails;
-import com.sprint.ootd5team.domain.user.dto.UserDto;
+import com.sprint.ootd5team.base.security.OotdSecurityUserDetails;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -20,7 +18,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -39,11 +36,11 @@ public class JwtLoginSuccessHandler implements
         response.setCharacterEncoding("UTF-8");
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-        if (authentication.getPrincipal() instanceof OotdUserDetails userDetails) {
+        if (authentication.getPrincipal() instanceof OotdSecurityUserDetails userDetails) {
             try {
                 // 1. 토큰생성
-                String accessToken = tokenProvider.generateAccessToken(userDetails);
-                String refreshToken = tokenProvider.generateRefreshToken(userDetails);
+                String accessToken = tokenProvider.generateAccessToken(userDetails.getUserDto());
+                String refreshToken = tokenProvider.generateRefreshToken(userDetails.getUserDto());
 
                 // 2. 서버 상태 등록
                 jwtRegistry.registerJwtInformation(

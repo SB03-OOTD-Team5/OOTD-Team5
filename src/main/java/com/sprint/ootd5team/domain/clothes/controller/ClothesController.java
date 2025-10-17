@@ -7,7 +7,7 @@ import com.sprint.ootd5team.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDto;
 import com.sprint.ootd5team.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
-import com.sprint.ootd5team.domain.clothes.extractor.ClothesExtractionService;
+import com.sprint.ootd5team.domain.extract.extractor.ClothesExtractor;
 import com.sprint.ootd5team.domain.clothes.service.ClothesService;
 import java.time.Instant;
 import java.util.UUID;
@@ -27,7 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class ClothesController implements ClothesApi {
 
     private final ClothesService clothesService;
-    private final ClothesExtractionService clothesExtractionService;
+    private final ClothesExtractor clothesExtractor;
     private final AuthService authService;
 
     @Override
@@ -73,7 +73,7 @@ public class ClothesController implements ClothesApi {
     @Override
     public ResponseEntity<Void> deleteClothes(UUID clothesId) {
         UUID ownerId = authService.getCurrentUserId();
-        log.info("[ClothesController] 삭제 요청 수신: clothesId={}", clothesId);
+        log.info("[ClothesController] 삭제 요청 수신: ownerId={}, clothesId={}", ownerId, clothesId);
         clothesService.delete(ownerId, clothesId);
 
         log.info("[ClothesController] 삭제 응답 완료");
@@ -84,9 +84,10 @@ public class ClothesController implements ClothesApi {
     @Override
     public ResponseEntity<ClothesDto> updateClothes(UUID clothesId, ClothesUpdateRequest request,
         MultipartFile image) {
-        log.info("[ClothesController] 수정 요청 수신: clothesId={}, request={}, image={}", clothesId,
+        UUID ownerId = authService.getCurrentUserId();
+        log.info("[ClothesController] 수정 요청 수신: ownerId={}, clothesId={}, request={}, image={}", ownerId, clothesId,
             request, image);
-        ClothesDto clothesDto = clothesService.update(clothesId, request, image);
+        ClothesDto clothesDto = clothesService.update(ownerId, clothesId, request, image);
 
         log.info("[ClothesController] 수정 응답 반환: name={}, image={}", clothesDto.name(),
             clothesDto.imageUrl());
@@ -126,7 +127,7 @@ public class ClothesController implements ClothesApi {
             return ResponseEntity.badRequest().build();
         }
 
-        ClothesDto clothesDto = clothesExtractionService.extractByUrl(url);
+        ClothesDto clothesDto = clothesExtractor.extractByUrl(url);
 
         log.info("[ClothesController] 추출 결과 name={}, imageUrl={}",
             clothesDto.name(), clothesDto.imageUrl());

@@ -23,7 +23,7 @@ public interface ClothesService {
 
     ClothesDto create(ClothesCreateRequest request, MultipartFile image);
 
-    ClothesDto update(UUID clothesId, ClothesUpdateRequest request, MultipartFile image);
+    ClothesDto update(UUID ownerId, UUID clothesId, ClothesUpdateRequest request, MultipartFile image);
 
     void delete(UUID ownerId, UUID clothesId);
 }

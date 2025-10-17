@@ -2,7 +2,7 @@ package com.sprint.ootd5team.base.websocket.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
-import com.sprint.ootd5team.base.security.OotdUserDetails;
+import com.sprint.ootd5team.base.security.OotdSecurityUserDetails;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageCreateRequest;
 import com.sprint.ootd5team.domain.directmessage.entity.DirectMessageRoom;
 import com.sprint.ootd5team.domain.directmessage.repository.DirectMessageRoomRepository;
@@ -145,7 +145,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 			catch (Exception ignored) {}
 		}
 		// 혹시 모를 커스텀 UserDetails 지원 (테스트/이관 대비)
-		if (principal instanceof OotdUserDetails ud) return ud.getUserId();
+		if (principal instanceof OotdSecurityUserDetails ud) return ud.getUserId();
 
 		// 마지막 폴백: auth.getName()이 UUID 문자열이어야만 허용
 		try { return UUID.fromString(auth.getName()); }

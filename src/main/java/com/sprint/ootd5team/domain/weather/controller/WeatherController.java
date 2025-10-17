@@ -48,7 +48,6 @@ public class WeatherController implements WeatherApi {
         WeatherAPILocationDto locationDto = locationService.fetchLocation(latitude,
             longitude, userId);
         return ResponseEntity.status(HttpStatus.OK).body(locationDto);
-
     }
 
 }

@@ -1,7 +1,7 @@
 package com.sprint.ootd5team.domain.weather.external.kma;
 
 public enum KmaCategoryType {
-    TMP, //temperature
+    TMP, //feelsLikeTemperature
     POP, //precipitationProbability
     PTY, //precipitationType
     SKY, //skyStatus

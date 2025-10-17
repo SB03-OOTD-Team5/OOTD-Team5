@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.nimbusds.jose.JOSEException;
-import com.sprint.ootd5team.base.security.JwtTokenProvider;
-import com.sprint.ootd5team.base.security.OotdUserDetails;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import java.time.Instant;
@@ -19,7 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 public class JwtTokenProviderTest {
 
     private JwtTokenProvider jwtTokenProvider;
-    private OotdUserDetails userDetails;
+    private OotdSecurityUserDetails userDetails;
 
     @BeforeEach
     void setUp() throws JOSEException {
@@ -41,14 +39,14 @@ public class JwtTokenProviderTest {
             false
         );
 
-        userDetails = new OotdUserDetails(userDto, "encoded-password");
+        userDetails = new OotdSecurityUserDetails(userDto, "encoded-password");
     }
 
     @Test
     @DisplayName("JWT 토큰 생성 테스트")
     void generateAccessToken_Success() throws JOSEException {
         // When
-        String token = jwtTokenProvider.generateAccessToken(userDetails);
+        String token = jwtTokenProvider.generateAccessToken(userDetails.getUserDto());
 
         // Then
         assertThat(token).isNotNull();
@@ -60,7 +58,7 @@ public class JwtTokenProviderTest {
     @DisplayName("유효한 JWT 토큰 검증 테스트")
     void validateToken_ValidAccessToken_ReturnsTrue() throws JOSEException {
         // Given
-        String token = jwtTokenProvider.generateAccessToken(userDetails);
+        String token = jwtTokenProvider.generateAccessToken(userDetails.getUserDto());
 
         // When
         boolean isValid = jwtTokenProvider.validateAccessToken(token);
@@ -106,7 +104,7 @@ public class JwtTokenProviderTest {
     @DisplayName("JWT 토큰에서 사용자명 추출 테스트")
     void getUsernameFromToken_ValidToken_ReturnsUsername() throws JOSEException {
         // Given
-        String token = jwtTokenProvider.generateAccessToken(userDetails);
+        String token = jwtTokenProvider.generateAccessToken(userDetails.getUserDto());
 
         // When
         String username = jwtTokenProvider.getEmailFromToken(token);
@@ -131,7 +129,7 @@ public class JwtTokenProviderTest {
     @DisplayName("JWT 토큰에서 토큰 ID 추출 테스트")
     void getTokenId_ValidToken_ReturnsTokenId() throws JOSEException {
         // Given
-        String token = jwtTokenProvider.generateAccessToken(userDetails);
+        String token = jwtTokenProvider.generateAccessToken(userDetails.getUserDto());
 
         // When
         String tokenId = jwtTokenProvider.getTokenId(token);
@@ -166,7 +164,7 @@ public class JwtTokenProviderTest {
             "test-refresh-secret-key-for-jwt-token-generation-and-validation-must-be-long-enough"
         );
 
-        String token = shortExpirationProvider.generateAccessToken(userDetails);
+        String token = shortExpirationProvider.generateAccessToken(userDetails.getUserDto());
 
         // Wait for token to expire
         try {
@@ -196,12 +194,12 @@ public class JwtTokenProviderTest {
             null,
             false
         );
-        OotdUserDetails anotherUserDetails = new OotdUserDetails(anotherUserDto,
+        OotdSecurityUserDetails anotherUserDetails = new OotdSecurityUserDetails(anotherUserDto,
             "another-password");
 
         // When
-        String token1 = jwtTokenProvider.generateAccessToken(userDetails);
-        String token2 = jwtTokenProvider.generateAccessToken(anotherUserDetails);
+        String token1 = jwtTokenProvider.generateAccessToken(userDetails.getUserDto());
+        String token2 = jwtTokenProvider.generateAccessToken(anotherUserDetails.getUserDto());
 
         // Then
         assertThat(token1).isNotEqualTo(token2);

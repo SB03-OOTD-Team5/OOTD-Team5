@@ -22,8 +22,20 @@ configurations {
     }
 }
 
+ext {
+    set('springAiVersion', "1.0.0-M6")
+}
+
 repositories {
     mavenCentral()
+    maven { url "https://repo.spring.io/milestone" }
+    maven { url "https://repo.spring.io/snapshot" }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
 }
 
 dependencies {
@@ -88,6 +100,9 @@ dependencies {
 
     // 웹 스크래핑
     implementation 'org.jsoup:jsoup:1.18.1'
+
+    // Gemini
+    implementation "org.springframework.ai:spring-ai-vertex-ai-gemini-spring-boot-starter"
 
 }
 

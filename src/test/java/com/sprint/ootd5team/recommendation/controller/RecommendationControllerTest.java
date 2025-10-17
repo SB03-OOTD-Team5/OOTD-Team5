@@ -51,7 +51,8 @@ class RecommendationControllerTest {
             .build();
 
         given(authService.getCurrentUserId()).willReturn(userId);
-        given(recommendationService.getRecommendation(weatherId, userId)).willReturn(response);
+        given(recommendationService.getRecommendation(weatherId, userId, false)).willReturn(
+            response);
 
         // when
         ResultActions result = mockMvc.perform(get("/api/recommendations")
@@ -61,7 +62,7 @@ class RecommendationControllerTest {
         // then
         result.andExpect(status().isOk());
         verify(authService).getCurrentUserId();
-        verify(recommendationService).getRecommendation(weatherId, userId);
+        verify(recommendationService).getRecommendation(weatherId, userId, false);
     }
 
     @Test
@@ -77,7 +78,8 @@ class RecommendationControllerTest {
             .build();
 
         given(authService.getCurrentUserId()).willReturn(userId);
-        given(recommendationService.getRecommendation(weatherId, userId)).willReturn(response);
+        given(recommendationService.getRecommendation(weatherId, userId, false)).willReturn(
+            response);
 
         // when
         ResultActions result = mockMvc.perform(get("/api/recommendations")
@@ -89,7 +91,7 @@ class RecommendationControllerTest {
             .andExpect(jsonPath("$.weatherId").value(weatherId.toString()))
             .andExpect(jsonPath("$.userId").value(userId.toString()));
         verify(authService).getCurrentUserId();
-        verify(recommendationService).getRecommendation(weatherId, userId);
+        verify(recommendationService).getRecommendation(weatherId, userId, false);
     }
 
     @Test
