@@ -1,6 +1,8 @@
 package com.sprint.ootd5team.domain.feed.event;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -106,16 +108,15 @@ public class FeedEventConsumerTest {
     }
 
     @Test
-    @DisplayName("역직렬화 실패 시 예외는 로깅만 수행하고 전파하지 않음")
-    void handleEvent_deserializationFailure_logsError() throws Exception {
-        // given
+    @DisplayName("역직렬화 실패 시 RuntimeException 발생")
+    void handleEvent_deserializationFailure_throwsException() throws Exception {
         when(objectMapper.readValue(payload, FeedIndexCreatedEvent.class))
             .thenThrow(new RuntimeException("역직렬화 실패"));
 
-        // when
-        consumer.consumeFeedIndexCreatedEvent(payload);
+        assertThatThrownBy(() -> consumer.consumeFeedIndexCreatedEvent(payload))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessageContaining("역직렬화 실패");
 
-        // then
-        verify(indexer, org.mockito.Mockito.never()).create(any());
+        verify(indexer, never()).create(any());
     }
 }
