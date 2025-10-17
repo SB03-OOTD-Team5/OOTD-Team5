@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +22,7 @@ public class OotdUserDetailsService implements UserDetailsService {
     private final UserMapper userMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(username).orElseThrow(UserNotFoundException::new);
 
@@ -32,6 +34,7 @@ public class OotdUserDetailsService implements UserDetailsService {
     /**
      * 임시 비밀번호 검증용 메서드
      */
+    @Transactional
     public boolean authenticateTemporaryPassword(String email, String tempPassword) {
         Optional<User> optionalUser = userRepository.findByEmail(email);
         if(optionalUser.isEmpty()) return false;
