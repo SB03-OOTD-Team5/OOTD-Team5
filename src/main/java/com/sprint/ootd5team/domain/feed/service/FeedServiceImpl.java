@@ -2,7 +2,7 @@ package com.sprint.ootd5team.domain.feed.service;
 
 import com.sprint.ootd5team.base.exception.feed.InvalidSortOptionException;
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
-import com.sprint.ootd5team.domain.feed.assembler.FeedDtoAssembler;
+import com.sprint.ootd5team.domain.feed.service.internal.FeedDtoAssembler;
 import com.sprint.ootd5team.domain.feed.dto.data.FeedDto;
 import com.sprint.ootd5team.domain.feed.dto.data.FeedSearchResult;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedCreateRequest;
@@ -18,7 +18,7 @@ import com.sprint.ootd5team.domain.feed.event.type.FeedIndexCreatedEvent;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.feed.repository.feedClothes.FeedClothesRepository;
 import com.sprint.ootd5team.domain.feed.search.FeedSearchService;
-import com.sprint.ootd5team.domain.feed.validator.FeedValidator;
+import com.sprint.ootd5team.domain.feed.service.internal.FeedValidator;
 import com.sprint.ootd5team.domain.follow.repository.FollowRepository;
 import com.sprint.ootd5team.domain.notification.event.type.multi.FeedCreatedEvent;
 import java.util.List;
