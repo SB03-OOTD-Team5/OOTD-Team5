@@ -46,7 +46,7 @@ public class FeedEventProducer {
 
         try {
             String payload = objectMapper.writeValueAsString(event);
-            kafkaTemplate.send("ootd.Feeds.Updated", payload);
+            kafkaTemplate.send("ootd.Feeds.ContentUpdated", payload);
             log.info("[FeedEventProducer] Kafka - FeedUpdatedEvent 발행 완료: {}", payload);
 
         } catch (Exception e) {
