@@ -1,100 +1,64 @@
 package com.sprint.ootd5team.domain.feed.event.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sprint.ootd5team.domain.feed.event.type.FeedDeletedEvent;
 import com.sprint.ootd5team.domain.feed.event.type.FeedContentUpdatedEvent;
+import com.sprint.ootd5team.domain.feed.event.type.FeedDeletedEvent;
+import com.sprint.ootd5team.domain.feed.event.type.FeedIndexCreatedEvent;
 import com.sprint.ootd5team.domain.feed.event.type.FeedLikeCountUpdateEvent;
 import com.sprint.ootd5team.domain.feed.indexer.ElasticsearchFeedIndexer;
-import com.sprint.ootd5team.domain.feed.event.type.FeedIndexCreatedEvent;
-import java.util.Map;
-import java.util.UUID;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.document.Document;
-import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
-import org.springframework.data.elasticsearch.core.query.UpdateQuery;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+/**
+ * Kafka에서 발행된 피드 관련 이벤트를 수신하고,
+ * 해당 이벤트 타입에 따라 {@link ElasticsearchFeedIndexer}를 통해 인덱스를 갱신하는 소비자
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class FeedEventConsumer {
 
     private final ObjectMapper objectMapper;
-    private final ElasticsearchFeedIndexer feedIndexer;
-    private final ElasticsearchOperations operations;
+    private final ElasticsearchFeedIndexer indexer;
 
     @KafkaListener(topics = "ootd.Feeds.Created", groupId = "ootd.feed-indexer")
     public void consumeFeedIndexCreatedEvent(String message) {
-        try {
-            FeedIndexCreatedEvent event = objectMapper.readValue(message, FeedIndexCreatedEvent.class);
-            log.info("[FeedEventConsumer] Kafka - FeedIndexCreatedEvent 수신: {}", event);
-
-            feedIndexer.index(event);
-
-        } catch (Exception e) {
-            log.error("[FeedEventConsumer] Kafka - FeedIndexCreatedEvent 처리 실패: {}", message, e);
-        }
+        handleEvent(message, FeedIndexCreatedEvent.class, indexer::create);
     }
 
     @KafkaListener(topics = "ootd.Feeds.ContentUpdated", groupId = "ootd.feed-indexer")
     public void consumeFeedContentUpdatedEvent(String message) {
-        try {
-            FeedContentUpdatedEvent event = objectMapper.readValue(message, FeedContentUpdatedEvent.class);
-            log.info("[FeedEventConsumer] Kafka - FeedUpdatedEvent 수신: {}", event);
-
-            Map<String, Object> doc = Map.of("content", event.getContent());
-            UpdateQuery query = UpdateQuery.builder(event.getFeedId().toString())
-                .withDocument(Document.from(doc))
-                .build();
-
-            operations.update(query, IndexCoordinates.of("feeds-v5"));
-            log.info("[FeedEventConsumer] Elasticsearch 피드 업데이트 완료: feedId={}, content={}",
-                event.getFeedId(), event.getContent()
-            );
-
-        } catch (Exception e) {
-            log.error("[FeedEventConsumer] FeedUpdatedEvent 처리 실패", e);
-        }
+        handleEvent(message, FeedContentUpdatedEvent.class, indexer::updateContent);
     }
 
     @KafkaListener(topics = "ootd.Feeds.LikeUpdated", groupId = "ootd.feed-indexer")
     public void consumeFeedLikeCountUpdatedEvent(String message) {
-        try {
-            FeedLikeCountUpdateEvent event = objectMapper.readValue(message, FeedLikeCountUpdateEvent.class);
-            log.info("[FeedEventConsumer] Kafka - FeedLikeCountUpdateEvent 수신: {}", event);
-
-            UUID feedId = event.getFeedId();
-            long newLikeCount = event.getNewLikeCount();
-
-            Map<String, Object> updateDoc = Map.of("likeCount", newLikeCount);
-            UpdateQuery updateQuery = UpdateQuery.builder(feedId.toString())
-                .withDocument(Document.from(updateDoc))
-                .build();
-
-            operations.update(updateQuery, IndexCoordinates.of("feeds-v5"));
-            log.info("[FeedEventConsumer] Elasticsearch likeCount 업데이트 완료: feedId={}, likeCount={}",
-                event.getFeedId(), newLikeCount
-            );
-
-        } catch (Exception e) {
-            log.error("[FeedEventConsumer] FeedLikeCountUpdateEvent 처리 실패", e);
-        }
+        handleEvent(message, FeedLikeCountUpdateEvent.class, indexer::updateLikeCount);
     }
 
     @KafkaListener(topics = "ootd.Feeds.Deleted", groupId = "ootd.feed-indexer")
     public void consumeFeedDeletedEvent(String message) {
+        handleEvent(message, FeedDeletedEvent.class, indexer::delete);
+    }
+
+    /**
+     * 전달받은 Kafka 메시지를 지정된 이벤트 타입으로 역직렬화하고,
+     * 해당 이벤트에 맞는 인덱싱 작업을 수행한다.
+     *
+     * @param message 수신한 Kafka 메시지(JSON 문자열)
+     * @param clazz 역직렬화할 이벤트 클래스 타입
+     * @param handler 이벤트 처리 로직을 수행할 함수
+     * @param <T> 이벤트 타입
+     */
+    private <T> void handleEvent(String message, Class<T> clazz, Consumer<T> handler) {
         try {
-            FeedDeletedEvent event = objectMapper.readValue(message, FeedDeletedEvent.class);
-            log.info("[FeedEventConsumer] Kafka - FeedDeletedEvent 수신: {}", event);
-
-            operations.delete(event.getFeedId().toString(), IndexCoordinates.of("feeds-v5"));
-            log.info("[FeedEventConsumer] Elasticsearch 피드 삭제 완료: {}", event.getFeedId());
-
+            T event = objectMapper.readValue(message, clazz);
+            handler.accept(event);
         } catch (Exception e) {
-            log.error("[FeedEventConsumer] FeedDeletedEvent 처리 실패", e);
+            log.error("[FeedEventConsumer] {} 처리 실패: {}", clazz.getSimpleName(), message, e);
         }
     }
 }

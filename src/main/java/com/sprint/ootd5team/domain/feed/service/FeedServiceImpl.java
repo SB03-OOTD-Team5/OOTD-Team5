@@ -57,8 +57,8 @@ public class FeedServiceImpl implements FeedService {
      *
      * <p>
      * - 작성자, 날씨, 옷 ID의 유효성을 검증한다.<br>
-     * - 피드와 피드-옷 매핑을 저장한다.<br>
-     * - 생성된 피드의 이벤트를 발행한다.
+     * - Feed 및 FeedClothes 엔티티를 저장한다.<br>
+     * - 피드 생성 알림 이벤트와 인덱싱 이벤트를 발행한다.
      * </p>
      *
      * @param request       피드 생성 요청
@@ -92,16 +92,13 @@ public class FeedServiceImpl implements FeedService {
 
     /**
      * 피드 목록을 커서 기반 페이지네이션으로 조회한다.
-     * <p>
-     * - 조건에 맞는 피드 목록을 조회하고, limit+1 규칙으로 hasNext 여부를 판별한다.<br>
-     * - 마지막 피드를 기준으로 nextCursor / nextIdAfter 값을 계산한다.<br>
-     * - 전체 개수를 조회하고, {@link FeedDtoAssembler}로 DTO를 가공한다.<br>
-     * - 최종적으로 {@link FeedDtoCursorResponse} 응답을 반환한다.
-     * </p>
+     *
+     * <p>검색어가 존재할 경우 Elasticsearch 기반 검색을,
+     * 없을 경우 일반 DB 조회를 수행한다.</p>
      *
      * @param request       조회 조건 및 페이지네이션 정보
      * @param currentUserId 현재 로그인 사용자 ID (likedByMe 여부 판별에 사용)
-     * @return 커서 기반 페이지네이션 응답
+     * @return 커서 기반 페이지네이션 응답 DTO
      */
     @Override
     public FeedDtoCursorResponse getFeeds(FeedListRequest request, UUID currentUserId) {
@@ -115,6 +112,13 @@ public class FeedServiceImpl implements FeedService {
         return getFeedsWithoutKeyword(request, currentUserId);
     }
 
+    /**
+     * 단일 피드를 조회한다.
+     *
+     * @param feedId        조회할 피드 ID
+     * @param currentUserId 현재 로그인 사용자 ID
+     * @return 피드 상세 DTO
+     */
     @Override
     public FeedDto getFeed(UUID feedId, UUID currentUserId) {
         log.info("[FeedService] 피드 조회 - feedId:{}, currentUserId:{}", feedId, currentUserId);
@@ -126,7 +130,7 @@ public class FeedServiceImpl implements FeedService {
     }
 
     /**
-     * 주어진 feedId에 해당하는 피드를 수정한다.
+     * 주어진 피드의 내용을 수정하고 Elasticsearch 인덱스 갱신 이벤트를 발행한다.
      *
      * @param feedId        수정 대상 피드 ID
      * @param request       수정 요청 객체
@@ -152,9 +156,10 @@ public class FeedServiceImpl implements FeedService {
     }
 
     /**
-     * 주어진 feedId에 해당하는 피드를 삭제한다.
+     * 주어진 피드를 삭제하고 Elasticsearch 인덱스 삭제 이벤트를 발행한다.
      *
-     * <p>DB 제약조건(FK + ON DELETE CASCADE)에 의해 연결된 엔티티 (피드 댓글, 좋아요, OOTD 매핑)도 자동 삭제</p>
+     * <p>연관된 댓글, 좋아요, OOTD 매핑은 DB FK 제약조건
+     * (ON DELETE CASCADE)에 의해 자동 삭제된다.</p>
      *
      * @param feedId 삭제할 피드 ID
      */
@@ -170,6 +175,13 @@ public class FeedServiceImpl implements FeedService {
         feedEventProducer.publishFeedDeletedEvent(new FeedDeletedEvent(feedId));
     }
 
+    /**
+     * 키워드가 포함된 피드를 Elasticsearch 기반으로 검색한다.
+     *
+     * @param request       조회 조건
+     * @param currentUserId 로그인 사용자 ID
+     * @return 검색 결과를 포함한 커서 페이지 응답
+     */
     private FeedDtoCursorResponse getFeedsWithKeyword(FeedListRequest request, UUID currentUserId) {
         FeedSearchResult result = feedSearchService.searchByKeyword(request);
 
@@ -201,6 +213,13 @@ public class FeedServiceImpl implements FeedService {
         );
     }
 
+    /**
+     * Elasticsearch를 사용하지 않는 일반 조건 기반의 피드 목록을 조회한다.
+     *
+     * @param request       조회 조건
+     * @param currentUserId 로그인 사용자 ID
+     * @return 커서 페이지 응답
+     */
     private FeedDtoCursorResponse getFeedsWithoutKeyword(FeedListRequest request, UUID currentUserId) {
         List<FeedDto> feedDtos = feedRepository.findFeedDtos(request, currentUserId);
         log.info("[FeedService] 조회된 피드의 개수: {}", feedDtos.size());

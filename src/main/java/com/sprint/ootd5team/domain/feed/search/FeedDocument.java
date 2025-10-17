@@ -13,6 +13,11 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
+/**
+ * Elasticsearch 인덱스에 저장되는 피드 문서 모델.
+ *
+ * <p>인덱스명: {@code feeds-v5}</p>
+ */
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
