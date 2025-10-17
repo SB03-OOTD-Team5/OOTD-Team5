@@ -73,7 +73,7 @@ public class ClothesController implements ClothesApi {
     @Override
     public ResponseEntity<Void> deleteClothes(UUID clothesId) {
         UUID ownerId = authService.getCurrentUserId();
-        log.info("[ClothesController] 삭제 요청 수신: clothesId={}", clothesId);
+        log.info("[ClothesController] 삭제 요청 수신: ownerId={}, clothesId={}", ownerId, clothesId);
         clothesService.delete(ownerId, clothesId);
 
         log.info("[ClothesController] 삭제 응답 완료");
@@ -84,9 +84,10 @@ public class ClothesController implements ClothesApi {
     @Override
     public ResponseEntity<ClothesDto> updateClothes(UUID clothesId, ClothesUpdateRequest request,
         MultipartFile image) {
-        log.info("[ClothesController] 수정 요청 수신: clothesId={}, request={}, image={}", clothesId,
+        UUID ownerId = authService.getCurrentUserId();
+        log.info("[ClothesController] 수정 요청 수신: ownerId={}, clothesId={}, request={}, image={}", ownerId, clothesId,
             request, image);
-        ClothesDto clothesDto = clothesService.update(clothesId, request, image);
+        ClothesDto clothesDto = clothesService.update(ownerId, clothesId, request, image);
 
         log.info("[ClothesController] 수정 응답 반환: name={}, image={}", clothesDto.name(),
             clothesDto.imageUrl());

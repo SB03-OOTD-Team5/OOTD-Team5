@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.domain.clothesattribute.repository;
 
 import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttribute;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -13,4 +14,12 @@ public interface ClothesAttributeRepository extends JpaRepository<ClothesAttribu
 	@EntityGraph(attributePaths = "defs")
 	@Query("select ca from ClothesAttribute ca")
 	List<ClothesAttribute> findAllWithDefs();
+
+	@EntityGraph(attributePaths = "defs")
+	@Query("""
+    select ca
+    from ClothesAttribute ca
+    where ca.id in :ids
+""")
+	List<ClothesAttribute> findAllByIdInWithDefs(Collection<UUID> ids);
 }
