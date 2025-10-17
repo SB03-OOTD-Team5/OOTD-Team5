@@ -1,5 +1,5 @@
 server:
-  port: 80
+  port: 8080
 
 logging:
   level:
@@ -33,13 +33,26 @@ spring:
         org.apache.kafka.common.security.plain.PlainLoginModule required
         username="${CONFLUENT_KAFKA_API_KEY}"
         password="${CONFLUENT_KAFKA_API_SECRET}";
-
+    # Consumer 설정
+    consumer:
+      group-id: ootd.notification
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    # Producer 설정
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
   # JPA 설정
   jpa:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
+    open-in-view: false
+
   sql:
     init:
       mode: never
