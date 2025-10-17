@@ -8,6 +8,7 @@ import com.sprint.ootd5team.domain.feed.search.FeedDocument;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
@@ -24,6 +25,9 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchFeedIndexer {
 
     private final ElasticsearchOperations operations;
+
+    @Value("${spring.elasticsearch.indices.feed}")
+    private String indexName;
 
     /**
      * 피드 생성 이벤트를 기반으로 새로운 Elasticsearch 문서를 생성합니다.
@@ -49,7 +53,7 @@ public class ElasticsearchFeedIndexer {
             .withDocument(Document.from(doc))
             .build();
 
-        operations.update(query, IndexCoordinates.of("feeds-v5"));
+        operations.update(query, IndexCoordinates.of(indexName));
         log.info("[ElasticsearchFeedIndexer] content 업데이트 완료: {}", event.getFeedId());
     }
 
@@ -63,7 +67,7 @@ public class ElasticsearchFeedIndexer {
             .withDocument(Document.from(doc))
             .build();
 
-        operations.update(query, IndexCoordinates.of("feeds-v5"));
+        operations.update(query, IndexCoordinates.of(indexName));
         log.info("[ElasticsearchFeedIndexer] likeCount 업데이트 완료: {}", event.getFeedId());
     }
 
@@ -71,7 +75,7 @@ public class ElasticsearchFeedIndexer {
      * 피드 삭제 이벤트를 기반으로 Elasticsearch 인덱스에서 해당 문서를 제거합니다.
      */
     public void delete(FeedDeletedEvent event) {
-        operations.delete(event.getFeedId().toString(), IndexCoordinates.of("feeds-v5"));
+        operations.delete(event.getFeedId().toString(), IndexCoordinates.of(indexName));
         log.info("[ElasticsearchFeedIndexer] 인덱스 삭제 완료: {}", event.getFeedId());
     }
 }

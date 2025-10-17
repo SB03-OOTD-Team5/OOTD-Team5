@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.domain.feed.event.consumer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.domain.feed.event.type.FeedContentUpdatedEvent;
 import com.sprint.ootd5team.domain.feed.event.type.FeedDeletedEvent;
@@ -57,8 +58,12 @@ public class FeedEventConsumer {
         try {
             T event = objectMapper.readValue(message, clazz);
             handler.accept(event);
+        } catch (JsonProcessingException e) {
+            log.error("[FeedEventConsumer] JSON 역직렬화 실패 - {}", e.getMessage(), e);
+            throw new RuntimeException("JSON 역직렬화 실패", e);
         } catch (Exception e) {
-            log.error("[FeedEventConsumer] {} 처리 실패: {}", clazz.getSimpleName(), message, e);
+            log.error("[FeedEventConsumer] {} 처리 실패 - cause: {}", clazz.getSimpleName(), e.getMessage(), e);
+            throw e;
         }
     }
 }

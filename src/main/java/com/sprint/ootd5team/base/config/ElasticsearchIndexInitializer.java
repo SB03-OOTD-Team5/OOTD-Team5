@@ -82,7 +82,7 @@ public class ElasticsearchIndexInitializer {
                 "likeCount", Map.of("type", "long"),
                 "createdAt", Map.of(
                     "type", "date",
-                    "format", "date_time"
+                    "format", "strict_date_optional_time||epoch_millis"
                 )
             ));
 

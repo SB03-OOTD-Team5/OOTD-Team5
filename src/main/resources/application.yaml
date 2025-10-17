@@ -105,7 +105,7 @@ spring:
   elasticsearch:
     uris: http://localhost:9200
     indices:
-      feed: feeds-v5
+      feed: feeds-v1
 
 # SecurityConfig 비활성화/활성화 on off
 app:

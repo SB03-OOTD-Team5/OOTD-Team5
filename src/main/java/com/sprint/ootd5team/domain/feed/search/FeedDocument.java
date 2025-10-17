@@ -22,7 +22,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Builder
-@Document(indexName = "feeds-v5")
+@Document(indexName = "feeds-v1")
 public class FeedDocument {
 
     @Id
