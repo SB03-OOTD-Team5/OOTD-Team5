@@ -1,7 +1,6 @@
 package com.sprint.ootd5team.domain.recommendation.enums.type;
 
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
-import java.util.List;
 
 /**
  * 상의 종류 Enum
@@ -9,18 +8,20 @@ import java.util.List;
  * - 날씨(온도, 습도, 강수) 기반 점수 계산
  */
 public enum TopType {
-    T_SHIRT(List.of("티셔츠", "tshirt", "티", "t-shirt")),
-    SHIRT(List.of("셔츠", "남방", "shirt")),
-    KNIT(List.of("니트", "스웨터", "knit", "sweater")),
-    HOODIE(List.of("후드", "hood")),
-    SWEATSHIRT(List.of("맨투맨", "sweat")),
-    BLOUSE(List.of("블라우스", "blouse")),
-    OTHER(List.of());
+    T_SHIRT("티셔츠", new String[]{"tshirt", "t-shirt"}),
+    SHIRT("셔츠", new String[]{"남방", "shirt"}),
+    KNIT("니트", new String[]{"스웨터", "knit", "sweater"}),
+    HOODIE("후드티", new String[]{"후드", "hood"}),
+    SWEATSHIRT("맨투맨", new String[]{"sweatshirt", "sweat"}),
+    BLOUSE("블라우스", new String[]{"blouse"}),
+    OTHER("기타", new String[]{});
 
-    private final List<String> keywords;
+    private final String displayName;
+    private final String[] aliases;
 
-    TopType(List<String> keywords) {
-        this.keywords = keywords;
+    TopType(String displayName, String[] aliases) {
+        this.displayName = displayName;
+        this.aliases = aliases;
     }
 
     /** 날씨 기반 점수 */
@@ -57,6 +58,6 @@ public enum TopType {
             }
         }
 
-        return score;
+        return Math.max(-5, Math.min(5, score));
     }
 }

@@ -11,18 +11,20 @@ import java.util.List;
  * - 날씨(온도, 습도, 강수) 기반 점수 계산
  */
 public enum BottomType {
-    JEANS(List.of("청바지", "데님", "jean", "denim")),
-    SLACKS(List.of("슬랙스", "slacks")),
-    SKIRT(List.of("스커트", "치마", "skirt")),
-    SHORTS(List.of("반바지", "shorts")),
-    JOGGER(List.of("조거", "트레이닝", "training", "jogger")),
-    WIDE_PANTS(List.of("와이드", "wide")),
-    OTHER(List.of());
+    JEANS("청바지", new String[]{"데님", "jean", "denim"}),
+    SLACKS("슬랙스", new String[]{"slacks"}),
+    SKIRT("스커트", new String[]{"치마", "skirt"}),
+    SHORTS("반바지", new String[]{"shorts"}),
+    JOGGER("조거팬츠", new String[]{"트레이닝", "training", "jogger"}),
+    WIDE_PANTS("와이드팬츠", new String[]{"wide"}),
+    OTHER("기타", new String[]{});
 
-    private final List<String> keywords;
+    private final String displayName;
+    private final String[] aliases;
 
-    BottomType(List<String> keywords) {
-        this.keywords = keywords;
+    BottomType(String displayName, String[] aliases) {
+        this.displayName = displayName;
+        this.aliases = aliases;
     }
 
     /** 날씨 기반 점수 */
@@ -107,6 +109,6 @@ public enum BottomType {
             }
         }
 
-        return score;
+        return Math.max(-5, Math.min(5, score));
     }
 }

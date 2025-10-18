@@ -124,7 +124,7 @@ public class RecommendationService {
         RecommendationInfoDto info,
         List<ClothesFilteredDto> candidates
     ) {
-        log.debug("[RecommendationService] 내부 알고리즘 기반 추천 실행");
+        log.info("[RecommendationService] 내부 알고리즘 기반 추천 실행");
 
         List<ClothesScore> items = singleItemScoringEngine.getTopItemsByType(info, candidates);
         List<OutfitScore> ranked = outfitCombinationGenerator.generateWithScoring(items);

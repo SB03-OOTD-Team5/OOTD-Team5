@@ -2,6 +2,7 @@
  의상 더미 데이터
  ownerId값 변경하고 insert
  */
+-- delete from tbl_clothes where owner_id = '52cd7032-6bcb-4544-806a-72c73de25399';
 SET app.owner_id = '52cd7032-6bcb-4544-806a-72c73de25399';
 
 /* 기본 속성 정의 추가 */
@@ -92,58 +93,59 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         -- TOP
         ('화이트 티셔츠', 'TOP'),
         ('블랙 반팔티', 'TOP'),
-        ('네이비 셔츠', 'TOP'),
+        ('데님 데일리 셔츠', 'TOP'),
         ('핑크 블라우스', 'TOP'),
         ('그레이 맨투맨', 'TOP'),
         ('브라운 니트', 'TOP'),
-        ('민트 셔츠', 'TOP'),
+        ('피그먼트 페이퍼셔츠', 'TOP'),
         ('화이트 셔츠', 'TOP'),
         ('스트라이프 티셔츠', 'TOP'),
-        ('체크 셔츠', 'TOP'),
-        ('라이트블루 셔츠', 'TOP'),
-        ('오버사이즈 후디', 'TOP'),
+        ('오버핏 포켓 체크 셔츠', 'TOP'),
+        ('옥스포드 오버핏 셔츠', 'TOP'),
+        ('그레이 후드티', 'TOP'),
         ('브이넥 니트', 'TOP'),
-        ('베이지 가디건', 'TOP'),
+        ('레드 자수 맨투맨', 'TOP'),
 
         -- BOTTOM
         ('블루 데님 팬츠', 'BOTTOM'),
-        ('블랙 슬랙스', 'BOTTOM'),
+        ('투턱 와이드 슬랙스', 'BOTTOM'),
         ('그레이 조거팬츠', 'BOTTOM'),
-        ('베이지 치노팬츠', 'BOTTOM'),
-        ('브라운 와이드팬츠', 'BOTTOM'),
+        ('베이지 치노 팬츠', 'BOTTOM'),
+        ('커브드 팬츠_코듀로이 브라운', 'BOTTOM'),
         ('블랙 미니스커트', 'BOTTOM'),
         ('아이보리 와이드팬츠', 'BOTTOM'),
-        ('네이비 치노팬츠', 'BOTTOM'),
+        ('카고 스트랩 팬츠', 'BOTTOM'),
         ('카키 카고팬츠', 'BOTTOM'),
-        ('화이트 쇼츠', 'BOTTOM'),
+        ('원 턱 테이퍼드 슬랙스', 'BOTTOM'),
         ('블랙 조거팬츠', 'BOTTOM'),
-        ('데님 쇼츠', 'BOTTOM'),
+        ('스트레이트 슬랙스', 'BOTTOM'),
 
         -- DRESS
-        ('블루 셔츠 원피스', 'DRESS'),
+        ('네이비 체크 원피스', 'DRESS'),
         ('베이지 니트 원피스', 'DRESS'),
-        ('핑크 플로럴 원피스', 'DRESS'),
+        ('플레어 퍼프 원피스', 'DRESS'),
         ('블랙 롱 원피스', 'DRESS'),
         ('네이비 랩 원피스', 'DRESS'),
-        ('아이보리 레이스 원피스', 'DRESS'),
+        ('베이지 셔츠 원피스', 'DRESS'),
 
         -- OUTER
         ('베이지 트렌치코트', 'OUTER'),
         ('블랙 가죽자켓', 'OUTER'),
         ('그레이 후드집업', 'OUTER'),
-        ('브라운 코트', 'OUTER'),
+        ('브라운 숏 코트', 'OUTER'),
         ('네이비 패딩', 'OUTER'),
         ('블루 데님자켓', 'OUTER'),
-        ('라이트그레이 코트', 'OUTER'),
+        ('아이보리 롱 코트', 'OUTER'),
         ('카키 야상', 'OUTER'),
         ('아이보리 가디건', 'OUTER'),
+        ('그레이 라운드 가디건', 'OUTER'),
 
         -- SHOES
         ('화이트 스니커즈', 'SHOES'),
         ('블랙 로퍼', 'SHOES'),
         ('브라운 부츠', 'SHOES'),
         ('샌들', 'SHOES'),
-        ('네이비 러닝화', 'SHOES'),
+        ('브라운 스니커즈', 'SHOES'),
         ('베이지 로퍼', 'SHOES'),
         ('그레이 첼시부츠', 'SHOES'),
         ('화이트 슬리퍼', 'SHOES'),
@@ -151,9 +153,7 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         -- ACCESSORY
         ('실버 목걸이', 'ACCESSORY'),
         ('골드 귀걸이', 'ACCESSORY'),
-        ('네이비 넥타이', 'ACCESSORY'),
         ('브라운 벨트', 'ACCESSORY'),
-        ('블랙 선글라스', 'ACCESSORY'),
         ('실버 반지', 'ACCESSORY'),
         ('골드 반지', 'ACCESSORY'),
         ('실버 팔찌', 'ACCESSORY'),
@@ -172,7 +172,7 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         -- BAG
         ('미니 백팩', 'BAG'),
         ('캔버스 토트백', 'BAG'),
-        ('크림 숄더백', 'BAG'),
+        ('블랙 메신저백', 'BAG'),
         ('블랙 크로스백', 'BAG'),
         ('베이지 토트백', 'BAG'),
 
@@ -190,11 +190,9 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('손수건', 'ETC'),
 
         -- SOCKS
-        ('화이트 앵클삭스', 'SOCKS'),
-        ('블랙 드레스삭스', 'SOCKS'),
-        ('그레이 스포츠삭스', 'SOCKS'),
-        ('울 니삭스', 'SOCKS'),
-        ('패턴 양말', 'SOCKS')
+        ('기본 화이트 양말', 'SOCKS'),
+        ('기본 블랙 양말', 'SOCKS'),
+        ('그레이 크루삭스', 'SOCKS')
 )
 INSERT INTO tbl_clothes (id, owner_id, name, type, image_url, created_at)
 SELECT gen_random_uuid(), owner.owner_id, ni.name, ni.type, NULL, NOW()
@@ -216,7 +214,7 @@ WHERE NOT EXISTS (
 WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
      mapping(name, attribute_id, def_value) AS (
     VALUES
-        ('화이트 티셔츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '여름'),
+        ('화이트 티셔츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '사계절'),
         ('화이트 티셔츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
         ('화이트 티셔츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '화이트'),
         ('화이트 티셔츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
@@ -228,11 +226,11 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('블랙 반팔티', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
         ('블랙 반팔티', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '스트릿'),
 
-        ('네이비 셔츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '봄/가을'),
-        ('네이비 셔츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '남성'),
-        ('네이비 셔츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '네이비'),
-        ('네이비 셔츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
-        ('네이비 셔츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '포멀'),
+        ('데님 데일리 셔츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '봄/가을'),
+        ('데님 데일리 셔츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '남성'),
+        ('데님 데일리 셔츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '블랙'),
+        ('데님 데일리 셔츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '데님'),
+        ('데님 데일리 셔츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '캐주얼'),
 
         ('핑크 블라우스', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '봄'),
         ('핑크 블라우스', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '여성'),
@@ -252,11 +250,11 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('브라운 니트', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '니트'),
         ('브라운 니트', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '클래식'),
 
-        ('민트 셔츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '봄'),
-        ('민트 셔츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '남성'),
-        ('민트 셔츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '민트'),
-        ('민트 셔츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
-        ('민트 셔츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '캐주얼'),
+        ('피그먼트 페이퍼셔츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '봄'),
+        ('피그먼트 페이퍼셔츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '남성'),
+        ('피그먼트 페이퍼셔츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '그린'),
+        ('피그먼트 페이퍼셔츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
+        ('피그먼트 페이퍼셔츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '캐주얼'),
 
         ('화이트 셔츠','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'봄/가을'),
         ('화이트 셔츠','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
@@ -264,47 +262,41 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('화이트 셔츠','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'면'),
         ('화이트 셔츠','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'포멀'),
 
-        -- 스트라이프 티셔츠
         ('스트라이프 티셔츠','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'여름'),
         ('스트라이프 티셔츠','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
         ('스트라이프 티셔츠','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'네이비'),
         ('스트라이프 티셔츠','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'면'),
         ('스트라이프 티셔츠','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'캐주얼'),
 
-        -- 체크 셔츠
-        ('체크 셔츠','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'봄/가을'),
-        ('체크 셔츠','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'남성'),
-        ('체크 셔츠','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'브라운'),
-        ('체크 셔츠','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'면'),
-        ('체크 셔츠','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'빈티지'),
+        ('오버핏 포켓 체크 셔츠','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'봄/가을'),
+        ('오버핏 포켓 체크 셔츠','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'남성'),
+        ('오버핏 포켓 체크 셔츠','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'브라운'),
+        ('오버핏 포켓 체크 셔츠','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'면'),
+        ('오버핏 포켓 체크 셔츠','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'빈티지'),
 
-        -- 라이트블루 셔츠
-        ('라이트블루 셔츠','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'봄/가을'),
-        ('라이트블루 셔츠','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
-        ('라이트블루 셔츠','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'스카이블루'),
-        ('라이트블루 셔츠','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'린넨'),
-        ('라이트블루 셔츠','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'캐주얼'),
+        ('옥스포드 오버핏 셔츠','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'봄/가을'),
+        ('옥스포드 오버핏 셔츠','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
+        ('옥스포드 오버핏 셔츠','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'스카이블루'),
+        ('옥스포드 오버핏 셔츠','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'린넨'),
+        ('옥스포드 오버핏 셔츠','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'캐주얼'),
 
-        -- 오버사이즈 후디
-        ('오버사이즈 후디','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'가을'),
-        ('오버사이즈 후디','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
-        ('오버사이즈 후디','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'그레이'),
-        ('오버사이즈 후디','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'기모'),
-        ('오버사이즈 후디','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'스트릿'),
+        ('그레이 후드티','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'가을'),
+        ('그레이 후드티','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
+        ('그레이 후드티','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'그레이'),
+        ('그레이 후드티','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'면'),
+        ('그레이 후드티','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'스트릿'),
 
-        -- 브이넥 니트
         ('브이넥 니트','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'겨울'),
         ('브이넥 니트','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
         ('브이넥 니트','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'베이지'),
         ('브이넥 니트','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'니트'),
         ('브이넥 니트','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'클래식'),
 
-        -- 베이지 가디건
-        ('베이지 가디건','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'봄/가을'),
-        ('베이지 가디건','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
-        ('베이지 가디건','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'베이지'),
-        ('베이지 가디건','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'니트'),
-        ('베이지 가디건','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'캐주얼')
+        ('레드 자수 맨투맨','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'봄/가을'),
+        ('레드 자수 맨투맨','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
+        ('레드 자수 맨투맨','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'레드'),
+        ('레드 자수 맨투맨','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'면'),
+        ('레드 자수 맨투맨','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'캐주얼')
 )
 INSERT INTO tbl_clothes_attributes_values (id, clothes_id, attribute_id, def_value, created_at)
 SELECT gen_random_uuid(), c.id, m.attribute_id, m.def_value, NOW()
@@ -318,42 +310,36 @@ ON CONFLICT (clothes_id, attribute_id) DO NOTHING;
 WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
      mapping(name, attribute_id, def_value) AS (
     VALUES
-        -- 블루 데님 팬츠
         ('블루 데님 팬츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '사계절'),
         ('블루 데님 팬츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
         ('블루 데님 팬츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '블루'),
         ('블루 데님 팬츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '데님'),
         ('블루 데님 팬츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '캐주얼'),
 
-        -- 블랙 슬랙스
-        ('블랙 슬랙스', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '봄/가을'),
-        ('블랙 슬랙스', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '남성'),
-        ('블랙 슬랙스', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '블랙'),
-        ('블랙 슬랙스', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '폴리'),
-        ('블랙 슬랙스', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '포멀'),
+        ('투턱 와이드 슬랙스', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '봄/가을'),
+        ('투턱 와이드 슬랙스', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
+        ('투턱 와이드 슬랙스', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '그레이'),
+        ('투턱 와이드 슬랙스', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '폴리'),
+        ('투턱 와이드 슬랙스', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '포멀'),
 
-        -- 그레이 조거팬츠
         ('그레이 조거팬츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '가을'),
         ('그레이 조거팬츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
         ('그레이 조거팬츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '그레이'),
         ('그레이 조거팬츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
         ('그레이 조거팬츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '스포티'),
 
-        -- 베이지 치노팬츠
-        ('베이지 치노팬츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '봄/가을'),
-        ('베이지 치노팬츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '남성'),
-        ('베이지 치노팬츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '베이지'),
-        ('베이지 치노팬츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
-        ('베이지 치노팬츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '캐주얼'),
+        ('베이지 치노 팬츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '봄/가을'),
+        ('베이지 치노 팬츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '여성'),
+        ('베이지 치노 팬츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '베이지'),
+        ('베이지 치노 팬츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
+        ('베이지 치노 팬츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '캐주얼'),
 
-        -- 브라운 와이드팬츠
-        ('브라운 와이드팬츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '가을'),
-        ('브라운 와이드팬츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '여성'),
-        ('브라운 와이드팬츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '브라운'),
-        ('브라운 와이드팬츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '폴리'),
-        ('브라운 와이드팬츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '빈티지'),
+        ('커브드 팬츠_코듀로이 브라운', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '가을'),
+        ('커브드 팬츠_코듀로이 브라운', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
+        ('커브드 팬츠_코듀로이 브라운', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '브라운'),
+        ('커브드 팬츠_코듀로이 브라운', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
+        ('커브드 팬츠_코듀로이 브라운', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '캐주얼'),
 
-        -- 블랙 미니스커트
         ('블랙 미니스커트', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '여름'),
         ('블랙 미니스커트', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '여성'),
         ('블랙 미니스커트', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '블랙'),
@@ -366,11 +352,11 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('아이보리 와이드팬츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
         ('아이보리 와이드팬츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '클래식'),
 
-        ('네이비 치노팬츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '봄/가을'),
-        ('네이비 치노팬츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '남성'),
-        ('네이비 치노팬츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '네이비'),
-        ('네이비 치노팬츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
-        ('네이비 치노팬츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '포멀'),
+        ('카고 스트랩 팬츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '봄/가을'),
+        ('카고 스트랩 팬츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
+        ('카고 스트랩 팬츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '베이지'),
+        ('카고 스트랩 팬츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
+        ('카고 스트랩 팬츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '스트릿'),
 
         ('카키 카고팬츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '가을'),
         ('카키 카고팬츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
@@ -378,11 +364,11 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('카키 카고팬츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '나일론'),
         ('카키 카고팬츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '스트릿'),
 
-        ('화이트 쇼츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '여름'),
-        ('화이트 쇼츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
-        ('화이트 쇼츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '화이트'),
-        ('화이트 쇼츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
-        ('화이트 쇼츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '스포티'),
+        ('원 턱 테이퍼드 슬랙스', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '기타'),
+        ('원 턱 테이퍼드 슬랙스', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
+        ('원 턱 테이퍼드 슬랙스', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '그레이'),
+        ('원 턱 테이퍼드 슬랙스', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '기모'),
+        ('원 턱 테이퍼드 슬랙스', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '포멀'),
 
         ('블랙 조거팬츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '가을'),
         ('블랙 조거팬츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
@@ -390,11 +376,11 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('블랙 조거팬츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '폴리'),
         ('블랙 조거팬츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '스포티'),
 
-        ('데님 쇼츠', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '여름'),
-        ('데님 쇼츠', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
-        ('데님 쇼츠', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '블루'),
-        ('데님 쇼츠', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '데님'),
-        ('데님 쇼츠', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '캐주얼'))
+        ('스트레이트 슬랙스', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '여름'),
+        ('스트레이트 슬랙스', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
+        ('스트레이트 슬랙스', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '블루'),
+        ('스트레이트 슬랙스', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '데님'),
+        ('스트레이트 슬랙스', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '캐주얼'))
 INSERT INTO tbl_clothes_attributes_values (id, clothes_id, attribute_id, def_value, created_at)
 SELECT gen_random_uuid(), c.id, m.attribute_id, m.def_value, NOW()
 FROM mapping m
@@ -409,11 +395,11 @@ ON CONFLICT (clothes_id, attribute_id) DO NOTHING;
 WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
      mapping(name, attribute_id, def_value) AS (
     VALUES
-        ('블루 셔츠 원피스', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '봄'),
-        ('블루 셔츠 원피스', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '여성'),
-        ('블루 셔츠 원피스', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '블루'),
-        ('블루 셔츠 원피스', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
-        ('블루 셔츠 원피스', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '포멀'),
+        ('네이비 체크 원피스', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '봄'),
+        ('네이비 체크 원피스', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '여성'),
+        ('네이비 체크 원피스', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '블루'),
+        ('네이비 체크 원피스', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
+        ('네이비 체크 원피스', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '포멀'),
 
         ('베이지 니트 원피스', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '가을'),
         ('베이지 니트 원피스', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '여성'),
@@ -421,13 +407,13 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('베이지 니트 원피스', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '니트'),
         ('베이지 니트 원피스', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '클래식'),
 
-        ('핑크 플로럴 원피스', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '여름'),
-        ('핑크 플로럴 원피스', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '여성'),
-        ('핑크 플로럴 원피스', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '핑크'),
-        ('핑크 플로럴 원피스', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '레이온'),
-        ('핑크 플로럴 원피스', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '빈티지'),
+        ('플레어 퍼프 원피스', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '여름'),
+        ('플레어 퍼프 원피스', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '여성'),
+        ('플레어 퍼프 원피스', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '핑크'),
+        ('플레어 퍼프 원피스', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '레이온'),
+        ('플레어 퍼프 원피스', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '빈티지'),
 
-        ('블랙 롱 원피스', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '겨울'),
+        ('블랙 롱 원피스', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '가을'),
         ('블랙 롱 원피스', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '여성'),
         ('블랙 롱 원피스', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '블랙'),
         ('블랙 롱 원피스', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '울'),
@@ -439,11 +425,11 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('네이비 랩 원피스','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'레이온'),
         ('네이비 랩 원피스','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'포멀'),
 
-        ('아이보리 레이스 원피스','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'봄'),
-        ('아이보리 레이스 원피스','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'여성'),
-        ('아이보리 레이스 원피스','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'베이지'),
-        ('아이보리 레이스 원피스','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'레이온'),
-        ('아이보리 레이스 원피스','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'클래식')
+        ('베이지 셔츠 원피스','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'봄/가을'),
+        ('베이지 셔츠 원피스','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'여성'),
+        ('베이지 셔츠 원피스','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'베이지'),
+        ('베이지 셔츠 원피스','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'레이온'),
+        ('베이지 셔츠 원피스','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'클래식')
 )
 INSERT INTO tbl_clothes_attributes_values (id, clothes_id, attribute_id, def_value, created_at)
 SELECT gen_random_uuid(), c.id, m.attribute_id, m.def_value, NOW()
@@ -477,11 +463,11 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('그레이 후드집업', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '면'),
         ('그레이 후드집업', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '캐주얼'),
 
-        ('브라운 코트', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '겨울'),
-        ('브라운 코트', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
-        ('브라운 코트', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '브라운'),
-        ('브라운 코트', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '울'),
-        ('브라운 코트', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '클래식'),
+        ('브라운 숏 코트', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '겨울'),
+        ('브라운 숏 코트', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
+        ('브라운 숏 코트', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '브라운'),
+        ('브라운 숏 코트', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '울'),
+        ('브라운 숏 코트', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '클래식'),
 
         ('네이비 패딩', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '겨울'),
         ('네이비 패딩', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '공용'),
@@ -495,11 +481,11 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('블루 데님자켓','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'데님'),
         ('블루 데님자켓','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'캐주얼'),
 
-        ('라이트그레이 코트','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'겨울'),
-        ('라이트그레이 코트','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
-        ('라이트그레이 코트','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'그레이'),
-        ('라이트그레이 코트','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'울'),
-        ('라이트그레이 코트','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'클래식'),
+        ('아이보리 롱 코트','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'겨울'),
+        ('아이보리 롱 코트','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
+        ('아이보리 롱 코트','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'화이트'),
+        ('아이보리 롱 코트','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'울'),
+        ('아이보리 롱 코트','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'클래식'),
 
         ('카키 야상','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'가을'),
         ('카키 야상','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'남성'),
@@ -511,7 +497,13 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('아이보리 가디건','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
         ('아이보리 가디건','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'베이지'),
         ('아이보리 가디건','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'니트'),
-        ('아이보리 가디건','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'캐주얼')
+        ('아이보리 가디건','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'캐주얼'),
+
+        ('그레이 라운드 가디건','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'봄/가을'),
+        ('그레이 라운드 가디건','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
+        ('그레이 라운드 가디건','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'그레이'),
+        ('그레이 라운드 가디건','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'니트'),
+        ('그레이 라운드 가디건','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'캐주얼')
 
 )
 INSERT INTO tbl_clothes_attributes_values (id, clothes_id, attribute_id, def_value, created_at)
@@ -552,11 +544,11 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('샌들', '11111111-aaaa-bbbb-cccc-000000000004'::uuid, '폴리'),
         ('샌들', '11111111-aaaa-bbbb-cccc-000000000005'::uuid, '캐주얼'),
 
-        ('네이비 러닝화','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'봄/가을'),
-        ('네이비 러닝화','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
-        ('네이비 러닝화','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'네이비'),
-        ('네이비 러닝화','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'폴리'),
-        ('네이비 러닝화','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'스포티'),
+        ('브라운 스니커즈','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'봄/가을'),
+        ('브라운 스니커즈','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
+        ('브라운 스니커즈','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'브라운'),
+        ('브라운 스니커즈','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'폴리'),
+        ('브라운 스니커즈','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'스포티'),
 
         ('베이지 로퍼','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'봄/가을'),
         ('베이지 로퍼','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'남성'),
@@ -596,12 +588,6 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('골드 귀걸이','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'기타'),
         ('골드 귀걸이','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'포멀'),
 
-        ('네이비 넥타이','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
-        ('네이비 넥타이','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'남성'),
-        ('네이비 넥타이','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'네이비'),
-        ('네이비 넥타이','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'폴리'),
-        ('네이비 넥타이','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'포멀'),
-
         ('실버 목걸이', '11111111-aaaa-bbbb-cccc-000000000001'::uuid, '사계절'),
         ('실버 목걸이', '11111111-aaaa-bbbb-cccc-000000000002'::uuid, '여성'),
         ('실버 목걸이', '11111111-aaaa-bbbb-cccc-000000000003'::uuid, '실버'),
@@ -619,12 +605,6 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('브라운 숄','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'브라운'),
         ('브라운 숄','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'울'),
         ('브라운 숄','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'클래식'),
-
-        ('블랙 선글라스','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
-        ('블랙 선글라스','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
-        ('블랙 선글라스','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'블랙'),
-        ('블랙 선글라스','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'기타'),
-        ('블랙 선글라스','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'스트릿'),
 
         ('실버 반지','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
         ('실버 반지','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
@@ -750,11 +730,11 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('캔버스 토트백','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'면'),
         ('캔버스 토트백','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'캐주얼'),
 
-        ('크림 숄더백','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
-        ('크림 숄더백','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'여성'),
-        ('크림 숄더백','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'베이지'),
-        ('크림 숄더백','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'가죽'),
-        ('크림 숄더백','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'포멀')
+        ('블랙 메신저백','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
+        ('블랙 메신저백','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
+        ('블랙 메신저백','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'블랙'),
+        ('블랙 메신저백','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'나일론'),
+        ('블랙 메신저백','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'캐주얼')
 )
 INSERT INTO tbl_clothes_attributes_values (id, clothes_id, attribute_id, def_value, created_at)
 SELECT gen_random_uuid(), c.id, m.attribute_id, m.def_value, NOW()
@@ -805,7 +785,7 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('우산','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
         ('우산','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
         ('우산','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'기타'),
-        ('우산','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'나일론'),
+        ('우산','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'기타'),
         ('우산','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'기타'),
 
         ('양산','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'여름'),
@@ -846,40 +826,23 @@ ON CONFLICT (clothes_id, attribute_id) DO NOTHING;
 WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
      mapping(name, attribute_id, def_value) AS (
     VALUES
-        -- 화이트 앵클삭스
-        ('화이트 앵클삭스','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
-        ('화이트 앵클삭스','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
-        ('화이트 앵클삭스','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'화이트'),
-        ('화이트 앵클삭스','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'면'),
-        ('화이트 앵클삭스','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'스포티'),
+        ('기본 화이트 양말','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
+        ('기본 화이트 양말','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
+        ('기본 화이트 양말','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'화이트'),
+        ('기본 화이트 양말','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'면'),
+        ('기본 화이트 양말','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'기타'),
 
-        -- 블랙 드레스삭스
-        ('블랙 드레스삭스','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
-        ('블랙 드레스삭스','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'남성'),
-        ('블랙 드레스삭스','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'블랙'),
-        ('블랙 드레스삭스','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'울'),
-        ('블랙 드레스삭스','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'포멀'),
+        ('기본 블랙 양말','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
+        ('기본 블랙 양말','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
+        ('기본 블랙 양말','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'블랙'),
+        ('기본 블랙 양말','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'면'),
+        ('기본 블랙 양말','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'기타'),
 
-        -- 그레이 스포츠삭스
-        ('그레이 스포츠삭스','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
-        ('그레이 스포츠삭스','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
-        ('그레이 스포츠삭스','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'그레이'),
-        ('그레이 스포츠삭스','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'폴리'),
-        ('그레이 스포츠삭스','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'스포티'),
-
-        -- 울 니삭스
-        ('울 니삭스','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'겨울'),
-        ('울 니삭스','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
-        ('울 니삭스','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'베이지'),
-        ('울 니삭스','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'울'),
-        ('울 니삭스','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'빈티지'),
-
-        -- 패턴 양말
-        ('패턴 양말','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
-        ('패턴 양말','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
-        ('패턴 양말','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'네이비'),
-        ('패턴 양말','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'면'),
-        ('패턴 양말','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'캐주얼')
+        ('그레이 크루삭스','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
+        ('그레이 크루삭스','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
+        ('그레이 크루삭스','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'그레이'),
+        ('그레이 크루삭스','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'폴리'),
+        ('그레이 크루삭스','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'기타')
 )
 INSERT INTO tbl_clothes_attributes_values (id, clothes_id, attribute_id, def_value, created_at)
 SELECT gen_random_uuid(), c.id, m.attribute_id, m.def_value, NOW()

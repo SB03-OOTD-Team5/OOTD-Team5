@@ -63,32 +63,82 @@ public enum Color {
         };
     }
 
-    /** 날씨 기반 의상 단품 점수 */
-    public double getWeatherScore(RecommendationInfoDto info) {
-        double score = 0.0;
-        double temp = info.personalFeelsTemp();
+    public double getColorMatchBonus(Color other) {
+        if (this == other) return 1.0; // 같은 색은 기본 조화
 
-        WeatherInfoDto weather = info.weatherInfo();
-        PrecipitationType precip = weather.precipitationType();
-        double precipProb = weather.precipitationProbability();
+        // 상하의 조합 추천 매핑
+        return switch (this) {
+            case NAVY -> switch (other) {
+                case BEIGE, SKY_BLUE -> 2.0;
+                case BLUE -> 1.0;
+                case BLACK -> -1.0;
+                default -> 0.0;
+            };
+            case GREEN -> switch (other) {
+                case BLACK, SKY_BLUE -> 2.0;
+                case KHAKI -> -2.0;
+                default -> 0.0;
+            };
+            case BEIGE -> switch (other) {
+                case WHITE, NAVY, BROWN -> 1.5;
+                case BLACK -> 1.0;
+                default -> 0.0;
+            };
+            case WHITE -> switch (other) {
+                case NAVY, BEIGE, KHAKI, GRAY -> 1.5;
+                default -> 0.0;
+            };
+            case BLUE -> switch (other) {
+                case BLACK, WHITE, BEIGE -> 1.5;
+                case NAVY -> 1.0;
+                default -> 0.0;
+            };
+            case BLACK -> switch (other) {
+                case BEIGE, WHITE, GRAY, KHAKI -> 1.5;
+                case NAVY -> 0.5;
+                default -> 0.0;
+            };
+            case BROWN -> switch (other) {
+                case BEIGE, WHITE, KHAKI -> 1.0;
+                default -> 0.0;
+            };
+            case GRAY -> switch (other) {
+                case WHITE, PINK, NAVY, PURPLE -> 1.0;
+                default -> 0.0;
+            };
+            default -> 0.0;
+        };
+    }
 
-        // 맑은 날 밝은 색 보너스
-        if (precip.isClear() && isBright()) {
-            score += 2.0;
+    /**
+     * OUTER(겉옷)가 TOP/BOTTOM과 색상적으로 너무 유사하면 감점
+     */
+    public double getOuterContrastPenalty(Color top, Color bottom, Color dress) {
+        double penalty = 0.0;
+
+        // DRESS 우선 적용 (상의·하의 모두 대체)
+        if (dress != null) {
+            if (this == dress) {
+                penalty -= 1.0;
+                log.debug("[ColorPenalty] OUTER={} ↔ DRESS={} → 동일색 → -1.0", this, dress);
+            }
+
+            return penalty;
         }
 
-        // 비 확률 높으면 밝은 색 감점
-        if (precipProb > 0.5 && isBright()) {
-            score -= 1.5;
+        // 일반 코디 (TOP + BOTTOM 비교)
+        if (this == OTHER) return 0.0;
+
+        if (top != null && this == top) {
+            penalty -= 1.0;
+        } else if (top != null && this.tone == top.tone) {
+            penalty -= 0.5;
         }
 
-        // 온도 기반 톤 보정
-        if (temp < 10 && tone == ColorTone.WARM) {
-            score += 2.0;
-        } else if (temp > 25 && tone == ColorTone.COOL) {
-            score += 2.0;
+        if (bottom != null && this == bottom) {
+            penalty -= 0.8;
         }
 
-        return score;
+        return penalty;
     }
 }

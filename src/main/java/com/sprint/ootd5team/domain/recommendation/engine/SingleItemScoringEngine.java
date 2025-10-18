@@ -40,7 +40,7 @@ public class SingleItemScoringEngine {
 
                 List<ClothesScore> top = getTopN(info, group);
 
-                log.debug("[SingleItemScoringEngine] 타입 {} → 상위 {}개 선정 (총 {}개 중)\n",
+                log.info("[SingleItemScoringEngine] 타입 {} → 상위 {}개 선정 (총 {}개 중)\n",
                     type, top.size(), group.size());
                 return top.stream();
             })
@@ -78,11 +78,9 @@ public class SingleItemScoringEngine {
             ? c.topType().getWeatherScore(info) : 0;
         double bottomScore = (c.type() == ClothesType.BOTTOM && c.bottomType() != null)
             ? c.bottomType().getWeatherScore(info) : 0;
-        double colorScore = (c.colorTone() != null && c.color() != null)
-            ? c.color().getWeatherScore(info) : 0;
         double materialScore = c.material() != null ? c.material().getWeatherScore(info) : 0;
 
-        double weighted = (shoesScore + outerScore + topScore + bottomScore + colorScore + materialScore) / 6.0;
+        double weighted = (shoesScore + outerScore + topScore + bottomScore + materialScore) / 6.0;
 
         // 평균 기준점
         double base = 50.0;
@@ -93,11 +91,10 @@ public class SingleItemScoringEngine {
         if (outerScore != 0) sb.append(String.format("아우터(%+.1f) ", outerScore));
         if (topScore != 0) sb.append(String.format("상의(%+.1f) ", topScore));
         if (bottomScore != 0) sb.append(String.format("하의(%+.1f) ", bottomScore));
-        if (colorScore != 0) sb.append(String.format("색상(%+.1f) ", colorScore));
         if (materialScore != 0) sb.append(String.format("소재(%+.1f) ", materialScore));
 
         if (sb.length() > 0) {
-            log.debug("[SingleItemScoringEngine] '{}' ({}) 적용 점수: {}→ 총점 {}",
+            log.debug("[SingleItemScoringEngine] '{}' ({}) 날씨 기반 적용 점수: {}→ 총점 {}",
                 c.name(), c.type(), sb.toString().trim(), String.format("%.1f", score));
         }
         return score;

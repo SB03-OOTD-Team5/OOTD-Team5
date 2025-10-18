@@ -36,13 +36,14 @@ public enum ClothesStyle {
         }
 
         // 중간
-        if (isPair(this, other, CASUAL, FORMAL) ||
+        if (isPair(this, other, CASUAL, CLASSIC) ||
             isPair(this, other, STREET, VINTAGE)) {
             return 0.5;
         }
 
         // 부조화
         if (isPair(this, other, FORMAL, STREET) ||
+            isPair(this, other, FORMAL, CASUAL) ||
             isPair(this, other, FORMAL, SPORTY) ||
             isPair(this, other, CLASSIC, STREET)) {
             return -2.0;
