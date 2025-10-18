@@ -29,6 +29,8 @@ import com.sprint.ootd5team.domain.follow.entity.Follow;
 import com.sprint.ootd5team.domain.follow.mapper.FollowMapper;
 import com.sprint.ootd5team.domain.follow.repository.FollowRepository;
 import com.sprint.ootd5team.domain.follow.service.FollowServiceImpl;
+import com.sprint.ootd5team.domain.notification.event.type.multi.FeedCreatedEvent;
+import com.sprint.ootd5team.domain.notification.event.type.single.FollowCreatedEvent;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.mapper.ProfileMapper;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
@@ -44,6 +46,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.ActiveProfiles;
@@ -65,6 +68,9 @@ public class FollowServiceTest {
 
     @Mock
     private ProfileMapper profileMapper;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private FollowServiceImpl followService;
@@ -266,7 +272,7 @@ public class FollowServiceTest {
     }
 
     @Test
-    @DisplayName("팔로우 등록 성공")
+    @DisplayName("팔로우 등록 성공(알림 이벤트 발행 포함)")
     void createFollow_success() {
         // given
         Profile followeeProfile = mock(Profile.class);
@@ -301,6 +307,8 @@ public class FollowServiceTest {
         then(followRepository).should().save(any(Follow.class));
         then(profileMapper).should().toAuthorDto(followeeProfile);
         then(profileMapper).should().toAuthorDto(followerProfile);
+        // 알림 이벤트 발행 검증
+        verify(eventPublisher).publishEvent(any(FollowCreatedEvent.class));
     }
 
     @Test
