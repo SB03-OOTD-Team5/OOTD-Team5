@@ -86,13 +86,17 @@ public class SingleItemScoringEngine {
         int denom = 0;
 
         // 타입별 점수 합산
-        switch (type) {
-            case SHOES -> {sum += shoesScore; denom++;}
-            case OUTER -> {sum += outerScore; denom++;}
-            case TOP -> {sum += topScore; denom++;}
-            case BOTTOM -> {sum += bottomScore; denom++;}
-            default -> {}
-        }
+        if (type == null) {
+            log.warn("[SingleItemScoringEngine] type=null → '{}' 소재 점수만 반영", c.name());
+        } else {
+            switch (type) {
+                    case SHOES -> { if (c.shoesType()  != null) { sum += shoesScore;  denom++; } }
+                    case OUTER  -> { if (c.outerType()  != null) { sum += outerScore;  denom++; } }
+                    case TOP    -> { if (c.topType()    != null) { sum += topScore;    denom++; } }
+                    case BOTTOM -> { if (c.bottomType() != null) { sum += bottomScore; denom++; } }
+                    default -> {}
+                }
+            }
 
         if (c.material() != null) {sum += materialScore; denom++;}
 
@@ -111,7 +115,7 @@ public class SingleItemScoringEngine {
         if (bottomScore != 0) {sb.append(String.format("하의(%+.1f) ", bottomScore));}
         if (materialScore != 0) {sb.append(String.format("소재(%+.1f) ", materialScore));}
 
-        if (!sb.isEmpty()) {
+        if (sb.length() > 0) {
             log.debug("[SingleItemScoringEngine] '{}' ({}) 적용 점수: {}→ 총점 {}",
                 c.name(), type, sb.toString().trim(), score);
         }

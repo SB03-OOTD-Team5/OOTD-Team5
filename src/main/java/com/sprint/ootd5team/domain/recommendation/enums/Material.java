@@ -66,7 +66,7 @@ public enum Material {
             // 방풍·방수 계열
             case NYLON, LEATHER -> {
                 if (feelsLike <= 10) score += 3;
-                if (feelsLike > 25) score -= 3;
+                else if (feelsLike > 25) score -= 3;
                 else score += 0.5;
             }
 

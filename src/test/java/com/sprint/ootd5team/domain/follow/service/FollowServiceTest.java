@@ -28,8 +28,6 @@ import com.sprint.ootd5team.domain.follow.dto.response.FollowListResponse;
 import com.sprint.ootd5team.domain.follow.entity.Follow;
 import com.sprint.ootd5team.domain.follow.mapper.FollowMapper;
 import com.sprint.ootd5team.domain.follow.repository.FollowRepository;
-import com.sprint.ootd5team.domain.follow.service.FollowServiceImpl;
-import com.sprint.ootd5team.domain.notification.event.type.multi.FeedCreatedEvent;
 import com.sprint.ootd5team.domain.notification.event.type.single.FollowCreatedEvent;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.mapper.ProfileMapper;
