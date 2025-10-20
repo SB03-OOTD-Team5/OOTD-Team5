@@ -1,7 +1,7 @@
 # ------------------------------------------------------------
 # 1단계: 빌드 환경
 # ------------------------------------------------------------
-FROM amazoncorretto:17 AS builder
+FROM public.ecr.aws/amazoncorretto/amazoncorretto:17 AS builder
 
 WORKDIR /app
 
@@ -23,7 +23,7 @@ RUN ./gradlew bootJar
 # ------------------------------------------------------------
 # 2단계: 실행 환경
 # ------------------------------------------------------------
-FROM amazoncorretto:17-alpine3.21-jdk
+FROM public.ecr.aws/amazoncorretto/amazoncorretto:17-alpine3.21-jdk
 
 WORKDIR /app
 
