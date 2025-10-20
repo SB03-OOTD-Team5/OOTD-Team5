@@ -94,6 +94,15 @@ spring:
             options:
               model: gemini-2.5-flash-lite
 
+    ollama:
+      api:
+        url: ${OLLAMA_API_URL:http://localhost:11434}
+      chat:
+        options:
+          model: gemma:2b
+          temperature: 0.7
+
+  # Elasticsearch 설정
   elasticsearch:
     uris: http://localhost:9200
     indices:
@@ -129,7 +138,7 @@ springdoc:
     operations-sorter: method
 
 swagger:
-  server-url: http://localhost:${server.port:8080}
+  server-url: http://localhost:${server.port}
 
 # Admin 설정
 ootd:
