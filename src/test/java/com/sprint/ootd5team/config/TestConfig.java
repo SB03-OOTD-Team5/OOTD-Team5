@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.mock;
 
 import com.sprint.ootd5team.base.cache.CacheEvictHelper;
+import com.sprint.ootd5team.base.llm.LlmProvider;
 import com.sprint.ootd5team.domain.feed.search.FeedDocument;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -44,5 +45,11 @@ public class TestConfig {
         when(indexOps.exists()).thenReturn(true);
 
         return mock;
+    }
+
+    @Bean
+    @Primary
+    public LlmProvider llmProvider() {
+        return mock(LlmProvider.class);
     }
 }
