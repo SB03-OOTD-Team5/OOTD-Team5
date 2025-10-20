@@ -102,6 +102,7 @@ spring:
           model: gemma:2b
           temperature: 0.7
 
+  # Elasticsearch 설정
   elasticsearch:
     uris: http://localhost:9200
     indices:
