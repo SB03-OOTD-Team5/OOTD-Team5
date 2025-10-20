@@ -82,6 +82,33 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             .fetch();
     }
 
+    @Override
+    public List<FeedDto> findFeedDtosByIds(
+        FeedListRequest request, List<UUID> feedIds, UUID currentUserId
+    ) {
+        if (feedIds == null || feedIds.isEmpty()) {
+            log.debug("[FeedRepository] feedIds 비어있음 → 빈 리스트 반환");
+            return List.of();
+        }
+
+        QFeed feed = QFeed.feed;
+        QUser user = QUser.user;
+        QProfile profile = QProfile.profile;
+        QWeather weather = QWeather.weather;
+
+        SortSpecDto sortSpec = buildSortSpec(request);
+
+        return queryFactory
+            .select(feedProjection(currentUserId))
+            .from(feed)
+            .join(user).on(feed.authorId.eq(user.id))
+            .leftJoin(profile).on(profile.user.id.eq(user.id))
+            .join(weather).on(feed.weatherId.eq(weather.id))
+            .where(feed.id.in(feedIds))
+            .orderBy(sortSpec.orderSpecifiers().toArray(OrderSpecifier[]::new))
+            .fetch();
+    }
+
     /**
      * 단일 피드 조회
      *
@@ -222,6 +249,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                     new OrderSpecifier<>(asc ? Order.ASC : Order.DESC, feed.createdAt),
                     new OrderSpecifier<>(Order.ASC, feed.id)
                 );
+
                 BooleanExpression cursorCondition = (cursor != null && idAfter != null)
                     ? (asc
                     ? feed.createdAt.gt(Instant.parse(cursor))
@@ -229,6 +257,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                     : feed.createdAt.lt(Instant.parse(cursor))
                         .or(feed.createdAt.eq(Instant.parse(cursor)).and(feed.id.gt(idAfter))))
                     : null;
+
                 yield new SortSpecDto(orders, cursorCondition);
             }
             case "likeCount" -> {
@@ -236,6 +265,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                     new OrderSpecifier<>(asc ? Order.ASC : Order.DESC, feed.likeCount),
                     new OrderSpecifier<>(Order.ASC, feed.id)
                 );
+
                 BooleanExpression cursorCondition = (cursor != null && idAfter != null)
                     ? (asc
                     ? feed.likeCount.gt(Long.parseLong(cursor))
@@ -243,6 +273,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                     : feed.likeCount.lt(Long.parseLong(cursor))
                         .or(feed.likeCount.eq(Long.parseLong(cursor)).and(feed.id.gt(idAfter))))
                     : null;
+
                 yield new SortSpecDto(orders, cursorCondition);
             }
             default -> throw InvalidSortOptionException.withSortBy(request.sortBy());

@@ -94,6 +94,19 @@ spring:
             options:
               model: gemini-2.5-flash-lite
 
+    ollama:
+      api:
+        url: ${OLLAMA_API_URL:http://localhost:11434}
+      chat:
+        options:
+          model: gemma:2b
+          temperature: 0.7
+
+  elasticsearch:
+    uris: http://localhost:9200
+    indices:
+      feed: feeds-v1
+
 # SecurityConfig 비활성화/활성화 on off
 app:
   security:
@@ -105,7 +118,7 @@ weather:
     provider: ${WEATHER_API_CLIENT:kma} # 기본값=kma, 들어올수있는값 openWeather,meteo
   kakao:
     base-url: https://dapi.kakao.com/v2/local/geo/coord2regioncode.json
-    client-secret: ${KAKAO_CLIENT_SECRET}
+    client-secret: ${KAKAO_CLIENT_ID}
   kma: #기상청
     base-url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getVilageFcst
     #base-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst

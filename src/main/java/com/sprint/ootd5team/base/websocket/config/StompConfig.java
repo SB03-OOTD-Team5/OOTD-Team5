@@ -1,7 +1,9 @@
 package com.sprint.ootd5team.base.websocket.config;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.task.ThreadPoolTaskExecutorBuilder;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -22,7 +24,8 @@ public class StompConfig implements WebSocketMessageBrokerConfigurer {
     // === 엔드포인트 경로 ===
     private static final String ENDPOINT_PATH = "/ws";
     // === CORS 허용 ORIGIN 목록 ===
-    private static final String[] ALLOWED_ORIGINS = {"http://localhost:8080"};
+    private final List<String> allowedOrigins;
+
     // 세션에 저장해둘 키
     static final String ATTR_HTTP_AUTHORIZATION = "HTTP_AUTHORIZATION";
     static final String ATTR_QUERY_ACCESS_TOKEN = "QUERY_ACCESS_TOKEN";
@@ -32,7 +35,7 @@ public class StompConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // WebSocket 연결 엔드포인트
         registry.addEndpoint(ENDPOINT_PATH)
-            .setAllowedOrigins(ALLOWED_ORIGINS) //CORS설정
+            .setAllowedOrigins(allowedOrigins.toArray(new String[0])) //CORS설정
             .withSockJS();
     }
 
@@ -49,6 +52,12 @@ public class StompConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.taskExecutor(new ThreadPoolTaskExecutorBuilder()
+            .corePoolSize(4)
+            .maxPoolSize(16)
+            .queueCapacity(200)
+            .threadNamePrefix("stomp-in-")
+            .build());
         // 클라이언트 → 서버 방향(INBOUND) 메시지를 가로채 로그
         registration.interceptors(stompAuthChannelInterceptor, loggingInterceptor(Direction.INBOUND));
     }
@@ -57,6 +66,12 @@ public class StompConfig implements WebSocketMessageBrokerConfigurer {
     public void configureClientOutboundChannel(ChannelRegistration registration) {
         // 서버 → 클라이언트 방향(OUTBOUND) 메시지를 가로채 로그
         registration.interceptors(loggingInterceptor(Direction.OUTBOUND));
+        registration.taskExecutor(new ThreadPoolTaskExecutorBuilder()
+            .corePoolSize(4)
+            .maxPoolSize(16)
+            .queueCapacity(200)
+            .threadNamePrefix("stomp-out-")
+            .build());
     }
 
     // ====== 공통 로깅 인터셉터 ======

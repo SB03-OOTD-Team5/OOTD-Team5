@@ -16,6 +16,10 @@ import java.util.UUID;
 @JsonTypeName("feed-created")
 public class FeedCreatedEvent extends MultiReceiverEvent<FeedCreatedPayload> {
 
+    public FeedCreatedEvent() {
+        super(null, List.of());
+    }
+
     public FeedCreatedEvent(UUID feedId, UUID authorId, String authorName, String content,
         List<UUID> receiverIds) {
         super(new FeedCreatedPayload(feedId, authorId, authorName, content), receiverIds);
