@@ -7,8 +7,8 @@ set -euo pipefail
 LE_ROOT=/etc/letsencrypt
 S3_URI="s3://${LETSENCRYPT_S3_BUCKET}/cert"
 
-echo "[renew-hook] Reloading Nginx to pick up renewed certificates."
-nginx -s reload
-
 echo "[renew-hook] Syncing renewed certificates to ${S3_URI}"
 aws s3 sync "${LE_ROOT}/" "${S3_URI}/" --delete --no-progress
+
+echo "[renew-hook] Reloading Nginx to pick up renewed certificates."
+nginx -s reload
