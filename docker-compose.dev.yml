@@ -1,0 +1,100 @@
+# 로컬용 임시 docker-compose 파일
+# Elasticsearch 배포 마이그레이션 후 삭제 예정
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: kafka
+    ports:
+      - "9092:9092"   # 내부 컨테이너/네트워크용
+      - "29092:29092" # 호스트 PC 접근용
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    depends_on:
+      - zookeeper
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      - kafka
+
+  elasticsearch:
+    image: elasticsearch:9.1.5
+    container_name: ootd-elasticsearch
+    environment:
+      - node.name=node1
+      - cluster.name=ootd-elasticsearch
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - path.repo=/usr/share/elasticsearch/backups
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - node1-data:/usr/share/elasticsearch/data
+      - node1-backups:/usr/share/elasticsearch/backups
+    command: >
+      bash -c "
+        if [ ! -d 'plugins/analysis-nori' ]; then
+          bin/elasticsearch-plugin install analysis-nori --batch;
+        fi;
+        exec /usr/local/bin/docker-entrypoint.sh elasticsearch
+      "
+    ports:
+      - 9200:9200
+    networks:
+      - ootd-elasticsearch
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    image: kibana:9.1.5
+    container_name: ootd-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+      - xpack.encryptedSavedObjects.encryptionKey=fhjskloppd678ehkdfdlliverpoolfcr
+    ports:
+      - 5601:5601
+    networks:
+      - ootd-elasticsearch
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+volumes:
+  node1-data:
+    driver: local
+  node1-backups:
+    driver: local
+
+networks:
+  ootd-elasticsearch:
+    driver: bridge

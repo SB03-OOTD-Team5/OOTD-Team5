@@ -5,6 +5,8 @@ import com.sprint.ootd5team.base.exception.feed.FeedNotFoundException;
 import com.sprint.ootd5team.base.exception.feed.LikeCountUnderflowException;
 import com.sprint.ootd5team.base.exception.feed.LikeNotFoundException;
 import com.sprint.ootd5team.domain.feed.entity.Feed;
+import com.sprint.ootd5team.domain.feed.event.producer.FeedEventProducer;
+import com.sprint.ootd5team.domain.feed.event.type.FeedLikeCountUpdateEvent;
 import com.sprint.ootd5team.domain.feed.repository.feed.FeedRepository;
 import com.sprint.ootd5team.domain.like.entity.FeedLike;
 import com.sprint.ootd5team.domain.like.repository.FeedLikeRepository;
@@ -24,6 +26,8 @@ public class FeedLikeServiceImpl implements FeedLikeService {
 
     private final FeedLikeRepository feedLikeRepository;
     private final FeedRepository feedRepository;
+    private final FeedEventProducer feedEventProducer;
+
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -40,6 +44,8 @@ public class FeedLikeServiceImpl implements FeedLikeService {
         log.debug("[FeedLikeService] 저장된 FeedLike: {}", feedLike);
 
         feedRepository.incrementLikeCount(feedId);
+
+        publishLikeCountUpdatedEvent(feedId);
 
         // 알림 전송
         // 좋아요 누른 사람 이름 가져오기
@@ -64,6 +70,16 @@ public class FeedLikeServiceImpl implements FeedLikeService {
             log.error("[FeedLikeService] 좋아요 수 감소 실패");
             throw LikeCountUnderflowException.withFeedId(feedId);
         }
+
+        publishLikeCountUpdatedEvent(feedId);
+    }
+
+    private void publishLikeCountUpdatedEvent(UUID feedId) {
+        long updatedLikeCount = feedRepository.findLikeCountByFeedId(feedId);
+
+        feedEventProducer.publishLikeCountUpdatedEvent(
+            new FeedLikeCountUpdateEvent(feedId, updatedLikeCount)
+        );
     }
 
     private Feed validateFeed(UUID feedId) {
