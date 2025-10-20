@@ -31,6 +31,7 @@ public enum Material {
 
     /** 날씨 기반 의상 단품 점수 */
     public double getWeatherScore(RecommendationInfoDto info) {
+        if (info == null || info.weatherInfo() == null) return 0.0;
         double score = 0.0;
         double feelsLike = info.personalFeelsTemp();
 
@@ -73,7 +74,8 @@ public enum Material {
         }
 
         // 강수/강설 조건 추가 보정
-        if (precip.isRainy() || precip.isSnowy()) {
+        boolean rainyOrSnowy = precip != null && (precip.isRainy() || precip.isSnowy());
+        if (rainyOrSnowy) {
             // 방수 재질 우대
             if (this == NYLON || this == LEATHER) score += 3;
             else if (this == POLY || this == DENIM) score += 1.5;

@@ -78,18 +78,6 @@ class OutfitCombinationGeneratorEngineTest {
             .anyMatch(o -> o.getItems().stream().anyMatch(i -> i.type() == ClothesType.DRESS));
         assertThat(hasDress).isTrue();
 
-        boolean hasOuter = result.stream()
-            .anyMatch(o ->
-                o.getItems().stream().anyMatch(i -> i.type() == ClothesType.OUTER)
-            );
-        assertThat(hasOuter).isIn(true, false);
-
-        boolean hasShoes = result.stream()
-            .anyMatch(o ->
-                o.getItems().stream().anyMatch(i -> i.type() == ClothesType.SHOES)
-            );
-        assertThat(hasShoes).isIn(true, false);
-
         assertThat(result)
             .allSatisfy(outfit ->
                 assertThat(outfit.normalizedScore())

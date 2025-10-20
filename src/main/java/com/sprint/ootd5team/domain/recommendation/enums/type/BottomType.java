@@ -3,7 +3,6 @@ package com.sprint.ootd5team.domain.recommendation.enums.type;
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
 import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
 import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
-import java.util.List;
 
 /**
  * 하의 종류 Enum
@@ -29,7 +28,9 @@ public enum BottomType {
 
     /** 날씨 기반 점수 */
     public double getWeatherScore(RecommendationInfoDto info) {
-        if (info == null || info.weatherInfo() == null) return 0.0;
+        if (info == null || info.weatherInfo() == null) {
+            return 0.0;
+        }
         double feels = info.personalFeelsTemp();
 
         WeatherInfoDto w = info.weatherInfo();
@@ -86,10 +87,10 @@ public enum BottomType {
                 }
             }
             case JOGGER -> {
-                if (feels <= 15) {
-                    score += 4;
-                } else if (feels < 5) {
+                if (feels < 5) {
                     score += 1;
+                } else if (feels <= 15) {
+                    score += 4;
                 } else {
                     score -= 2;
                 }

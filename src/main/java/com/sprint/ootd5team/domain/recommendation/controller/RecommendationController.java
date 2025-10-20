@@ -30,14 +30,8 @@ public class RecommendationController implements RecommendationApi {
         @RequestParam(required = false, defaultValue = "false") boolean useAi
     ) {
         log.info("[RecommendationController] 추천 조회 수신: weatherId={} ", weatherId);
-        UUID userId;
-        try {
-            userId = authService.getCurrentUserId();
-        } catch (Exception e) {
-            // ✅ 로컬 테스트용 fallback
-            log.warn("⚠️ 인증 실패 → 로컬 테스트용 기본 유저 적용");
-            userId = UUID.fromString("52cd7032-6bcb-4544-806a-72c73de25399"); // 테스트용 고정 ID
-        }
+        UUID userId = authService.getCurrentUserId();
+
         RecommendationDto recommendationDto = recommendationService.getRecommendation(weatherId,
             userId, useAi);
 

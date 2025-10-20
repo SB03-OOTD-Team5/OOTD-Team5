@@ -42,8 +42,8 @@ public enum TopType {
             }
 
             case KNIT -> {
-                if (feels <= 15) score += 4;
-                else if (feels <= 10) score += 5;
+                if (feels <= 10) score += 5;
+                else if (feels <= 15) score += 4;
                 else score -= 2;
             }
 

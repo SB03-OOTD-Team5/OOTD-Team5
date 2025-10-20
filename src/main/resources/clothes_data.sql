@@ -180,7 +180,6 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('실크 스카프', 'SCARF'),
         ('체크 머플러', 'SCARF'),
         ('카키 머플러', 'SCARF'),
-        ('브라운 숄', 'SCARF'),
 
         -- ETC
         ('우산', 'ETC'),
@@ -599,12 +598,6 @@ WITH owner AS (SELECT current_setting('app.owner_id')::uuid AS owner_id),
         ('브라운 벨트','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'브라운'),
         ('브라운 벨트','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'가죽'),
         ('브라운 벨트','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'클래식'),
-
-        ('브라운 숄','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'겨울'),
-        ('브라운 숄','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),
-        ('브라운 숄','11111111-aaaa-bbbb-cccc-000000000003'::uuid,'브라운'),
-        ('브라운 숄','11111111-aaaa-bbbb-cccc-000000000004'::uuid,'울'),
-        ('브라운 숄','11111111-aaaa-bbbb-cccc-000000000005'::uuid,'클래식'),
 
         ('실버 반지','11111111-aaaa-bbbb-cccc-000000000001'::uuid,'사계절'),
         ('실버 반지','11111111-aaaa-bbbb-cccc-000000000002'::uuid,'공용'),

@@ -69,10 +69,9 @@ public class SeasonFilterEngine {
         return seasons.stream()
             .flatMap(s -> Stream.concat(
                 Stream.of(s.getDisplayName()),
-                Arrays.stream(s.getAliases())
+                Arrays.stream(s.getAliases() == null ? new String[0] : s.getAliases())
             ))
-            .filter(Objects::nonNull)
-            .map(String::toLowerCase)
+            .map(str -> str.toLowerCase(java.util.Locale.ROOT))
             .distinct()
             .toArray(String[]::new);
     }

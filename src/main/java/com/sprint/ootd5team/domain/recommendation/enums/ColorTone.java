@@ -21,8 +21,11 @@ public enum ColorTone {
         }
 
         // 무채색
-        if (this == NEUTRAL && other == NEUTRAL) score += 2;
-        if (this == NEUTRAL || other == NEUTRAL) score += 2;
+         if (this == NEUTRAL && other == NEUTRAL) {
+            score += 3.0;
+         } else if (this == NEUTRAL || other == NEUTRAL) {
+            score += 1.5;
+         }
 
         // 따뜻/차가움
         if ((this == WARM && other == COOL) || (this == COOL && other == WARM)) {

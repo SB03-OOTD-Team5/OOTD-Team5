@@ -55,13 +55,13 @@ public class OutfitScore {
         if (items.size() <= 1) return delta;
 
         // ETC 타입은 조화 점수 계산 제외
-        if (added.item().type() == ClothesType.ETC || added.item().type() == ClothesType.SOCKS) {
+        if (added.item().type() == ClothesType.ETC) {
             return 0.0;
         }
 
         // 기존 조합
         List<ClothesScore> prevItems = items.subList(0, items.size() - 1).stream()
-            .filter(p -> p.item().type() != ClothesType.ETC && p.item().type() != ClothesType.SOCKS)
+            .filter(p -> p.item().type() != ClothesType.ETC)
             .toList();
 
         for (ClothesScore prev : prevItems) {
@@ -86,7 +86,7 @@ public class OutfitScore {
             }
 
             // 신발 타입 보정
-            if (added.type() == ClothesType.SHOES && added.shoesType() != null) {
+            if (added.type() == ClothesType.SHOES && added.shoesType() != null && prev.style() != null) {
                 delta += added.shoesType().getClothesStyleFromShoes(prev.style());
             }
 
@@ -101,14 +101,14 @@ public class OutfitScore {
                     delta += colorPenalty;
                 }
             }
+        }
 
-            if (added.type() == ClothesType.ACCESSORY
-                || added.type() == ClothesType.BAG
-                || added.type() == ClothesType.HAT
-                || added.type() == ClothesType.SCARF) {
-                delta *= 0.5;
-            }
-
+        if (added.type() == ClothesType.ACCESSORY
+            || added.type() == ClothesType.BAG
+            || added.type() == ClothesType.HAT
+            || added.type() == ClothesType.SCARF
+            || added.type() == ClothesType.SOCKS) {
+            delta *= 0.5;
         }
 
         return delta;
@@ -139,8 +139,16 @@ public class OutfitScore {
             score += 0.5;
         }
 
+        // 양말 하중
+        boolean hasSocks = items.stream()
+            .anyMatch(i -> i.item().type() == ClothesType.SOCKS);
+
+        if (hasSocks) {
+            score *= 0.9; // 전체 점수 10% 감산
+        }
+
         // ETC 가중치(우산, 손수건 등..)
-        boolean hasEtc = validItems.stream()
+        boolean hasEtc = items.stream()
             .anyMatch(i -> i.item().type() == ClothesType.ETC || i.item().type() == ClothesType.SOCKS);
 
         if (hasEtc) {
