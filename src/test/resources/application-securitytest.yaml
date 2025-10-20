@@ -1,0 +1,16 @@
+# SecurityConfig 활성화
+app:
+  security:
+    enabled: true
+
+# Redis 활성화
+spring:
+  autoconfigure:
+    exclude: []
+  data:
+    redis:
+      repositories:
+        enabled: false
+logging:
+  level:
+    org.springframework.security: DEBUG

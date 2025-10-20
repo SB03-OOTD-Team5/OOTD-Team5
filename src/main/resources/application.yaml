@@ -1,1 +1,180 @@
-spring.application.name=OOTD-5Team
+spring:
+  application:
+    name: OOTD-5Team
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+#   클라이언트 애플리케이션(Spring Boot)에 대한 OAuth2 설정 정보
+  security:
+    oauth2:
+      client:
+        registration:
+          # 구글
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - email
+              - profile
+          # 카카오
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
+            provider: kakao
+            client-name: OOTD-KAKAO
+            scope:
+              - profile_nickname
+
+#   OAuth2 인증 제공자(카카오)에 대한 설정 정보
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+
+  servlet:
+    multipart:
+      max-file-size: 50MB        # 스프링 전역 업로드 허용 파일 크기
+      max-request-size: 50MB     # 요청 전체 크기
+
+  batch: # 앱 실행시 Job 기본 실행 설정
+    job:
+      enabled: false
+
+  jpa:
+    properties:
+      hibernate:
+        hibernate.default_batch_fetch_size: 50
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    #    로컬 실행 시: KAFKA_BOOTSTRAP_SERVERS=localhost:29092
+    #    Docker 실행 시: KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+    # Confluent Cloud
+    #    bootstrap-servers: pkc-xxxxxx.ap-northeast-2.aws.confluent.cloud:9092
+    #    properties:
+    #      security.protocol: SASL_SSL
+    #      sasl.mechanism: PLAIN
+    #      sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="API_KEY" password="API_SECRET";
+    consumer:
+      group-id: ootd.notification
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+  ai:
+    provider: gemini   # 현재 활성화할 LLM provider
+    vertex:
+      ai:
+        gemini:
+          project-id: grounded-jetty-473710-n3
+          location: us-central1
+          chat:
+            options:
+              model: gemini-2.5-flash-lite
+
+    ollama:
+      api:
+        url: ${OLLAMA_API_URL:http://localhost:11434}
+      chat:
+        options:
+          model: gemma:2b
+          temperature: 0.7
+
+  elasticsearch:
+    uris: http://localhost:9200
+    indices:
+      feed: feeds-v1
+
+# SecurityConfig 비활성화/활성화 on off
+app:
+  security:
+    enabled: true
+
+#외부 API key 설정
+weather:
+  api-client:
+    provider: ${WEATHER_API_CLIENT:kma} # 기본값=kma, 들어올수있는값 openWeather,meteo
+  kakao:
+    base-url: https://dapi.kakao.com/v2/local/geo/coord2regioncode.json
+    client-secret: ${KAKAO_CLIENT_ID}
+  kma: #기상청
+    base-url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getVilageFcst
+    #base-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst
+    client-secret: ${KMA_CLIENT_SECRET}
+  openWeather:
+    base-url: api.openweathermap.org/data/2.5/forecast
+    client-secret: ${OPEN_WEATHER_CLIENT_SECRET:123}
+
+# Swagger UI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    display-request-duration: true
+    operations-sorter: method
+
+swagger:
+  server-url: http://localhost:${server.port}
+
+# Admin 설정
+ootd:
+  admin:
+    username: ${OOTD_ADMIN_USERNAME}
+    password: ${OOTD_ADMIN_PASSWORD}
+    email: ${OOTD_ADMIN_EMAIL}
+    # 임시 비밀번호 전송하는 이메일 설정
+  email:
+    sender: ${OOTD_EMAIL_SENDER}
+
+  # Access Token 및 Refresh Token 비밀키, 만료시간 설정
+  jwt:
+    access-token:
+      expiration-ms: 1800000 # 30분
+      secret: ${JWT_ACCESS_TOKEN_SECRET:change-me-access-secret-for-dev-only}
+
+    refresh-token:
+      expiration-ms: 604800000 # 7일
+      secret: ${JWT_REFRESH_TOKEN_SECRET:change-me-refresh-secret-for-dev-only}
+
+  storage:
+    type: ${STORAGE_TYPE:s3}
+    s3:
+      access-key: ${AWS_ACCESS_KEY_ID:dummy-access-key}
+      secret-key: ${AWS_SECRET_ACCESS_KEY:dummy-secret-key}
+      region: ${AWS_REGION:ap-northeast-2}
+      bucket: ${AWS_S3_BUCKET:zzootd-s3}
+      presigned-url-expiration: ${AWS_S3_PRESIGNED_URL_EXPIRATION:600}
+      max-upload-size: 20MB   # 실제 정책상 허용할 크기
+      prefix:
+        clothes: "clothes/"
+        profiles: "profiles/"
+
+  jsoup:
+    timeout: 10000
+    user-agent: "OOTD-Extractor/1.0"
+
+  sse:
+    repository: ${OOTD_SSE_REPOSITORY:redis}  #memory
