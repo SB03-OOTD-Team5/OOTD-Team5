@@ -129,8 +129,8 @@ class RecommendationServiceTest {
         given(seasonFilterEngine.getFilteredClothes(any(), any()))
             .willReturn(List.of(sampleClothes()));
 
-        ClothesScore score = new ClothesScore(sampleClothes(), 0.9, null, null, null);
-        OutfitScore outfit = new OutfitScore(List.of(score), 0.9, List.of(), List.of(), List.of());
+        ClothesScore score = new ClothesScore(sampleClothes(), 0.9);
+        OutfitScore outfit = new OutfitScore(List.of(score), 0.9);
         given(singleItemScoringEngine.getTopItemsByType(any(), anyList())).willReturn(List.of(score));
         given(outfitCombinationGenerator.generateWithScoring(any())).willReturn(List.of(outfit));
 

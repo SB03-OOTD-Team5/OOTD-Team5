@@ -61,14 +61,12 @@ class SingleItemScoringEngineTest {
         TopType topType = mock(TopType.class);
         BottomType bottomType = mock(BottomType.class);
         ColorTone colorTone = mock(ColorTone.class);
-        Color color = mock(Color.class);
         Material material = mock(Material.class);
 
         given(shoesType.getWeatherScore(info)).willReturn(5.0);
         given(outerType.getWeatherScore(info)).willReturn(4.0);
         given(topType.getWeatherScore(info)).willReturn(3.0);
         given(bottomType.getWeatherScore(info)).willReturn(2.0);
-        given(color.getWeatherScore(info)).willReturn(1.0);
         given(material.getWeatherScore(info)).willReturn(2.0);
 
         given(dto.shoesType()).willReturn(shoesType);
@@ -76,7 +74,6 @@ class SingleItemScoringEngineTest {
         given(dto.topType()).willReturn(topType);
         given(dto.bottomType()).willReturn(bottomType);
         given(dto.colorTone()).willReturn(colorTone);
-        given(dto.color()).willReturn(color);
         given(dto.material()).willReturn(material);
 
         // when
@@ -109,7 +106,6 @@ class SingleItemScoringEngineTest {
     }
 
     @Test
-    @DisplayName("점수가 너무 높을 때 상한 보정이 적용된다")
     void 점수가_너무높을때_상한보정_적용() {
         // given
         SingleItemScoringEngine engine = new SingleItemScoringEngine();
@@ -131,7 +127,6 @@ class SingleItemScoringEngineTest {
     }
 
     @Test
-    @DisplayName("타입별 그룹화 후 상위 N개 아이템을 반환한다")
     void 타입별_그룹화_후_상위N개_반환() {
         // given
         SingleItemScoringEngine engine = spy(new SingleItemScoringEngine());

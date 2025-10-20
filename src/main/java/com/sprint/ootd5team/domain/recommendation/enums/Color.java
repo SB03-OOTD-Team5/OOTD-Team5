@@ -120,7 +120,6 @@ public enum Color {
         if (dress != null) {
             if (this == dress) {
                 penalty -= 1.0;
-                log.debug("[ColorPenalty] OUTER={} ↔ DRESS={} → 동일색 → -1.0", this, dress);
             }
 
             return penalty;
