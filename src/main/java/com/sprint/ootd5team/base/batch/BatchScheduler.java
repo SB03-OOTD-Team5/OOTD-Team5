@@ -1,5 +1,6 @@
 package com.sprint.ootd5team.base.batch;
 
+import com.sprint.ootd5team.domain.weather.service.WeatherCleanupService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobParameters;
@@ -18,6 +19,7 @@ public class BatchScheduler {
 
     private final JobLauncher jobLauncher;
     private final WeatherBatchConfig batchConfig;
+    private final WeatherCleanupService weatherCleanupService;
 
     @Scheduled(cron = "0 0 23 * * *", zone = "Asia/Seoul")
     public void runJob() {
@@ -31,6 +33,16 @@ public class BatchScheduler {
                  | JobParametersInvalidException |
                  org.springframework.batch.core.repository.JobRestartException e) {
             log.error(e.getMessage());
+        }
+    }
+
+    @Scheduled(cron = "0 0 2 ? * MON", zone = "Asia/Seoul")
+    public void cleanupUnusedWeathers() {
+        try {
+            int deleted = weatherCleanupService.deleteUnusedWeathersBeforeToday();
+            log.info("[WeatherScheduler] 삭제된 weather 컬럼 갯수: {}", deleted);
+        } catch (Exception e) {
+            log.error("[WeatherScheduler] weather 스케쥴링 실패. {}", e.getMessage(), e);
         }
     }
 }
