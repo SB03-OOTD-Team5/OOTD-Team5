@@ -21,6 +21,7 @@ import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import com.sprint.ootd5team.domain.weather.entity.Weather;
 import com.sprint.ootd5team.domain.weather.exception.WeatherNotFoundException;
 import com.sprint.ootd5team.domain.weather.repository.WeatherRepository;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -176,6 +177,7 @@ public class RecommendationService {
     private RecommendationDto buildResult(UUID weatherId, UUID userId,
         List<ClothesFilteredDto> clothes) {
         List<RecommendationClothesDto> converted = clothes.stream()
+            .sorted(Comparator.comparingInt(c -> c.type().order()))
             .map(recommendationMapper::toDto)
             .toList();
 
