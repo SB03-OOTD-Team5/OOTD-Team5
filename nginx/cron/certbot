@@ -1,0 +1,4 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+0 3 * * * . /opt/certbot/env.sh && /opt/certbot/certbot-renew.sh >> /var/log/cron.log 2>&1
