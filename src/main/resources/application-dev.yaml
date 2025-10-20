@@ -17,12 +17,6 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true     # 쿼리 로그 포맷 (정렬)
-  # Elasticsearch 설정
-  elasticsearch:
-    uris: http://localhost:9200
-    indices:
-      feed: feeds-v1
-
 
 # csrf 설정 비활성화/활성화 on off
 app:

@@ -14,7 +14,7 @@ import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
 import org.springframework.stereotype.Component;
 
-@Profile("dev")
+@Profile({"dev", "test"})
 @Slf4j
 @RequiredArgsConstructor
 @Component
