@@ -23,4 +23,7 @@ public interface FeedRepository extends JpaRepository<Feed, UUID>, FeedRepositor
 
     @Query("select f.authorId from Feed f where f.id = :feedId")
     UUID findAuthorIdByFeedId(@Param("feedId") UUID feedId);
+
+    @Query("select f.likeCount from Feed f where f.id = :feedId")
+    long findLikeCountByFeedId(@Param("feedId") UUID feedId);
 }

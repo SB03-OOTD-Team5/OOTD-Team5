@@ -12,4 +12,17 @@ public record FeedDtoCursorResponse(
     long totalCount,
     String sortBy,
     String sortDirection
-) { }
+) {
+
+    public static FeedDtoCursorResponse empty(String sortBy, String sortDirection) {
+        return new FeedDtoCursorResponse(
+            List.of(),
+            null,
+            null,
+            false,
+            0L,
+            sortBy,
+            sortDirection
+        );
+    }
+}

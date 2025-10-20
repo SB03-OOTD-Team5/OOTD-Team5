@@ -11,7 +11,13 @@ public interface FeedRepositoryCustom {
 
     List<FeedDto> findFeedDtos(FeedListRequest request, UUID currentUserId);
 
+    List<FeedDto> findFeedDtosByIds(
+        FeedListRequest request, List<UUID> feedIds, UUID currentUserId
+    );
+
     FeedDto findFeedDtoById(UUID feedId, UUID currentUserId);
 
-    long countFeeds(String keywordLike, SkyStatus skyStatus, PrecipitationType precipitationType, UUID authorId);
+    long countFeeds(
+        String keywordLike, SkyStatus skyStatus, PrecipitationType precipitationType, UUID authorId
+    );
 }
