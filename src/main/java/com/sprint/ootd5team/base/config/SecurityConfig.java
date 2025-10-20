@@ -8,6 +8,7 @@ import com.sprint.ootd5team.base.security.JwtRegistry;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.RedisJwtRegistry;
 import com.sprint.ootd5team.base.security.RedisLockProvider;
+import com.sprint.ootd5team.base.security.SpaCsrfTokenRequestHandler;
 import com.sprint.ootd5team.base.security.handler.Http403ForbiddenAccessDeniedHandler;
 import com.sprint.ootd5team.base.security.handler.JwtLoginSuccessHandler;
 import com.sprint.ootd5team.base.security.handler.JwtLogoutHandler;
@@ -30,6 +31,7 @@ import org.springframework.security.access.expression.method.MethodSecurityExpre
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -105,11 +107,22 @@ public class SecurityConfig {
     )
         throws Exception {
         http
+            // cors 설정
+            .cors(Customizer.withDefaults())  // CorsConfigurationSource Bean 자동 적용
+
             // csrf 설정
             .csrf(csrf -> {
                 if(csrfEnabled){
-                    csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler());
+                    CookieCsrfTokenRepository tokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+
+                    tokenRepository.setCookieCustomizer(cookie -> cookie
+                            .path("/")
+                            .sameSite("Lax")  // 또는 "Strict", "None"
+                            .secure(false)  // HTTP 환경에서 테스트 시 (개발용)
+                        // .domain("yourdomain.com")  // 필요시 도메인 지정
+                    );
+                    csrf.csrfTokenRepository(tokenRepository)
+                        .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler());
                     } else {
                     csrf.disable();
                 }
