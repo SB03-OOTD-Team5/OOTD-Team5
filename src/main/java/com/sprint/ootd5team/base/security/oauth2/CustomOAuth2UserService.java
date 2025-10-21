@@ -43,12 +43,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         OAuth2UserInfo oAuth2UserInfo = null;
 
         if(provider.equals("google")){
-            log.info("구글 로그인");
             oAuth2UserInfo = new GoogleUserDetails(oAuth2User.getAttributes());
+            log.debug("[Security] 구글 로그인 user:{}", oAuth2UserInfo.getEmail());
         }
         else if(provider.equals("kakao")){
-            log.info("카카오 로그인");
             oAuth2UserInfo = new KakaoUserDetails(oAuth2User.getAttributes());
+            log.debug("[Security] 카카오 로그인 user:{}", oAuth2UserInfo.getEmail());
         }else {
             throw new OAuth2AuthenticationException(
                 new OAuth2Error("invalid_request", "Unsupported OAuth2 provider: " + provider, null)
@@ -60,6 +60,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String name = oAuth2UserInfo.getName();
 
         Optional<User> findUser = userRepository.findByEmail(email);
+        // 저장된 OAuthUser가 없을경우 생성
         User user = findUser.orElseGet(() -> {
             User createduser = new User(name, email, null, Role.USER);
             userRepository.save(createduser);
@@ -70,7 +71,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             return createduser;
         });
 
-        log.debug("로그인 성공 id: {}", user.getId());
+        log.debug("[Security] OAuth2 사용자 정보 로드 완료 - provider: {}, email: {}", provider, email);
         return new OotdOAuth2UserDetails(userMapper.toDto(user), oAuth2User.getAttributes());
     }
 

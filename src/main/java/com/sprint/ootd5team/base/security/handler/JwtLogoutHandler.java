@@ -33,7 +33,7 @@ public class JwtLogoutHandler implements LogoutHandler {
 
         Cookie[] cookies = request.getCookies();
         if(cookies != null || cookies.length == 0) {
-            log.debug("No cookies found");
+            log.debug("[Security] No cookies found");
             return;
         }
 
@@ -47,6 +47,6 @@ public class JwtLogoutHandler implements LogoutHandler {
                 String username = tokenProvider.getEmailFromToken(refreshToken);
                 OotdSecurityUserDetails userDetails = (OotdSecurityUserDetails)userDetailsService.loadUserByUsername(username);
             });
-        log.debug("JWT logout handler executed - refresh token cookie cleared");
+        log.debug("[Security] JWT logout handler executed - refresh token cookie cleared");
     }
 }

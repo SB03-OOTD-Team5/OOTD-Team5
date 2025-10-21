@@ -36,7 +36,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             try {
                 OotdOAuth2UserDetails oauthUser = (OotdOAuth2UserDetails) authentication.getPrincipal();
                 UserDto userDto = oauthUser.getUserDto();
-                log.info("OAuth2 Login Success. userDto: {}", userDto.email());
 
                 // 1. 토큰생성
                 String accessToken = tokenProvider.generateAccessToken(userDto);
@@ -64,15 +63,15 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 response.getWriter().write(objectMapper.writeValueAsString(jwtDto));
                 response.sendRedirect("/#/recommendations");
 
-                log.debug("JWT access and refresh tokens issued for user: {}", userDto.name());
+                log.info("[Security] OAuth2 로그인 성공. userDto: {}", userDto.email());
 
             } catch (JOSEException e) {
-                log.error("Failed to generate JWT token for user: {}", authentication.getName(), e);
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 ErrorResponse errorResponse = new ErrorResponse(
                     new RuntimeException("Token generation failed")
                 );
                 response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+                log.error("[Security] OAuth2 JWT 토큰 생성 실패: {}", authentication.getName(), e);
             }
         }else{
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -80,6 +79,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 new RuntimeException("Authentication failed: Invalid user details")
             );
             response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+            log.error("[Security] 유효하지않은 유저정보 입니다.");
         }
     }
 }

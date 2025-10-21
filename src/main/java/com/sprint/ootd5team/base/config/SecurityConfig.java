@@ -15,10 +15,7 @@ import com.sprint.ootd5team.base.security.handler.JwtLogoutHandler;
 import com.sprint.ootd5team.base.security.handler.LoginFailureHandler;
 import com.sprint.ootd5team.base.security.oauth2.OAuth2LoginSuccessHandler;
 import com.sprint.ootd5team.domain.user.entity.Role;
-import java.util.List;
-import java.util.stream.IntStream;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -45,7 +42,6 @@ import org.springframework.security.web.authentication.Http403ForbiddenEntryPoin
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -55,25 +51,6 @@ public class SecurityConfig {
 
     @Value("${app.csrf.enabled:true}")
     private boolean csrfEnabled;
-    /**
-     * 현재 적용된 필터체인 목록 표시
-     * @param filterChain 시큐리티 필터체인
-     * @return 필터체인 로그 목록
-     */
-    @Bean
-    public CommandLineRunner debugFilterChain(SecurityFilterChain filterChain) {
-        return args -> {
-            int filterSize = filterChain.getFilters().size();
-
-            List<String> filterNames = IntStream.range(0, filterSize)
-                .mapToObj(idx -> String.format("\t[%s/%s] %s", idx + 1, filterSize,
-                    filterChain.getFilters().get(idx).getClass()))
-                .toList();
-
-            System.out.println("현재 적용된 필터 체인 목록:");
-            filterNames.forEach(System.out::println);
-        };
-    }
 
     /**
      * 비밀번호를 BCrypt로 암호화
@@ -118,7 +95,7 @@ public class SecurityConfig {
                     tokenRepository.setCookieCustomizer(cookie -> cookie
                             .path("/")
                             .sameSite("Lax")  // 또는 "Strict", "None"
-                            .secure(false)  // HTTP 환경에서 테스트 시 (개발용)
+                            .secure(true)  // HTTP 환경에서 테스트 시 (개발용)
                         // .domain("yourdomain.com")  // 필요시 도메인 지정
                     );
                     csrf.csrfTokenRepository(tokenRepository)
@@ -159,7 +136,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/sse").authenticated()
                 // 개발 storage = local일 때(s3시 필요없음)
                 .requestMatchers("/local-files/**").permitAll()
-                .anyRequest().permitAll()//TODO 개발환경은는 모두 허용, 빌드시에는 authenticated()으로 수정필요
+                .anyRequest()
+                .authenticated()//TODO 개발환경은는 모두 허용, 빌드시에는 authenticated()으로 수정필요
             )
             // 예외처리
             .exceptionHandling(ex -> ex
