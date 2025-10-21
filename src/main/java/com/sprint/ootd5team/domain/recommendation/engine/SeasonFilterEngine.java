@@ -1,19 +1,19 @@
 package com.sprint.ootd5team.domain.recommendation.engine;
 
 import com.sprint.ootd5team.domain.clothes.entity.Clothes;
+import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.clothes.repository.ClothesRepository;
-import com.sprint.ootd5team.domain.clothesattribute.entity.ClothesAttributeValue;
 import com.sprint.ootd5team.domain.recommendation.dto.ApparentTemperatureDto;
 import com.sprint.ootd5team.domain.recommendation.dto.ClothesFilteredDto;
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
 import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
 import com.sprint.ootd5team.domain.recommendation.enums.Season;
-import com.sprint.ootd5team.domain.recommendation.enums.util.EnumParser;
 import com.sprint.ootd5team.domain.recommendation.mapper.RecommendationMapper;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -34,49 +34,45 @@ public class SeasonFilterEngine {
     public List<ClothesFilteredDto> getFilteredClothes(UUID userId, RecommendationInfoDto info) {
         // 민감도 기반 허용 계절 계산
         EnumSet<Season> allowedSeasons = resolveAllowedSeasons(info);
-        log.debug("[Filter] 허용 계절 EnumSet = {}", allowedSeasons);
 
-        // 계절 속성 있는 의상
-        List<Clothes> clothesList = clothesRepository.findByOwnerWithSeasonAttribute(userId);
-        log.debug("[Filter] 계절 속성 보유 의상 {}개", clothesList.size());
+        // 허용 토큰(한글 displayName + aliases) 생성
+        String[] allowedTokens = buildAllowedTokens(allowedSeasons);
+        boolean includeAllSeason = true; // 사계절/기타 포함 여부
 
-        // 3) 자바단 필터 + 매핑
-        List<ClothesFilteredDto> filtered = clothesList.stream()
-            .filter(c -> matchesAllowedSeason(c, allowedSeasons))
+        // DB에서 계절 속성 매칭 의상만 조회
+        List<UUID> ids = clothesRepository.findClothesIdsBySeasonFilter(userId, allowedTokens, includeAllSeason);
+
+        List<Clothes> clothesList = ids.isEmpty()
+            ? List.of()
+            : clothesRepository.findAllWithAttributesByIds(ids);
+        log.debug("[SeasonFilterEngine] [Filter] DB필터 결과 {}개", clothesList.size());
+
+        return clothesList.stream()
             .map(recommendationMapper::toFilteredDto)
-            .toList();
+            .filter(dto -> {
+                boolean include = dto.type() != ClothesType.ETC
+                    || dto.optionalSubType() == null
+                    || dto.optionalSubType().shouldInclude(info);
 
-        log.debug("[Filter] 최종 필터링 결과 {}개 (전체 {}개 중)", filtered.size(), clothesList.size());
-        return filtered;
+                if (dto.type() == ClothesType.ETC) {
+                    log.debug("[SeasonFilterEngine] [ETC 필터] {} → subtype={} include={}",
+                        dto.name(), dto.optionalSubType(), include);
+                }
+                return include;
+            })
+            .toList();
     }
 
-    /** 의상의 계절 속성값과 허용 계절 비교 */
-    private boolean matchesAllowedSeason(Clothes clothes, EnumSet<Season> allowedSeasons) {
-        String seasonValue = clothes.getClothesAttributeValues().stream()
-            .filter(v -> "계절".equals(v.getAttribute().getName()))
-            .map(ClothesAttributeValue::getDefValue)
-            .findFirst()
-            .orElse("");
-
-        if (seasonValue.isBlank()) {
-            log.trace("[Filter:Skip] '{}' → 계절 속성 없음", clothes.getName());
-            return false;
-        }
-
-        // 복합값 처리: 봄/가을 같은 경우
-        List<Season> parsedSeasons = Arrays.stream(seasonValue.split("/"))
-            .map(part -> EnumParser.safeParse(Season.class, part.trim(), Season.OTHER))
-            .toList();
-
-        boolean match = parsedSeasons.stream()
-            .anyMatch(s -> s == Season.OTHER || allowedSeasons.contains(s));
-
-        log.debug(
-            "[Filter:Check] '{}' 의상 계절={}, 허용 계절={}, 매칭결과={}",
-            clothes.getName(), parsedSeasons, allowedSeasons, match
-        );
-
-        return match;
+    // 허용 가능 계절 목록 값
+    private String[] buildAllowedTokens(EnumSet<Season> seasons) {
+        return seasons.stream()
+            .flatMap(s -> Stream.concat(
+                Stream.of(s.getDisplayName()),
+                Arrays.stream(s.getAliases() == null ? new String[0] : s.getAliases())
+            ))
+            .map(str -> str.toLowerCase(java.util.Locale.ROOT))
+            .distinct()
+            .toArray(String[]::new);
     }
 
     /** 사용자 민감도 기반으로 허용 계절 EnumSet 계산 */
@@ -98,25 +94,36 @@ public class SeasonFilterEngine {
                 case AUTUMN, SPRING -> allowed.add(Season.WINTER);
                 case SUMMER -> allowed.addAll(EnumSet.of(Season.SPRING, Season.AUTUMN));
             }
+        } else if (sensitivity == 2) {
+            switch (forecast) {
+                case WINTER -> {}
+                case AUTUMN -> allowed.addAll(EnumSet.of(Season.SPRING, Season.WINTER));
+                case SPRING -> allowed.addAll(EnumSet.of(Season.AUTUMN, Season.WINTER));
+                case SUMMER -> allowed.addAll(EnumSet.of(Season.SPRING, Season.AUTUMN));
+            }
+        } else if (sensitivity == 4) {
+            switch (forecast) {
+                case SUMMER -> {}
+                case AUTUMN -> allowed.addAll(EnumSet.of(Season.SPRING, Season.SUMMER));
+                case SPRING -> allowed.addAll(EnumSet.of(Season.AUTUMN, Season.SUMMER));
+                case WINTER -> allowed.addAll(EnumSet.of(Season.SPRING, Season.AUTUMN));
+            }
         } else if (sensitivity == 5) {
             switch (forecast) {
                 case SUMMER -> {}
                 case AUTUMN, SPRING -> allowed.add(Season.SUMMER);
                 case WINTER -> allowed.addAll(EnumSet.of(Season.SPRING, Season.AUTUMN));
             }
-        } else {
+        }
+        else {
             switch (forecast) {
-                case SPRING -> allowed.add(Season.SUMMER);
-                case SUMMER -> allowed.add(Season.SPRING);
-                case AUTUMN -> allowed.add(Season.WINTER);
-                case WINTER -> allowed.add(Season.AUTUMN);
+                case SPRING, SUMMER, AUTUMN, WINTER-> {}
             }
         }
 
-        log.debug("[Filter:ResolveSeason] forecast={}, feelsLike={}, sensitivity={}, 허용계절={}",
+        log.debug("[SeasonFilterEngine] [Filter:ResolveSeason] forecast={}, feelsLike={}, sensitivity={}, 허용계절={}",
             forecast, String.format("%.1f", feelsLike), sensitivity, allowed);
 
         return allowed;
     }
-
 }

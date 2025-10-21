@@ -9,19 +9,6 @@ public class ClothesSaveFailedException extends ClothesException {
         super(ErrorCode.CLOTHES_SAVE_FAILED);
     }
 
-    public static ClothesSaveFailedException withId(UUID clothesId) {
-        ClothesSaveFailedException ex = new ClothesSaveFailedException();
-        ex.addDetail("clothesId", clothesId);
-        return ex;
-    }
-
-    public static ClothesSaveFailedException withId(UUID clothesId, Throwable cause) {
-        ClothesSaveFailedException ex = new ClothesSaveFailedException();
-        ex.addDetail("clothesId", clothesId);
-        ex.initCause(cause);
-        return ex;
-    }
-
     public static ClothesSaveFailedException withoutId(Throwable cause) {
         ClothesSaveFailedException ex = new ClothesSaveFailedException();
         ex.initCause(cause);

@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.recommendation.engine;
+package com.sprint.ootd5team.domain.recommendation.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -9,16 +9,14 @@ import static org.mockito.Mockito.spy;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.recommendation.dto.ClothesFilteredDto;
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
-import com.sprint.ootd5team.domain.recommendation.engine.SingleItemScoringEngine;
 import com.sprint.ootd5team.domain.recommendation.engine.model.ClothesScore;
-import com.sprint.ootd5team.domain.recommendation.enums.Color;
 import com.sprint.ootd5team.domain.recommendation.enums.ColorTone;
 import com.sprint.ootd5team.domain.recommendation.enums.Material;
 import com.sprint.ootd5team.domain.recommendation.enums.type.BottomType;
 import com.sprint.ootd5team.domain.recommendation.enums.type.OuterType;
 import com.sprint.ootd5team.domain.recommendation.enums.type.ShoesType;
 import com.sprint.ootd5team.domain.recommendation.enums.type.TopType;
-import com.sprint.ootd5team.recommendation.fixture.RecommendationFixture;
+import com.sprint.ootd5team.domain.recommendation.fixture.RecommendationFixture;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -61,14 +59,12 @@ class SingleItemScoringEngineTest {
         TopType topType = mock(TopType.class);
         BottomType bottomType = mock(BottomType.class);
         ColorTone colorTone = mock(ColorTone.class);
-        Color color = mock(Color.class);
         Material material = mock(Material.class);
 
         given(shoesType.getWeatherScore(info)).willReturn(5.0);
         given(outerType.getWeatherScore(info)).willReturn(4.0);
         given(topType.getWeatherScore(info)).willReturn(3.0);
         given(bottomType.getWeatherScore(info)).willReturn(2.0);
-        given(color.getWeatherScore(info)).willReturn(1.0);
         given(material.getWeatherScore(info)).willReturn(2.0);
 
         given(dto.shoesType()).willReturn(shoesType);
@@ -76,7 +72,6 @@ class SingleItemScoringEngineTest {
         given(dto.topType()).willReturn(topType);
         given(dto.bottomType()).willReturn(bottomType);
         given(dto.colorTone()).willReturn(colorTone);
-        given(dto.color()).willReturn(color);
         given(dto.material()).willReturn(material);
 
         // when
@@ -109,7 +104,6 @@ class SingleItemScoringEngineTest {
     }
 
     @Test
-    @DisplayName("점수가 너무 높을 때 상한 보정이 적용된다")
     void 점수가_너무높을때_상한보정_적용() {
         // given
         SingleItemScoringEngine engine = new SingleItemScoringEngine();
@@ -131,7 +125,6 @@ class SingleItemScoringEngineTest {
     }
 
     @Test
-    @DisplayName("타입별 그룹화 후 상위 N개 아이템을 반환한다")
     void 타입별_그룹화_후_상위N개_반환() {
         // given
         SingleItemScoringEngine engine = spy(new SingleItemScoringEngine());

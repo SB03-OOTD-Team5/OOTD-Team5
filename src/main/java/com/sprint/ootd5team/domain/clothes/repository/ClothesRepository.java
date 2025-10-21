@@ -43,21 +43,44 @@ public interface ClothesRepository extends JpaRepository<Clothes, UUID>, Clothes
     })
     List<Clothes> findByOwner_Id(@Param("ownerId") UUID ownerId);
 
-    @Query("""
-       SELECT DISTINCT c
-       FROM Clothes c
-       LEFT JOIN FETCH c.clothesAttributeValues cav
-       LEFT JOIN FETCH cav.attribute attr
-       WHERE c.owner.id = :ownerId
-         AND EXISTS (
-            SELECT 1
-            FROM ClothesAttributeValue cav2
-            JOIN cav2.attribute attr2
-            WHERE cav2.clothes = c
-              AND attr2.name = '계절'
-         )
-    """)
-    List<Clothes> findByOwnerWithSeasonAttribute(@Param("ownerId") UUID ownerId);
+    @Query(value = """
+        WITH candidates AS (
+            SELECT DISTINCT c.id, c.type
+            FROM tbl_clothes c
+            JOIN tbl_clothes_attributes_values v ON v.clothes_id = c.id
+            JOIN tbl_clothes_attributes a ON a.id = v.attribute_id
+            WHERE c.owner_id = :ownerId
+              AND a.name = '계절'
+              AND (
+                EXISTS (
+                  SELECT 1
+                  FROM unnest(regexp_split_to_array(lower(v.def_value), '[/,\\s]+')) AS tok
+                  WHERE tok = ANY(:tokens)
+                )
+                OR (:includeAllSeason = TRUE AND lower(v.def_value) IN ('사계절','기타'))
+              )
+        ),
+        ranked AS (
+            SELECT id, type,
+                   ROW_NUMBER() OVER (PARTITION BY type ORDER BY RANDOM()) AS rn
+            FROM candidates
+        )
+        SELECT id
+        FROM ranked
+        WHERE rn <= 10
+        """, nativeQuery = true)
+    List<UUID> findClothesIdsBySeasonFilter(
+        @Param("ownerId") UUID ownerId,
+        @Param("tokens") String[] tokens,
+        @Param("includeAllSeason") boolean includeAllSeason);
 
+    @Query("""
+            select distinct c
+            from Clothes c
+            join fetch c.clothesAttributeValues v
+            join fetch v.attribute a
+            where c.id in :ids
+        """)
+    List<Clothes> findAllWithAttributesByIds(@Param("ids") List<UUID> ids);
 
 }

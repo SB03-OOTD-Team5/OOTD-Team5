@@ -31,6 +31,7 @@ public class RecommendationController implements RecommendationApi {
     ) {
         log.info("[RecommendationController] 추천 조회 수신: weatherId={} ", weatherId);
         UUID userId = authService.getCurrentUserId();
+
         RecommendationDto recommendationDto = recommendationService.getRecommendation(weatherId,
             userId, useAi);
 

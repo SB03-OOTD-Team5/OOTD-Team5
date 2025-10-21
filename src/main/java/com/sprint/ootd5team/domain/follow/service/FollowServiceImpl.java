@@ -15,6 +15,7 @@ import com.sprint.ootd5team.domain.follow.dto.response.FollowListResponse;
 import com.sprint.ootd5team.domain.follow.entity.Follow;
 import com.sprint.ootd5team.domain.follow.mapper.FollowMapper;
 import com.sprint.ootd5team.domain.follow.repository.FollowRepository;
+import com.sprint.ootd5team.domain.notification.event.type.single.FollowCreatedEvent;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.mapper.ProfileMapper;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
@@ -24,6 +25,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -39,6 +41,7 @@ public class FollowServiceImpl implements FollowService {
     private final ProfileRepository profileRepository;
     private final FollowMapper followMapper;
     private final ProfileMapper profileMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -52,11 +55,15 @@ public class FollowServiceImpl implements FollowService {
 
         log.debug("[FollowService] 등록된 Follow 데이터 - {}", saved);
 
-        return new FollowDto(
+        FollowDto followDto = new FollowDto(
             saved.getId(),
             profileMapper.toAuthorDto(followeeProfile),
             profileMapper.toAuthorDto(followerProfile)
         );
+
+        eventPublisher.publishEvent(new FollowCreatedEvent(followDto));
+
+        return followDto;
     }
 
     @Override
