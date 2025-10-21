@@ -59,6 +59,7 @@ else
   echo "[bootstrap] Local certificate bundle present. Skipping initial issuance."
 fi
 
+CERTBOT_EXIT=0
 if [ "${TEMP_CERT_CREATED}" -eq 1 ]; then
   echo "[bootstrap] Starting temporary Nginx instance for ACME HTTP-01 challenge."
   nginx
@@ -66,6 +67,7 @@ if [ "${TEMP_CERT_CREATED}" -eq 1 ]; then
   sleep 2
 
   echo "[bootstrap] Requesting Let's Encrypt certificate for ${LETSENCRYPT_DOMAIN}."
+  set +e
   certbot certonly \
     --webroot \
     --webroot-path "${WEBROOT}" \
@@ -76,9 +78,14 @@ if [ "${TEMP_CERT_CREATED}" -eq 1 ]; then
     --rsa-key-size 4096 \
     --keep-until-expiring \
     --no-eff-email
+  CERTBOT_EXIT=$?
+  set -e
 
-  echo "[bootstrap] Certificate issued. Synchronizing to S3."
-  aws s3 sync "${LE_ROOT}/" "${S3_URI}/" --delete --no-progress
+  if [ "${CERTBOT_EXIT}" -eq 0 ]; then
+    echo "[bootstrap] Certificate issued."
+  else
+    echo "[bootstrap] Warning: certbot failed with exit code ${CERTBOT_EXIT}. Continuing with self-signed certificate."
+  fi
 
   echo "[bootstrap] Stopping temporary Nginx instance."
   nginx -s stop || true
@@ -86,6 +93,12 @@ if [ "${TEMP_CERT_CREATED}" -eq 1 ]; then
 fi
 
 trap - EXIT
+
+if [ -d "${LE_ROOT}" ]; then
+  if ! aws s3 sync "${LE_ROOT}/" "${S3_URI}/" --delete --no-progress; then
+    echo "[bootstrap] Warning: Failed to synchronize certificates to ${S3_URI}. Continuing without remote backup."
+  fi
+fi
 
 echo "[service] Launching cron daemon for automated renewals."
 crond -l 2
