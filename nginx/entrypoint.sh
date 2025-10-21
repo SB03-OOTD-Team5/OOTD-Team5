@@ -66,6 +66,14 @@ if [ "${TEMP_CERT_CREATED}" -eq 1 ]; then
   TEMP_NGINX_STARTED=1
   sleep 2
 
+  BOOTSTRAP_BACKUP=""
+  if [ -d "${LIVE_DIR}" ]; then
+    BOOTSTRAP_BACKUP="${LIVE_DIR}.bootstrap"
+    rm -rf "${BOOTSTRAP_BACKUP}"
+    mv "${LIVE_DIR}" "${BOOTSTRAP_BACKUP}"
+  fi
+  mkdir -p "${LIVE_DIR}"
+
   echo "[bootstrap] Requesting Let's Encrypt certificate for ${LETSENCRYPT_DOMAIN}."
   set +e
   certbot certonly \
@@ -83,7 +91,14 @@ if [ "${TEMP_CERT_CREATED}" -eq 1 ]; then
 
   if [ "${CERTBOT_EXIT}" -eq 0 ]; then
     echo "[bootstrap] Certificate issued."
+    if [ -n "${BOOTSTRAP_BACKUP}" ]; then
+      rm -rf "${BOOTSTRAP_BACKUP}"
+    fi
   else
+    rm -rf "${LIVE_DIR}"
+    if [ -n "${BOOTSTRAP_BACKUP}" ] && [ -d "${BOOTSTRAP_BACKUP}" ]; then
+      mv "${BOOTSTRAP_BACKUP}" "${LIVE_DIR}"
+    fi
     echo "[bootstrap] Warning: certbot failed with exit code ${CERTBOT_EXIT}. Continuing with self-signed certificate."
   fi
 
