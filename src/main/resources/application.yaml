@@ -171,3 +171,16 @@ ootd:
 
   sse:
     repository: ${OOTD_SSE_REPOSITORY:redis}  #memory
+
+# Actuator 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true

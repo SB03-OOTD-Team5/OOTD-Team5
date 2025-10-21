@@ -4,6 +4,7 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  workflow_dispatch:
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
@@ -15,7 +16,6 @@ env:
 
 jobs:
   deploy:
-    if: github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'dev'   # ← 공백 추가
     name: Build & Deploy
     runs-on: ubuntu-latest
     permissions:
@@ -74,7 +74,7 @@ jobs:
 
       - name: Check base images exist
         run: |
-          docker manifest inspect public.ecr.aws/amazoncorretto/amazoncorretto:17-alpine3.20-jdk >/dev/null
+          docker manifest inspect amazoncorretto:17 >/dev/null
           docker manifest inspect nginx:1.27-alpine >/dev/null
 
       # Backend 이미지: buildx에서 바로 push
@@ -85,7 +85,7 @@ jobs:
             echo "Backend build attempt #$i"
             docker buildx build \
               --pull \
-              --push \                         # ← 여기서 바로 ECR로 push
+              --push \
               --progress=plain \
               --cache-from=type=gha,scope=backend \
               --cache-to=type=gha,mode=max,scope=backend \
@@ -103,7 +103,7 @@ jobs:
             echo "Nginx build attempt #$i"
             docker buildx build \
               --pull \
-              --push \                         # ← 여기서 바로 ECR로 push
+              --push \
               --progress=plain \
               --cache-from=type=gha,scope=nginx \
               --cache-to=type=gha,mode=max,scope=nginx \
