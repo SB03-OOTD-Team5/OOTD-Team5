@@ -3,6 +3,7 @@ package com.sprint.ootd5team.domain.recommendation.engine.model;
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.recommendation.enums.ClothesStyle;
 import com.sprint.ootd5team.domain.recommendation.enums.Color;
+import com.sprint.ootd5team.domain.recommendation.enums.util.OutfitPenalty;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -65,8 +66,8 @@ public class OutfitScore {
             .toList();
 
         for (ClothesScore prev : prevItems) {
-            // 색상 조화
-            if (added.color() != null && prev.color() != null) {
+            // 상하의 색상 조화
+            if (added.type() == ClothesType.BOTTOM && added.color() != null) {
                 delta += added.color().getColorMatchBonus(prev.color());
             }
 
@@ -85,22 +86,8 @@ public class OutfitScore {
                 delta += added.style().getHarmonyScore(prev.style());
             }
 
-            // 신발 타입 보정
-            if (added.type() == ClothesType.SHOES && added.shoesType() != null && prev.style() != null) {
-                delta += added.shoesType().getClothesStyleFromShoes(prev.style());
-            }
-
-            // 상하의 색상 보정
-            if (added.type() == ClothesType.OUTER && added.color() != null) {
-                Color topColor = getColorOf(ClothesType.TOP);
-                Color bottomColor = getColorOf(ClothesType.BOTTOM);
-                Color dressColor = getColorOf(ClothesType.DRESS);
-
-                double colorPenalty = added.color().getOuterContrastPenalty(topColor, bottomColor, dressColor);
-                if (colorPenalty != 0) {
-                    delta += colorPenalty;
-                }
-            }
+            // 패널티
+            delta += OutfitPenalty.getPenalty(resolveSubType(added), resolveSubType(prev));
         }
 
         if (added.type() == ClothesType.ACCESSORY
@@ -169,6 +156,22 @@ public class OutfitScore {
             .filter(Objects::nonNull)
             .findFirst()
             .orElse(null);
+    }
+
+    private double getTypePenalty(ClothesScore a, ClothesScore b) {
+        Enum<?> aSub = resolveSubType(a);
+        Enum<?> bSub = resolveSubType(b);
+
+        if (aSub == null || bSub == null) return 0.0;
+        return OutfitPenalty.getPenalty(aSub, bSub);
+    }
+
+    private Enum<?> resolveSubType(ClothesScore c) {
+        if (c.topType() != null) return c.topType();
+        if (c.bottomType() != null) return c.bottomType();
+        if (c.outerType() != null) return c.outerType();
+        if (c.shoesType() != null) return c.shoesType();
+        return null;
     }
 
     @Override

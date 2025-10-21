@@ -1,8 +1,6 @@
 package com.sprint.ootd5team.domain.recommendation.enums.type;
 
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
-import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
-import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 
 /**
  * 하의 종류 Enum
@@ -10,12 +8,12 @@ import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
  * - 날씨(온도, 습도, 강수) 기반 점수 계산
  */
 public enum BottomType {
-    JEANS("청바지", new String[]{"데님", "jean", "denim"}),
+    JEANS("데님팬츠", new String[]{"데님", "jean", "denim", "진", "흑청", "청바지"}),
     SLACKS("슬랙스", new String[]{"slacks"}),
+    COTTON_PANTS("코튼팬츠", new String[]{"cotton", "코튼", "치노"}),
     SKIRT("스커트", new String[]{"치마", "skirt"}),
-    SHORTS("반바지", new String[]{"shorts"}),
-    JOGGER("조거팬츠", new String[]{"트레이닝", "training", "jogger"}),
-    WIDE_PANTS("와이드팬츠", new String[]{"wide"}),
+    SHORTS("반바지", new String[]{"shorts", "숏", "쇼츠"}),
+    JOGGER("조거팬츠", new String[]{"트레이닝", "training", "jogger", "조거", "스웻", "스웨트", "카고", "트랙"}),
     OTHER("기타", new String[]{});
 
     private final String displayName;
@@ -33,81 +31,28 @@ public enum BottomType {
         }
         double feels = info.personalFeelsTemp();
 
-        WeatherInfoDto w = info.weatherInfo();
-        double rainProb = w.precipitationProbability();
-        PrecipitationType precip = w.precipitationType();
-
-        boolean isRainy = precip != null && precip.isRainy();
-        boolean isSnowy = precip != null && precip.isSnowy();
-
         double score = 0;
 
         switch (this) {
             case SHORTS -> {
                 if (feels >= 26) {
-                    score += 6;
-                } else if (feels >= 22) {
                     score += 3;
+                } else if (feels >= 22) {
+                    score += 2;
                 } else {
                     score -= 3;
-                }
-                if (isRainy || rainProb > 0.4) {
-                    score -= 1;
                 }
             }
             case SKIRT -> {
                 if (feels >= 22) {
-                    score += 5;
+                    score += 3;
                 } else if (feels >= 18) {
                     score += 2;
                 } else {
                     score -= 3;
                 }
-                if (isRainy || isSnowy) {
-                    score -= 2;
-                }
             }
-            case JEANS -> {
-                if (feels >= 10 && feels <= 20) {
-                    score += 4;
-                } else if (feels < 8) {
-                    score -= 1;
-                } else if (feels > 25) {
-                    score -= 2;
-                }
-            }
-            case SLACKS -> {
-                if (feels >= 15 && feels <= 25) {
-                    score += 3;
-                } else if (feels < 10 || feels > 28) {
-                    score -= 2;
-                }
-                if (rainProb > 0.5) {
-                    score -= 1;
-                }
-            }
-            case JOGGER -> {
-                if (feels < 5) {
-                    score += 1;
-                } else if (feels <= 15) {
-                    score += 4;
-                } else {
-                    score -= 2;
-                }
-            }
-            case WIDE_PANTS -> {
-                if (feels >= 15 && feels <= 25) {
-                    score += 3;
-                } else if (feels < 10) {
-                    score -= 2;
-                }
-                if (precip.isRainy() || rainProb > 0.4) {
-                    score -= 1;
-                }
-            }
-
-            default -> {
-            }
+            default -> {}
         }
 
         return Math.max(-5, Math.min(5, score));

@@ -39,7 +39,7 @@ public class SingleItemScoringEngine {
 
                 List<ClothesScore> top = getTopN(info, group);
 
-                log.info("[SingleItemScoringEngine] 타입 {} → 상위 {}개 선정 (총 {}개 중)\n",
+                log.debug("[SingleItemScoringEngine] 타입 {} → 상위 {}개 선정 (총 {}개 중)",
                     type, top.size(), group.size());
                 return top.stream();
             })
@@ -116,7 +116,7 @@ public class SingleItemScoringEngine {
         if (materialScore != 0) {sb.append(String.format("소재(%+.1f) ", materialScore));}
 
         if (sb.length() > 0) {
-            log.debug("[SingleItemScoringEngine] '{}' ({}) 적용 점수: {}→ 총점 {}",
+            log.trace("[SingleItemScoringEngine] '{}' ({}) 적용 점수: {}→ 총점 {}",
                 c.name(), type, sb.toString().trim(), score);
         }
         return score;

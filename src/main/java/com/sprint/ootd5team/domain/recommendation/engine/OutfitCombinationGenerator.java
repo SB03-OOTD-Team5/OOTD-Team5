@@ -267,7 +267,7 @@ public class OutfitCombinationGenerator {
         boolean hasHoodieTop = combo.getItems().stream()
             .anyMatch(i -> i.topType() == TopType.HOODIE);
         boolean isHoodedOuter = addType == ClothesType.OUTER
-            && add.outerType() == OuterType.HOODED_JACKET;
+            && add.outerType() == OuterType.HOOD_ZIPUP || add.outerType() == OuterType.CARDIGAN;
         if (hasHoodieTop && isHoodedOuter) {
             return true;
         }

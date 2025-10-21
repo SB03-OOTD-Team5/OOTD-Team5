@@ -22,9 +22,9 @@ public enum ColorTone {
 
         // 무채색
          if (this == NEUTRAL && other == NEUTRAL) {
-            score += 3.0;
+            score += 1.0;
          } else if (this == NEUTRAL || other == NEUTRAL) {
-            score += 1.5;
+            score += 1.0;
          }
 
         // 따뜻/차가움

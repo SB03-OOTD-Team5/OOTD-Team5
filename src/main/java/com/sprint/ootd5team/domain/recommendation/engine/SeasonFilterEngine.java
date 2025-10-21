@@ -12,7 +12,6 @@ import com.sprint.ootd5team.domain.recommendation.mapper.RecommendationMapper;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -95,18 +94,30 @@ public class SeasonFilterEngine {
                 case AUTUMN, SPRING -> allowed.add(Season.WINTER);
                 case SUMMER -> allowed.addAll(EnumSet.of(Season.SPRING, Season.AUTUMN));
             }
+        } else if (sensitivity == 2) {
+            switch (forecast) {
+                case WINTER -> {}
+                case AUTUMN -> allowed.addAll(EnumSet.of(Season.SPRING, Season.WINTER));
+                case SPRING -> allowed.addAll(EnumSet.of(Season.AUTUMN, Season.WINTER));
+                case SUMMER -> allowed.addAll(EnumSet.of(Season.SPRING, Season.AUTUMN));
+            }
+        } else if (sensitivity == 4) {
+            switch (forecast) {
+                case SUMMER -> {}
+                case AUTUMN -> allowed.addAll(EnumSet.of(Season.SPRING, Season.SUMMER));
+                case SPRING -> allowed.addAll(EnumSet.of(Season.AUTUMN, Season.SUMMER));
+                case WINTER -> allowed.addAll(EnumSet.of(Season.SPRING, Season.AUTUMN));
+            }
         } else if (sensitivity == 5) {
             switch (forecast) {
                 case SUMMER -> {}
                 case AUTUMN, SPRING -> allowed.add(Season.SUMMER);
                 case WINTER -> allowed.addAll(EnumSet.of(Season.SPRING, Season.AUTUMN));
             }
-        } else {
+        }
+        else {
             switch (forecast) {
-                case SPRING -> allowed.add(Season.SUMMER);
-                case SUMMER -> allowed.add(Season.SPRING);
-                case AUTUMN -> allowed.add(Season.WINTER);
-                case WINTER -> allowed.add(Season.AUTUMN);
+                case SPRING, SUMMER, AUTUMN, WINTER-> {}
             }
         }
 
@@ -115,5 +126,4 @@ public class SeasonFilterEngine {
 
         return allowed;
     }
-
 }

@@ -2,10 +2,8 @@ package com.sprint.ootd5team.domain.recommendation.enums.type;
 
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
 import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
-import com.sprint.ootd5team.domain.recommendation.enums.ClothesStyle;
 import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
-import java.util.List;
 
 /**
  * 신발 종류 Enum
@@ -125,17 +123,6 @@ public enum ShoesType {
         return Math.max(-5, Math.min(5, score));
     }
 
-    /**
-     * 스타일 기반 점수
-     */
-    public double getClothesStyleFromShoes(ClothesStyle style) {
-        return switch (this) {
-            case SNEAKERS -> (style == ClothesStyle.CASUAL || style == ClothesStyle.STREET) ? 2 : 0;
-            case LOAFERS -> (style == ClothesStyle.FORMAL || style == ClothesStyle.CLASSIC) ? 2 : 0;
-            case HEELS -> (style == ClothesStyle.FORMAL) ? 1.5 : 0;
-            default -> 0;
-        };
-    }
 }
 
 

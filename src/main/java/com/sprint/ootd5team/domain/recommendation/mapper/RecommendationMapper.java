@@ -16,7 +16,6 @@ import com.sprint.ootd5team.domain.recommendation.enums.type.OuterType;
 import com.sprint.ootd5team.domain.recommendation.enums.type.ShoesType;
 import com.sprint.ootd5team.domain.recommendation.enums.type.TopType;
 import com.sprint.ootd5team.domain.recommendation.enums.util.EnumParser;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.BeanMapping;
@@ -79,7 +78,7 @@ public abstract class RecommendationMapper {
 
         var bottomType = entity.getType() == ClothesType.BOTTOM
             ? EnumParser.parseFromAttrAndName(BottomType.class, bottomTypeValue, name, BottomType.OTHER)
-            : BottomType.OTHER;
+            : BottomType.COTTON_PANTS;
 
         var outerType = entity.getType() == ClothesType.OUTER
             ? EnumParser.parseFromAttrAndName(OuterType.class, outerTypeValue, name, OuterType.OTHER)
@@ -87,7 +86,7 @@ public abstract class RecommendationMapper {
 
         var shoesType = entity.getType() == ClothesType.SHOES
             ? EnumParser.parseFromAttrAndName(ShoesType.class, shoesTypeValue, name, ShoesType.OTHER)
-            : ShoesType.OTHER;
+            : ShoesType.SNEAKERS;
 
         var optionalSubType = entity.getType() == ClothesType.ETC
             ? EnumParser.parseFromAttrAndName(OptionalItemSubType.class, optionalItemSubTypeValue, name, OptionalItemSubType.NONE)

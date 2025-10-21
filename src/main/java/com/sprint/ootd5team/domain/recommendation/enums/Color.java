@@ -1,8 +1,5 @@
 package com.sprint.ootd5team.domain.recommendation.enums;
 
-import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
-import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
-import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -64,80 +61,48 @@ public enum Color {
     }
 
     public double getColorMatchBonus(Color other) {
-        if (this == other) return 1.0; // 같은 색은 기본 조화
+        if (this == null || other == null) return 0.0;
 
-        // 상하의 조합 추천 매핑
+        // 완전 동일 색상은 살짝 감점
+        if (this == other) return -0.3;
+
         return switch (this) {
-            case NAVY -> switch (other) {
-                case BEIGE, SKY_BLUE -> 2.0;
-                case BLUE -> 1.0;
-                case BLACK -> -1.0;
-                default -> 0.0;
-            };
             case GREEN -> switch (other) {
-                case BLACK, SKY_BLUE -> 2.0;
-                case KHAKI -> -2.0;
+                case WHITE, BEIGE, BLACK -> 1.0;
+                case NAVY -> 0.5;
+                case KHAKI, RED -> -1.0;
                 default -> 0.0;
             };
             case BEIGE -> switch (other) {
-                case WHITE, NAVY, BROWN -> 1.5;
+                case WHITE, NAVY, BROWN, GRAY -> 1.5;
                 case BLACK -> 1.0;
                 default -> 0.0;
             };
             case WHITE -> switch (other) {
-                case NAVY, BEIGE, KHAKI, GRAY -> 1.5;
-                default -> 0.0;
+                case BLUE, GREEN, NAVY, GRAY, BEIGE, BROWN -> 1.5;
+                default -> 1.0;
             };
-            case BLUE -> switch (other) {
-                case BLACK, WHITE, BEIGE -> 1.5;
-                case NAVY -> 1.0;
+            case NAVY, BLUE -> switch (other) {
+                case BEIGE, WHITE, GRAY -> 1.5;
+                case SKY_BLUE -> 1.0;
                 default -> 0.0;
             };
             case BLACK -> switch (other) {
-                case BEIGE, WHITE, GRAY, KHAKI -> 1.5;
-                case NAVY -> 0.5;
+                case GRAY, BEIGE -> 1.0;
+                case BROWN, NAVY -> 0.5;
                 default -> 0.0;
             };
             case BROWN -> switch (other) {
-                case BEIGE, WHITE, KHAKI -> 1.0;
+                case BEIGE, WHITE, BLACK -> 1.0;
+                case KHAKI -> 0.5;
                 default -> 0.0;
             };
             case GRAY -> switch (other) {
-                case WHITE, PINK, NAVY, PURPLE -> 1.0;
+                case WHITE, NAVY, BLACK -> 1.0;
+                case BEIGE -> 0.5;
                 default -> 0.0;
             };
             default -> 0.0;
         };
-    }
-
-    /**
-     * OUTER(겉옷)가 TOP/BOTTOM과 색상적으로 너무 유사하면 감점
-     */
-    public double getOuterContrastPenalty(Color top, Color bottom, Color dress) {
-        double penalty = 0.0;
-
-        // DRESS 우선 적용 (상의·하의 모두 대체)
-        if (dress != null) {
-            if (this == dress) {
-                penalty -= 1.0;
-            }
-
-            return penalty;
-        }
-
-        // 일반 코디 (TOP + BOTTOM 비교)
-        if (this == OTHER) return 0.0;
-
-        if (top != null && this == top) {
-            penalty -= 1.0;
-        } else if (top != null && this.tone == top.tone) {
-            penalty -= 0.5;
-        }
-
-        if (bottom != null && this == bottom) {
-            penalty -= 0.8;
-        }
-
-        return penalty;
     }
 }
