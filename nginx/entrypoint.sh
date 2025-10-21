@@ -11,6 +11,7 @@ LIVE_DIR="${LE_ROOT}/live/${LETSENCRYPT_DOMAIN}"
 S3_URI="s3://${LETSENCRYPT_S3_BUCKET}/cert"
 TEMP_CERT_CREATED=0
 TEMP_NGINX_STARTED=0
+NEED_CERTBOT=0
 
 if grep -q "__LETSENCRYPT_DOMAIN__" /etc/nginx/nginx.conf; then
   sed -i "s#__LETSENCRYPT_DOMAIN__#${LETSENCRYPT_DOMAIN}#g" /etc/nginx/nginx.conf
@@ -55,12 +56,24 @@ if [ ! -f "${LIVE_DIR}/fullchain.pem" ] || [ ! -f "${LIVE_DIR}/privkey.pem" ]; t
     -subj "/CN=${LETSENCRYPT_DOMAIN}"
   cp "${LIVE_DIR}/fullchain.pem" "${LIVE_DIR}/chain.pem"
   TEMP_CERT_CREATED=1
+  NEED_CERTBOT=1
 else
-  echo "[bootstrap] Local certificate bundle present. Skipping initial issuance."
+  echo "[bootstrap] Local certificate bundle present. Evaluating issuer."
+  if issuer_output=$(openssl x509 -in "${LIVE_DIR}/fullchain.pem" -noout -issuer 2>/dev/null); then
+    if echo "${issuer_output}" | grep -qi "let's encrypt"; then
+      echo "[bootstrap] Existing Let's Encrypt certificate detected. Skipping issuance."
+    else
+      echo "[bootstrap] Existing certificate is not from Let's Encrypt. Scheduling issuance."
+      NEED_CERTBOT=1
+    fi
+  else
+    echo "[bootstrap] Warning: Unable to determine certificate issuer. Scheduling issuance."
+    NEED_CERTBOT=1
+  fi
 fi
 
 CERTBOT_EXIT=0
-if [ "${TEMP_CERT_CREATED}" -eq 1 ]; then
+if [ "${NEED_CERTBOT}" -eq 1 ]; then
   echo "[bootstrap] Starting temporary Nginx instance for ACME HTTP-01 challenge."
   nginx
   TEMP_NGINX_STARTED=1
