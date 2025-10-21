@@ -235,7 +235,7 @@ public class JwtTokenProvider {
     public ResponseCookie generateRefreshTokenCookie(String refreshToken) {
         return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
             .httpOnly(true)
-            .secure(false) // HTTPS 환경에서만
+            .secure(true) // HTTPS 환경에서만
             .path("/")
             .maxAge(refreshTokenExpirationInMs / 1000)
             .sameSite("Lax") // or "Lax", "None"
@@ -248,7 +248,7 @@ public class JwtTokenProvider {
     public Cookie genereateRefreshTokenExpirationCookie() {
         Cookie refreshCookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, "");
         refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(false); // Use HTTPS in production
+        refreshCookie.setSecure(true); // Use HTTPS in production
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(0);
         return refreshCookie;
