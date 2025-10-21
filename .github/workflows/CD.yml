@@ -16,7 +16,6 @@ env:
 
 jobs:
   deploy:
-    if: github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'dev'   # ← 공백 추가
     name: Build & Deploy
     runs-on: ubuntu-latest
     permissions:
