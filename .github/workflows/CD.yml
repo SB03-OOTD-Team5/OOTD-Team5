@@ -74,7 +74,7 @@ jobs:
 
       - name: Check base images exist
         run: |
-          docker manifest inspect public.ecr.aws/amazoncorretto/amazoncorretto:17-alpine3.20-jdk >/dev/null
+          docker manifest inspect amazoncorretto:17 >/dev/null
           docker manifest inspect nginx:1.27-alpine >/dev/null
 
       # Backend 이미지: buildx에서 바로 push
