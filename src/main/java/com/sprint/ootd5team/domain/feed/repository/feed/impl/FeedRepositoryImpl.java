@@ -255,7 +255,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                     ? feed.createdAt.gt(Instant.parse(cursor))
                     .or(feed.createdAt.eq(Instant.parse(cursor)).and(feed.id.gt(idAfter)))
                     : feed.createdAt.lt(Instant.parse(cursor))
-                        .or(feed.createdAt.eq(Instant.parse(cursor)).and(feed.id.lt(idAfter))))
+                        .or(feed.createdAt.eq(Instant.parse(cursor)).and(feed.id.gt(idAfter))))
                     : null;
 
                 yield new SortSpecDto(orders, cursorCondition);
@@ -271,7 +271,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                     ? feed.likeCount.gt(Long.parseLong(cursor))
                     .or(feed.likeCount.eq(Long.parseLong(cursor)).and(feed.id.gt(idAfter)))
                     : feed.likeCount.lt(Long.parseLong(cursor))
-                        .or(feed.likeCount.eq(Long.parseLong(cursor)).and(feed.id.lt(idAfter))))
+                        .or(feed.likeCount.eq(Long.parseLong(cursor)).and(feed.id.gt(idAfter))))
                     : null;
 
                 yield new SortSpecDto(orders, cursorCondition);

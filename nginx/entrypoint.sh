@@ -12,6 +12,10 @@ S3_URI="s3://${LETSENCRYPT_S3_BUCKET}/cert"
 TEMP_CERT_CREATED=0
 TEMP_NGINX_STARTED=0
 
+if grep -q "__LETSENCRYPT_DOMAIN__" /etc/nginx/nginx.conf; then
+  sed -i "s#__LETSENCRYPT_DOMAIN__#${LETSENCRYPT_DOMAIN}#g" /etc/nginx/nginx.conf
+fi
+
 cleanup() {
   if [ "${TEMP_NGINX_STARTED}" -eq 1 ]; then
     nginx -s stop || true

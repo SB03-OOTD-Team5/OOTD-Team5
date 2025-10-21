@@ -6,9 +6,7 @@ RUN apk add --no-cache \
       curl \
       openssl \
       certbot \
-      python3 \
-      py3-pip \
-  && pip3 install --no-cache-dir awscli \
+      aws-cli \
   && mkdir -p /var/www/certbot /opt/certbot /etc/letsencrypt \
   && rm -rf /var/cache/apk/*
 

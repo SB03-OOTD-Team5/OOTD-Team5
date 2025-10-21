@@ -4,6 +4,7 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  workflow_dispatch:
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
@@ -15,7 +16,6 @@ env:
 
 jobs:
   deploy:
-    if: github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'dev'   # ← 공백 추가
     name: Build & Deploy
     runs-on: ubuntu-latest
     permissions:
