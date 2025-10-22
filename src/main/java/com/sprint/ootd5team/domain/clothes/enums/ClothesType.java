@@ -3,18 +3,22 @@ package com.sprint.ootd5team.domain.clothes.enums;
 import java.util.regex.Pattern;
 
 public enum ClothesType {
-    TOP,
-    BOTTOM,
-    DRESS,
-    OUTER,
-    UNDERWEAR,
-    ACCESSORY,
-    SHOES,
-    SOCKS,
-    HAT,
-    BAG,
-    SCARF,
-    ETC;
+    TOP(0),
+    BOTTOM(1),
+    DRESS(2),
+    OUTER(3),
+    SHOES(4),
+    HAT(5),
+    BAG(6),
+    SCARF(7),
+    ACCESSORY(8),
+    SOCKS(9),
+    UNDERWEAR(10),
+    ETC(11);
+
+    private final int order;
+    ClothesType(int order) { this.order = order; }
+    public int order() { return order; }
 
     /**
      * 주어진 문자열을 Enum 값으로 정규화

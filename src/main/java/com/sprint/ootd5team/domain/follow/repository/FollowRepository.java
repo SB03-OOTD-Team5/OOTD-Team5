@@ -9,6 +9,11 @@ import org.springframework.data.repository.query.Param;
 
 public interface FollowRepository extends JpaRepository<Follow, UUID>, FollowRepositoryCustom {
 
-    @Query("select f.followerId from Follow f where f.followeeId = :authorId")
-    List<UUID> findFollowerIds(@Param("authorId") UUID authorId);
+    @Query("""
+    SELECT f.followerId
+    FROM Follow f
+    WHERE f.followeeId = :followeeId
+      AND f.followerId <> :followeeId
+""")
+    List<UUID> findFollowerIds(@Param("followeeId") UUID followeeId);
 }

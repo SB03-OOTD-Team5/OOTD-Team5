@@ -7,6 +7,7 @@ import com.sprint.ootd5team.domain.recommendation.enums.Color;
 import com.sprint.ootd5team.domain.recommendation.enums.ColorTone;
 import com.sprint.ootd5team.domain.recommendation.enums.Material;
 import com.sprint.ootd5team.domain.recommendation.enums.type.BottomType;
+import com.sprint.ootd5team.domain.recommendation.enums.type.OptionalItemSubType;
 import com.sprint.ootd5team.domain.recommendation.enums.type.OuterType;
 import com.sprint.ootd5team.domain.recommendation.enums.type.ShoesType;
 import com.sprint.ootd5team.domain.recommendation.enums.type.TopType;
@@ -36,7 +37,8 @@ public record ClothesFilteredDto(
     TopType topType,
     BottomType bottomType,
     OuterType outerType,
-    ShoesType shoesType
+    ShoesType shoesType,
+    OptionalItemSubType optionalSubType
 ) {
     /**
      * 테스트나 단순 생성용 - 상위 5개 필드만 받는 생성자
@@ -55,7 +57,7 @@ public record ClothesFilteredDto(
             type,
             attributes,
             null, null, null, null,
-            null, null, null, null
+            null, null, null, null, null
         );
     }
 }

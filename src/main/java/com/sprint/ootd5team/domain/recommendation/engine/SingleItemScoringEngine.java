@@ -14,8 +14,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 단일 의상 점수 계산 엔진
- * - 날씨 기반 (온도, 강수, 풍속, 습도)
- * - 색상, 소재, 계절, 두께 기반
+ * - 날씨 기반 소재점수, 세부 아이템 점수
  */
 @RequiredArgsConstructor
 @Component
@@ -40,7 +39,7 @@ public class SingleItemScoringEngine {
 
                 List<ClothesScore> top = getTopN(info, group);
 
-                log.debug("[SingleItemScoringEngine] 타입 {} → 상위 {}개 선정 (총 {}개 중)\n",
+                log.debug("[SingleItemScoringEngine] 타입 {} → 상위 {}개 선정 (총 {}개 중)",
                     type, top.size(), group.size());
                 return top.stream();
             })
@@ -71,34 +70,54 @@ public class SingleItemScoringEngine {
 
     /** 단품 날씨 점수 계산 */
     public double calculateSingleItemScore(RecommendationInfoDto info, ClothesFilteredDto c) {
-        double shoesScore = c.shoesType() != null ? c.shoesType().getWeatherScore(info) : 0;
-        double outerScore = (c.type() == ClothesType.OUTER && c.outerType() != null)
-            ? c.outerType().getWeatherScore(info) : 0;
-        double topScore = (c.type() == ClothesType.TOP && c.topType() != null)
-            ? c.topType().getWeatherScore(info) : 0;
-        double bottomScore = (c.type() == ClothesType.BOTTOM && c.bottomType() != null)
-            ? c.bottomType().getWeatherScore(info) : 0;
-        double colorScore = (c.colorTone() != null && c.color() != null)
-            ? c.color().getWeatherScore(info) : 0;
-        double materialScore = c.material() != null ? c.material().getWeatherScore(info) : 0;
+        ClothesType type = c.type();
 
-        double weighted = (shoesScore + outerScore + topScore + bottomScore + colorScore + materialScore) / 6.0;
+        double shoesScore = (type == ClothesType.SHOES && c.shoesType() != null) ? c.shoesType()
+            .getWeatherScore(info) : 0.0;
+        double outerScore = (type == ClothesType.OUTER && c.outerType() != null) ? c.outerType()
+            .getWeatherScore(info) : 0.0;
+        double topScore = (type == ClothesType.TOP && c.topType() != null) ? c.topType()
+            .getWeatherScore(info) : 0.0;
+        double bottomScore = (type == ClothesType.BOTTOM && c.bottomType() != null) ? c.bottomType()
+            .getWeatherScore(info) : 0.0;
+        double materialScore = (c.material() != null) ? c.material().getWeatherScore(info) : 0.0;
+
+        double sum = 0.0;
+        int denom = 0;
+
+        // 타입별 점수 합산
+        if (type == null) {
+            log.warn("[SingleItemScoringEngine] type=null → '{}' 소재 점수만 반영", c.name());
+        } else {
+            switch (type) {
+                    case SHOES -> { if (c.shoesType()  != null) { sum += shoesScore;  denom++; } }
+                    case OUTER  -> { if (c.outerType()  != null) { sum += outerScore;  denom++; } }
+                    case TOP    -> { if (c.topType()    != null) { sum += topScore;    denom++; } }
+                    case BOTTOM -> { if (c.bottomType() != null) { sum += bottomScore; denom++; } }
+                    default -> {}
+                }
+            }
+
+        if (c.material() != null) {sum += materialScore; denom++;}
+
+        if (denom == 0) {denom = 1;}
+        double weighted = sum / denom;
 
         // 평균 기준점
         double base = 50.0;
-        double score = Math.max(40, Math.min(60, base + weighted));
+        double score = Math.max(45, Math.min(60, base + weighted));
 
+        // 로그 빌드
         StringBuilder sb = new StringBuilder();
-        if (shoesScore != 0) sb.append(String.format("신발(%+.1f) ", shoesScore));
-        if (outerScore != 0) sb.append(String.format("아우터(%+.1f) ", outerScore));
-        if (topScore != 0) sb.append(String.format("상의(%+.1f) ", topScore));
-        if (bottomScore != 0) sb.append(String.format("하의(%+.1f) ", bottomScore));
-        if (colorScore != 0) sb.append(String.format("색상(%+.1f) ", colorScore));
-        if (materialScore != 0) sb.append(String.format("소재(%+.1f) ", materialScore));
+        if (shoesScore != 0) {sb.append(String.format("신발(%+.1f) ", shoesScore));}
+        if (outerScore != 0) {sb.append(String.format("아우터(%+.1f) ", outerScore));}
+        if (topScore != 0) {sb.append(String.format("상의(%+.1f) ", topScore));}
+        if (bottomScore != 0) {sb.append(String.format("하의(%+.1f) ", bottomScore));}
+        if (materialScore != 0) {sb.append(String.format("소재(%+.1f) ", materialScore));}
 
         if (sb.length() > 0) {
-            log.debug("[SingleItemScoringEngine] '{}' ({}) 적용 점수: {}→ 총점 {}",
-                c.name(), c.type(), sb.toString().trim(), String.format("%.1f", score));
+            log.trace("[SingleItemScoringEngine] '{}' ({}) 적용 점수: {}→ 총점 {}",
+                c.name(), type, sb.toString().trim(), score);
         }
         return score;
     }

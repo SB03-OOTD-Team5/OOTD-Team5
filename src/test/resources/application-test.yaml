@@ -15,7 +15,7 @@ spring:
     init:
       mode: never
 
-# 배치 임시 제외
+  # 배치 임시 제외
   batch:
     jdbc:
       initialize-schema: never
@@ -28,10 +28,24 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
       - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
+      - org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration
   data:
     redis:
       repositories:
         enabled: false
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test
+            client-secret: test
+          kakao:
+            client-id: test
+            client-secret: test
+  mail:
+    username: test
+    password: test1234
 
 # 테스트환경에서 SecurityConfig 비활성화
 app:
@@ -43,6 +57,8 @@ weather:
   kakao:
     client-secret: test
   kma:
+    client-secret: test
+  openWeather:
     client-secret: test
 
 # Admin 설정
@@ -65,7 +81,7 @@ ootd:
       secret: ${JWT_REFRESH_TOKEN_SECRET:test-refresh-secret-32-bytes-minimum-abcdef1234567890}
 
   storage:
-    type: ${STORAGE_TYPE:local}
+    type: local
     s3:
       access-key: ${AWS_ACCESS_KEY_ID:dummy-access-key}
       secret-key: ${AWS_SECRET_ACCESS_KEY:dummy-secret-key}
@@ -79,3 +95,7 @@ ootd:
 
   sse:
     repository: ${OOTD_SSE_REPOSITORY:memory}
+
+logging:
+  level:
+    org.apache.kafka: ERROR
