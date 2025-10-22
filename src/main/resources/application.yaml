@@ -94,14 +94,6 @@ spring:
             options:
               model: gemini-2.5-flash-lite
 
-    ollama:
-      api:
-        url: ${OLLAMA_API_URL:http://localhost:11434}
-      chat:
-        options:
-          model: gemma:2b
-          temperature: 0.7
-
   # Elasticsearch 설정
   elasticsearch:
     uris: http://localhost:9200
@@ -126,7 +118,7 @@ weather:
     client-secret: ${KMA_CLIENT_SECRET}
   openWeather:
     base-url: api.openweathermap.org/data/2.5/forecast
-    client-secret: ${OPEN_WEATHER_CLIENT_SECRET:123}
+    client-secret: ${OPEN_WEATHER_CLIENT_SECRET}
 
 # Swagger UI
 springdoc:
@@ -179,3 +171,16 @@ ootd:
 
   sse:
     repository: ${OOTD_SSE_REPOSITORY:redis}  #memory
+
+# Actuator 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
