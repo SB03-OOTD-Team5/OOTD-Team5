@@ -45,11 +45,13 @@ public class FeedEventProducer {
     }
 
     private void send(String topic, Object event, String typeName) {
-        try {
-            kafkaTemplate.send(topic, event);
-            log.info("[FeedEventProducer] Kafka - {} 발행 완료: {}", typeName, event);
-        } catch (Exception e) {
-            log.error("[FeedEventProducer] Kafka - {} 발행 실패", typeName, e);
-        }
+        kafkaTemplate.send(topic, event)
+            .whenComplete((result, ex) -> {
+                if (ex != null) {
+                    log.error("[FeedEventProducer] Kafka - {} 발행 실패", typeName, ex);
+                } else {
+                    log.info("[FeedEventProducer] Kafka - {} 발행 완료: {}", typeName, event);
+                }
+            });
     }
 }
