@@ -6,6 +6,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 @ConditionalOnProperty(name = "spring.ai.provider", havingValue = "gemini")
+@Profile("!test")
 public class GeminiProvider implements LlmProvider {
 
     private final VertexAiGeminiChatModel geminiChatModel;

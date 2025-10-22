@@ -2,10 +2,8 @@ package com.sprint.ootd5team.domain.recommendation.enums.type;
 
 import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
 import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
-import com.sprint.ootd5team.domain.recommendation.enums.ClothesStyle;
 import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
-import java.util.List;
 
 /**
  * 신발 종류 Enum
@@ -13,18 +11,20 @@ import java.util.List;
  * - 날씨/온도에 따른 점수 계산
  */
 public enum ShoesType {
-    BOOTS(List.of("부츠", "boot")),
-    SNEAKERS(List.of("운동화", "스니커즈", "sneaker")),
-    SANDALS(List.of("샌들", "슬리퍼", "sand")),
-    LOAFERS(List.of("로퍼", "loafer")),
-    HEELS(List.of("힐", "heel", "구두")),
-    RAIN_BOOTS(List.of("장화", "rain")),
-    OTHER(List.of());
+    BOOTS("부츠", new String[]{"boot", "워커"}),
+    SNEAKERS("스니커즈", new String[]{"운동화", "sneaker", "스포츠화"}),
+    SANDALS("샌들", new String[]{"슬리퍼", "sandals", "crocs"}),
+    LOAFERS("로퍼", new String[]{"loafer"}),
+    HEELS("구두", new String[]{"힐", "heel"}),
+    RAIN_BOOTS("장화", new String[]{"레인부츠", "rain boots", "rain"}),
+    OTHER("기타", new String[]{});
 
-    private final List<String> keywords;
+    private final String displayName;
+    private final String[] aliases;
 
-    ShoesType(List<String> keywords) {
-        this.keywords = keywords;
+    ShoesType(String displayName, String[] aliases) {
+        this.displayName = displayName;
+        this.aliases = aliases;
     }
 
     /** 날씨 기반 의상 단품 점수 */
@@ -120,20 +120,9 @@ public enum ShoesType {
             }
         }
 
-        return score;
+        return Math.max(-5, Math.min(5, score));
     }
 
-    /**
-     * 스타일 기반 점수
-     */
-    public double getClothesStyle(ClothesStyle style) {
-        return switch (this) {
-            case SNEAKERS -> (style == ClothesStyle.CASUAL || style == ClothesStyle.STREET) ? 2 : 0;
-            case LOAFERS -> (style == ClothesStyle.FORMAL || style == ClothesStyle.CLASSIC) ? 2 : 0;
-            case HEELS -> (style == ClothesStyle.FORMAL) ? 1.5 : 0;
-            default -> 0;
-        };
-    }
 }
 
 

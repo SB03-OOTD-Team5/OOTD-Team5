@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.recommendation.controller;
+package com.sprint.ootd5team.domain.recommendation.controller;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;

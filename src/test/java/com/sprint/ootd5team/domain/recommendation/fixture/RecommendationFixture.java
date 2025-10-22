@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.recommendation.fixture;
+package com.sprint.ootd5team.domain.recommendation.fixture;
 
 import com.sprint.ootd5team.domain.recommendation.dto.ApparentTemperatureDto;
 import com.sprint.ootd5team.domain.recommendation.dto.ProfileInfoDto;

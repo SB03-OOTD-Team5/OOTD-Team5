@@ -31,6 +31,7 @@ public enum Material {
 
     /** 날씨 기반 의상 단품 점수 */
     public double getWeatherScore(RecommendationInfoDto info) {
+        if (info == null || info.weatherInfo() == null) return 0.0;
         double score = 0.0;
         double feelsLike = info.personalFeelsTemp();
 
@@ -41,37 +42,52 @@ public enum Material {
         switch (this) {
             // 여름에 적합한 소재
             case LINEN, COTTON, RAYON -> {
-                if (feelsLike >= 25) score += 5;
-                else if (feelsLike >= 15) score += 2;
+                if (feelsLike >= 28) score += 3;
+                else if (feelsLike >= 20) score += 2;
+                else if (feelsLike >= 10) score += 0.5;
                 else score -= 2;
             }
 
             // 겨울에 적합한 소재
             case WOOL, FLEECE, KNIT -> {
-                if (feelsLike <= 5) score += 6;
-                else if (feelsLike <= 10) score += 3;
-                else score -= 2;
+                if (feelsLike <= 0) score += 3;
+                else if (feelsLike <= 5) score += 2;
+                else if (feelsLike <= 10) score += 1;
+                else if (feelsLike >= 20) score -= 2;
             }
 
             // 봄/가을용
             case DENIM, POLY -> {
-                if (feelsLike >= 10 && feelsLike <= 20) score += 3;
-                else score -= 1;
+                if (feelsLike >= 10 && feelsLike <= 22) score += 2.5;
+                else if (feelsLike >= 5 && feelsLike <= 27) score += 1;
+                else score -= 1.5;
             }
 
             // 방풍·방수 계열
             case NYLON, LEATHER -> {
                 if (feelsLike <= 10) score += 3;
-                if (feelsLike > 25) score -= 3;
-
-                if (precip.isRainy() || precip.isSnowy()) score += 5;
-                if (precipitationProbability > 0.5) score += 3;
+                else if (feelsLike > 25) score -= 3;
+                else score += 0.5;
             }
 
             default -> score += 0;
         }
 
-        return score;
+        // 강수/강설 조건 추가 보정
+        boolean rainyOrSnowy = precip != null && (precip.isRainy() || precip.isSnowy());
+        if (rainyOrSnowy) {
+            // 방수 재질 우대
+            if (this == NYLON || this == LEATHER) score += 3;
+            else if (this == POLY || this == DENIM) score += 1.5;
+            else score += 0.5;
+        }
+
+        if (precipitationProbability > 0.3) {
+            double factor = Math.min(precipitationProbability, 0.7);
+            score += (factor - 0.3) * 2.0;
+        }
+
+        return Math.max(-5, Math.min(5, score));
     }
 
     /** 소재 간 조화 점수 */

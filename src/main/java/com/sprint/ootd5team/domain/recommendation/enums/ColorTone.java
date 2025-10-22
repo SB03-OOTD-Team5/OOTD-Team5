@@ -14,21 +14,24 @@ public enum ColorTone {
 
     /** 두 색상 간 조화 점수 */
     public double getHarmonyScore(ColorTone other) {
+        double score = 0;
         // 동일 톤
         if (this == other) {
-            return 2.0;
+            score += 1.0;
         }
 
         // 무채색
-        if (this == NEUTRAL || other == NEUTRAL) {
-            return 1.0;
-        }
+         if (this == NEUTRAL && other == NEUTRAL) {
+            score += 1.0;
+         } else if (this == NEUTRAL || other == NEUTRAL) {
+            score += 1.0;
+         }
 
         // 따뜻/차가움
         if ((this == WARM && other == COOL) || (this == COOL && other == WARM)) {
-            return -2.0;
+            score += 0.5;
         }
 
-        return 0.0;
+        return Math.max(-5, Math.min(5, score));
     }
 }

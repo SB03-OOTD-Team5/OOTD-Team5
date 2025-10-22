@@ -1,8 +1,5 @@
 package com.sprint.ootd5team.domain.recommendation.enums;
 
-import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
-import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
-import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -63,32 +60,49 @@ public enum Color {
         };
     }
 
-    /** 날씨 기반 의상 단품 점수 */
-    public double getWeatherScore(RecommendationInfoDto info) {
-        double score = 0.0;
-        double temp = info.personalFeelsTemp();
+    public double getColorMatchBonus(Color other) {
+        if (this == null || other == null) return 0.0;
 
-        WeatherInfoDto weather = info.weatherInfo();
-        PrecipitationType precip = weather.precipitationType();
-        double precipProb = weather.precipitationProbability();
+        // 완전 동일 색상은 살짝 감점
+        if (this == other) return -0.3;
 
-        // 맑은 날 밝은 색 보너스
-        if (precip.isClear() && isBright()) {
-            score += 2.0;
-        }
-
-        // 비 확률 높으면 밝은 색 감점
-        if (precipProb > 0.5 && isBright()) {
-            score -= 1.5;
-        }
-
-        // 온도 기반 톤 보정
-        if (temp < 10 && tone == ColorTone.WARM) {
-            score += 2.0;
-        } else if (temp > 25 && tone == ColorTone.COOL) {
-            score += 2.0;
-        }
-
-        return score;
+        return switch (this) {
+            case GREEN -> switch (other) {
+                case WHITE, BEIGE, BLACK -> 1.0;
+                case NAVY -> 0.5;
+                case KHAKI, RED -> -1.0;
+                default -> 0.0;
+            };
+            case BEIGE -> switch (other) {
+                case WHITE, NAVY, BROWN, GRAY -> 1.5;
+                case BLACK -> 1.0;
+                default -> 0.0;
+            };
+            case WHITE -> switch (other) {
+                case BLUE, GREEN, NAVY, GRAY, BEIGE, BROWN -> 1.5;
+                default -> 1.0;
+            };
+            case NAVY, BLUE -> switch (other) {
+                case BEIGE, WHITE, GRAY -> 1.5;
+                case SKY_BLUE -> 1.0;
+                default -> 0.0;
+            };
+            case BLACK -> switch (other) {
+                case GRAY, BEIGE -> 1.0;
+                case BROWN, NAVY -> 0.5;
+                default -> 0.0;
+            };
+            case BROWN -> switch (other) {
+                case BEIGE, WHITE, BLACK -> 1.0;
+                case KHAKI -> 0.5;
+                default -> 0.0;
+            };
+            case GRAY -> switch (other) {
+                case WHITE, NAVY, BLACK -> 1.0;
+                case BEIGE -> 0.5;
+                default -> 0.0;
+            };
+            default -> 0.0;
+        };
     }
 }

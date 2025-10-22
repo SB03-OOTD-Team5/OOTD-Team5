@@ -2,11 +2,11 @@ package com.sprint.ootd5team.domain.recommendation.engine.model;
 
 import com.sprint.ootd5team.domain.clothes.enums.ClothesType;
 import com.sprint.ootd5team.domain.recommendation.enums.ClothesStyle;
-import com.sprint.ootd5team.domain.recommendation.enums.ColorTone;
-import com.sprint.ootd5team.domain.recommendation.enums.Material;
+import com.sprint.ootd5team.domain.recommendation.enums.Color;
+import com.sprint.ootd5team.domain.recommendation.enums.util.OutfitPenalty;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 코디 조합의 점수와 누적 속성(톤/소재/스타일)을 관리
  * <p>
- * - add(...) 호출로 아이템을 추가할 때, 기존 아이템들과의 페어와이즈 조화 점수(톤/소재/스타일)를
+ * - add(...) 호출로 아이템을 추가할 때, 기존 아이템들과의 조화 점수(톤/소재/스타일)를
  * 계산하여 totalScore에 누적
  * - normalizedScore()는 누적 조화 점수에 조합 수준 보정
  */
@@ -29,31 +29,23 @@ public class OutfitScore {
     private List<ClothesScore> items = new ArrayList<>();
     private double totalScore = 0.0;
 
-    private List<ColorTone> tones = new ArrayList<>();
-    private List<Material> materials = new ArrayList<>();
-    private List<ClothesStyle> styles = new ArrayList<>();
-
     public OutfitScore(OutfitScore other) {
         this.items = new ArrayList<>(other.items);
         this.totalScore = other.totalScore;
-        this.tones = new ArrayList<>(other.tones);
-        this.materials = new ArrayList<>(other.materials);
-        this.styles = new ArrayList<>(other.styles);
     }
 
-    /**
-     * 아이템을 추가하고, 기존 조합과의 조화에 따른 증분 점수를 누적
-     */
     public OutfitScore add(ClothesScore clothes) {
         items.add(clothes);
-        tones.add(clothes.tone());
-        materials.add(clothes.material());
-        styles.add(clothes.style());
-
-        // 아이템 추가 시 기존 조합과 비교
-        double delta = calculateIncrementalScore(clothes);
-        totalScore += delta;
+        totalScore += calculateIncrementalScore(clothes);
         return this;
+    }
+
+    public boolean hasType(ClothesType type) {
+        return items.stream().anyMatch(i -> i.type() == type);
+    }
+
+    public boolean hasStyle(ClothesStyle style) {
+        return items.stream().anyMatch(i -> i.style() == style);
     }
 
     /**
@@ -61,108 +53,131 @@ public class OutfitScore {
      */
     private double calculateIncrementalScore(ClothesScore added) {
         double delta = 0.0;
+        if (items.size() <= 1) return delta;
 
-        List<ColorTone> prevTones = tones.subList(0, tones.size() - 1);
-        List<Material> prevMats = materials.subList(0, materials.size() - 1);
-        List<ClothesStyle> prevStyles = styles.subList(0, styles.size() - 1);
-
-        for (ColorTone existingTone : prevTones) {
-            delta += added.tone().getHarmonyScore(existingTone);
+        // ETC 타입은 조화 점수 계산 제외
+        if (added.item().type() == ClothesType.ETC) {
+            return 0.0;
         }
 
-        for (Material existingMat : prevMats) {
-            delta += added.material().getCompatibilityScore(existingMat);
+        // 기존 조합
+        List<ClothesScore> prevItems = items.subList(0, items.size() - 1).stream()
+            .filter(p -> p.item().type() != ClothesType.ETC)
+            .toList();
+
+        for (ClothesScore prev : prevItems) {
+            // 상하의 색상 조화
+            if (added.type() == ClothesType.BOTTOM && added.color() != null) {
+                delta += added.color().getColorMatchBonus(prev.color());
+            }
+
+            // 톤 조화
+            if (added.tone() != null && prev.tone() != null) {
+                delta += added.tone().getHarmonyScore(prev.tone());
+            }
+
+            // 소재 조화
+            if (added.material() != null && prev.material() != null) {
+                delta += added.material().getCompatibilityScore(prev.material());
+            }
+
+            // 스타일 조화
+            if (added.style() != null && prev.style() != null) {
+                delta += added.style().getHarmonyScore(prev.style());
+            }
+
+            // 패널티
+            delta += OutfitPenalty.getPenalty(resolveSubType(added), resolveSubType(prev));
         }
 
-        for (ClothesStyle existingStyle : prevStyles) {
-            delta += added.style().getHarmonyScore(existingStyle);
-        }
-
-        if (added.item().type() == ClothesType.SHOES && added.item().shoesType() != null) {
-            Map<ClothesStyle, Long> freq = prevStyles.stream()
-                .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
-
-            long total = freq.values().stream().mapToLong(Long::longValue).sum();
-            double weightedScore = freq.entrySet().stream()
-                .mapToDouble(e -> {
-                    double ratio = (double) e.getValue() / total;
-                    return added.item().shoesType().getClothesStyle(e.getKey()) * ratio;
-                })
-                .sum();
-
-            delta += weightedScore;
-        }
-
-        if (prevTones.stream().distinct().count() == 1 && prevTones.size() > 1) {
-            delta += 1;
+        if (added.type() == ClothesType.ACCESSORY
+            || added.type() == ClothesType.BAG
+            || added.type() == ClothesType.HAT
+            || added.type() == ClothesType.SCARF
+            || added.type() == ClothesType.SOCKS) {
+            delta *= 0.5;
         }
 
         return delta;
     }
 
     /**
-     * 누적 점수와 조합 수준 보정을 반영한 최종 점수 반환
-     * <p>
-     * - 세트 보너스: 단품보다 조합
-     * - 누적 조화 정규화: 아이템 수가 늘어날수록 과도하게 유리해지는 것을 보정
-     * - 드레스/상의·하의 기반 보정: 조합 구조별 완성도 보너스
-     * - 전역 스타일 일관성: 전체가 하나의 스타일로 정렬될수록 보너스
+     * 최종 정규화 점수 계산
      */
     public double normalizedScore() {
-        double comboBonus = Math.log(items.size() + 1) * 1.5;
-        double normalizedTotal = totalScore / Math.pow(items.size(), 1.2);
-        double score = normalizedTotal + comboBonus;
+        List<ClothesScore> validItems = new ArrayList<>(items);
 
-        boolean hasDress = contains(ClothesType.DRESS);
-        boolean hasTop = contains(ClothesType.TOP);
-        boolean hasBottom = contains(ClothesType.BOTTOM);
-        boolean hasOuter = contains(ClothesType.OUTER);
-        boolean hasShoes = contains(ClothesType.SHOES);
-        boolean hasAccessory = items.stream().anyMatch(i ->
-            switch (i.item().type()) {
-                case ACCESSORY, BAG, HAT, SCARF -> true;
-                default -> false;
-            });
+        int n = Math.max(1, validItems.size());
+        double total = validItems.stream()
+            .mapToDouble(ClothesScore::score)
+            .sum();
 
-        // 드레스 기반
-        if (hasDress) {
-            score += 1.0;
-            if (hasOuter) score += 0.5;
-            if (hasShoes) score += 0.5;
-        }
+        // 평균 점수 (모든 의상 포함)
+        double avgScore = (total + totalScore) / n;
+        double score = avgScore;
 
-        // 상/하의 기반
-        if (hasTop && hasBottom) {
-            if (hasOuter) score += 0.3;
-            if (hasShoes) score += 0.3;
-            if (hasAccessory) score += 0.2;
-        }
+        // 스타일 일관성
+        List<ClothesStyle> styles = validItems.stream()
+            .map(i -> i.item().style())
+            .filter(Objects::nonNull)
+            .toList();
 
-        // 세트 개수 보너스
-        if (items.size() >= 5) {
-            score += 0.2 * Math.min(items.size(), 7);
-        }
-
-        // 타일 일관성
         if (styles.size() > 1 && styles.stream().distinct().count() == 1) {
-            score += 0.8;
+            score += 0.5;
+        }
+
+        // 양말 하중
+        boolean hasSocks = items.stream()
+            .anyMatch(i -> i.item().type() == ClothesType.SOCKS);
+
+        if (hasSocks) {
+            score *= 0.9; // 전체 점수 10% 감산
+        }
+
+        // ETC 가중치(우산, 손수건 등..)
+        boolean hasEtc = items.stream()
+            .anyMatch(i -> i.item().type() == ClothesType.ETC || i.item().type() == ClothesType.SOCKS);
+
+        if (hasEtc) {
+            score *= 1.1;
         }
 
         return score;
-    }
-
-    private boolean contains(ClothesType type) {
-        return items.stream().anyMatch(i -> i.item().type() == type);
     }
 
     public double score() {
         return totalScore;
     }
 
+    private Color getColorOf(ClothesType type) {
+        return items.stream()
+            .filter(i -> i.type() == type)
+            .map(ClothesScore::color)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null);
+    }
+
+    private double getTypePenalty(ClothesScore a, ClothesScore b) {
+        Enum<?> aSub = resolveSubType(a);
+        Enum<?> bSub = resolveSubType(b);
+
+        if (aSub == null || bSub == null) return 0.0;
+        return OutfitPenalty.getPenalty(aSub, bSub);
+    }
+
+    private Enum<?> resolveSubType(ClothesScore c) {
+        if (c.topType() != null) return c.topType();
+        if (c.bottomType() != null) return c.bottomType();
+        if (c.outerType() != null) return c.outerType();
+        if (c.shoesType() != null) return c.shoesType();
+        return null;
+    }
+
     @Override
     public String toString() {
         return items.stream()
-            .map(i -> i.item().name() + "(" + i.item().type().name() + ")")
+            .map(i -> i.name() + "(" + i.type().name() + ")")
             .collect(Collectors.joining(", "));
     }
 }

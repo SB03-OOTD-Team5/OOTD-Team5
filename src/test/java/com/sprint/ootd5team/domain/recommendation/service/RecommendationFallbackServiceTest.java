@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.recommendation.service;
+package com.sprint.ootd5team.domain.recommendation.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
