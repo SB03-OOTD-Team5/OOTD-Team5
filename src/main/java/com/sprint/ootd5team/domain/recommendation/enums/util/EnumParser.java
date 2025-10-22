@@ -43,7 +43,8 @@ public final class EnumParser {
                     displayName.toString().equalsIgnoreCase(normalized)) {
                     return constant;
                 }
-            } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+            } catch (NoSuchFieldException | IllegalAccessException ignored) {
+            }
         }
 
         // aliases 정확 일치
@@ -58,7 +59,8 @@ public final class EnumParser {
                         return constant;
                     }
                 }
-            } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+            } catch (NoSuchFieldException | IllegalAccessException ignored) {
+            }
         }
 
         // 부분 포함 매칭 (displayName / alias)
@@ -104,37 +106,75 @@ public final class EnumParser {
         return partialMatch(enumClass, combined.toLowerCase(), defaultValue);
     }
 
-    /** 내부용: 부분 일치 기반 매칭 */
+    /** 내부용: 부분 일치 기반 매칭 (긴 문자열 우선순위 적용) */
     private static <E extends Enum<E>> E partialMatch(
         Class<E> enumClass,
         String normalized,
         E defaultValue
     ) {
-        for (E constant : enumClass.getEnumConstants()) {
-            // displayName 포함 매칭
-            try {
-                var field = enumClass.getDeclaredField("displayName");
-                field.setAccessible(true);
-                Object displayName = field.get(constant);
-                if (displayName != null &&
-                    normalized.contains(displayName.toString().toLowerCase())) {
-                    return constant;
-                }
-            } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+        // 후보를 (displayName + aliases) 기준으로 모두 수집
+        return Arrays.stream(enumClass.getEnumConstants())
+            .sorted((a, b) -> {
+                int lenA = longestAliasLength(enumClass, a);
+                int lenB = longestAliasLength(enumClass, b);
+                return Integer.compare(lenB, lenA); // 긴 문자열 우선
+            })
+            .filter(constant -> matchesPartially(enumClass, constant, normalized))
+            .findFirst()
+            .orElse(defaultValue);
+    }
 
-            // aliases 포함 매칭
-            try {
-                var field = enumClass.getDeclaredField("aliases");
-                field.setAccessible(true);
-                Object aliasField = field.get(constant);
-                if (aliasField instanceof String[] aliases) {
-                    if (Arrays.stream(aliases)
-                        .anyMatch(a -> normalized.contains(a.toLowerCase()))) {
-                        return constant;
-                    }
-                }
-            } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+    private static <E extends Enum<E>> boolean matchesPartially(
+        Class<E> enumClass,
+        E constant,
+        String normalized
+    ) {
+        try {
+            // displayName 매칭
+            var displayField = enumClass.getDeclaredField("displayName");
+            displayField.setAccessible(true);
+            Object displayName = displayField.get(constant);
+            if (displayName != null &&
+                normalized.contains(normalize(displayName.toString()))) {
+                return true;
+            }
+
+            // alias 매칭
+            var aliasField = enumClass.getDeclaredField("aliases");
+            aliasField.setAccessible(true);
+            Object aliasValue = aliasField.get(constant);
+            if (aliasValue instanceof String[] aliases) {
+                return Arrays.stream(aliases)
+                    .anyMatch(a -> normalized.contains(normalize(a)));
+            }
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {
         }
-        return defaultValue;
+        return false;
+    }
+
+    private static <E extends Enum<E>> int longestAliasLength(Class<E> enumClass, E constant) {
+        try {
+            var displayField = enumClass.getDeclaredField("displayName");
+            displayField.setAccessible(true);
+            String displayName = (String) displayField.get(constant);
+
+            var aliasField = enumClass.getDeclaredField("aliases");
+            aliasField.setAccessible(true);
+            String[] aliases = (String[]) aliasField.get(constant);
+
+            return Math.max(
+                displayName != null ? displayName.length() : 0,
+                Arrays.stream(aliases != null ? aliases : new String[0])
+                    .mapToInt(String::length)
+                    .max()
+                    .orElse(0)
+            );
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {
+            return 0;
+        }
+    }
+
+    private static String normalize(String text) {
+        return text == null ? "" : text.toLowerCase().replaceAll("\\s+", "");
     }
 }
