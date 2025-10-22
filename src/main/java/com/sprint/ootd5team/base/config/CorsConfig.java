@@ -16,7 +16,7 @@ public class CorsConfig {
         "http://localhost:5173",
         "http://ootd-today.duckdns.org",
         "https://ootd-today.duckdns.org",
-        "https://55td.duckdns.org",
+        "http://55td.duckdns.org",
         "https://55td.duckdns.org"
 
     );
