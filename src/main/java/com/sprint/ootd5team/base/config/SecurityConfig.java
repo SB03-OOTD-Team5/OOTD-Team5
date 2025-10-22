@@ -13,6 +13,7 @@ import com.sprint.ootd5team.base.security.handler.Http403ForbiddenAccessDeniedHa
 import com.sprint.ootd5team.base.security.handler.JwtLoginSuccessHandler;
 import com.sprint.ootd5team.base.security.handler.JwtLogoutHandler;
 import com.sprint.ootd5team.base.security.handler.LoginFailureHandler;
+import com.sprint.ootd5team.base.security.oauth2.CookieOAuth2Repository;
 import com.sprint.ootd5team.base.security.oauth2.OAuth2LoginSuccessHandler;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import org.springframework.beans.factory.annotation.Value;
@@ -80,7 +81,8 @@ public class SecurityConfig {
         ObjectMapper objectMapper,
         JwtAuthenticationFilter jwtAuthenticationFilter,
         OAuth2LoginSuccessHandler oauth2LoginSuccessHandler,
-        JwtLogoutHandler jwtLogoutHandler
+        JwtLogoutHandler jwtLogoutHandler,
+        CookieOAuth2Repository cookieOAuth2Repository
     )
         throws Exception {
         http
@@ -112,6 +114,9 @@ public class SecurityConfig {
             )
             // oauth 로그인 설정
             .oauth2Login(auth-> auth
+                .authorizationEndpoint(authorization -> authorization
+                    .authorizationRequestRepository(cookieOAuth2Repository) //OAuth2 인증 정보를 저장하는 저장소
+                )
                 .successHandler(oauth2LoginSuccessHandler)
                 .failureHandler(loginFailureHandler)
             )

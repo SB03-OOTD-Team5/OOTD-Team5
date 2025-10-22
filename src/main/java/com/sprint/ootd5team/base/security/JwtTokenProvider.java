@@ -234,11 +234,11 @@ public class JwtTokenProvider {
      */
     public ResponseCookie generateRefreshTokenCookie(String refreshToken) {
         return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
-            .httpOnly(true)
+            .httpOnly(true) // JavaScript 접근 불가
             .secure(true) // HTTPS 환경에서만
             .path("/")
             .maxAge(refreshTokenExpirationInMs / 1000)
-            .sameSite("Lax") // or "Lax", "None"
+            .sameSite("Lax") // or "Lax", "None" CSRF 방어
             .build();
     }
     /**
