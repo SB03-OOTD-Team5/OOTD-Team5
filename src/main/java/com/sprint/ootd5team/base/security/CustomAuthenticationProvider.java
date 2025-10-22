@@ -35,7 +35,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
 
             // 1. 계정 잠금 체크
             if (userDetails.getUserDto().locked() == true) {
-                log.info("[Security] 로그인실패 - 계정이 잠겨있습니다 email: {}", email);
+                log.info("[Security] 로그인실패 - 계정이 잠겨있습니다 email: {}****", email.substring(0, Math.min(3, email.indexOf('@'))));
                 throw new LockedException("User account is locked");
             }
 
@@ -51,11 +51,11 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
                     userDetails.getAuthorities());
             }
 
-            log.info("[Security] 로그인실패 - ID 또는 비밀번호 불일치 email: {}", email);
+            log.info("[Security] 로그인실패 - ID 또는 비밀번호 불일치");
             throw new BadCredentialsException("비밀번호 / 아이디 일치 오류");
 
         } catch (UsernameNotFoundException e) {
-            log.error("[Security] 로그인실패 - 사용자를 찾을 수 없음 email: {}", email);
+            log.info("[Security] 로그인실패 - 인증 실패");
             throw new BadCredentialsException("사용자를 찾을 수 없음");
         }
     }

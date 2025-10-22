@@ -44,11 +44,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         if(provider.equals("google")){
             oAuth2UserInfo = new GoogleUserDetails(oAuth2User.getAttributes());
-            log.debug("[Security] 구글 로그인 user:{}", oAuth2UserInfo.getEmail());
+            log.debug("[Security] 구글 로그인 - provider: google");
         }
         else if(provider.equals("kakao")){
             oAuth2UserInfo = new KakaoUserDetails(oAuth2User.getAttributes());
-            log.debug("[Security] 카카오 로그인 user:{}", oAuth2UserInfo.getEmail());
+            log.debug("[Security] 카카오 로그인 - provider: kakao");
         }else {
             throw new OAuth2AuthenticationException(
                 new OAuth2Error("invalid_request", "Unsupported OAuth2 provider: " + provider, null)
@@ -71,7 +71,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             return createduser;
         });
 
-        log.debug("[Security] OAuth2 사용자 정보 로드 완료 - provider: {}, email: {}", provider, email);
+        log.info("[Security] OAuth2 사용자 정보 로드 완료 - provider: {}", provider);
         return new OotdOAuth2UserDetails(userMapper.toDto(user), oAuth2User.getAttributes());
     }
 

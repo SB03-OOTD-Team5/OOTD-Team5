@@ -130,6 +130,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-out").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/sign-in").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()  // oauth 연결 허용
                 .requestMatchers("/ws/**").permitAll()   // ★ 웹소켓 허용
                 .requestMatchers("/sub/**", "/pub/**").permitAll() // 구독/발행 경로도 필요시

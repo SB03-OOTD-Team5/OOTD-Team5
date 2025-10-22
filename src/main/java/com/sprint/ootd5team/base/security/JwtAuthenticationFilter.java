@@ -63,7 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     // SecurityContext에 인증정보 저장
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.error("[Security] JWT 토큰 인증 성공 refreshToken: {}", token);
+                    log.info("[Security] JWT 토큰 인증 성공 user: {}", email);
                 } else {
                     //토큰이 잘못됐을때 401에러
                     sendErrorResponse(response, "Invalid JWT token: ",

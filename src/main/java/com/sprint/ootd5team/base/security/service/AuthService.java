@@ -81,7 +81,7 @@ public class AuthService {
         eventPublisher.publishEvent(
             new TemporaryPasswordCreatedEvent(user.getTempPassword(), user.getEmail(),
                 user.getName(), user.getTempPasswordExpireAt()));
-        log.info("[Auth] 사용자 비밀번호 초기화 userId:{}, email:{}", user.getId(), user.getEmail());
+        log.info("[Auth] 사용자 비밀번호 초기화 userId:{}", user.getId());
     }
 
     /**
@@ -95,7 +95,10 @@ public class AuthService {
         // Validate refresh token
         if (!tokenProvider.validateRefreshToken(refreshToken)
             || !jwtRegistry.hasActiveJwtInformationByRefreshToken(refreshToken)) {
-            log.error("[Auth] 유효하지않은 리프레쉬 토큰 refreshToken :{}",refreshToken);
+            log.error("[Auth] 유효하지않은 리프레쉬 토큰 refreshToken(last 4): {}",
+                refreshToken != null && refreshToken.length() > 4
+                    ? refreshToken.substring(refreshToken.length() - 4)
+                    : "null");
             throw new OotdException(ErrorCode.INVALID_TOKEN);
         }
 
@@ -120,7 +123,7 @@ public class AuthService {
                 refreshToken,
                 newJwtInformation
             );
-            log.info("[Auth] 리프레쉬토큰 재발급 refreshToken : {}", refreshToken);
+            log.info("[Auth] 리프레쉬토큰 재발급 성공 userId: {}", ootdSecurityUserDetails.getUserId());
 
             return newJwtInformation;
 

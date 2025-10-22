@@ -28,6 +28,10 @@ public class Http403ForbiddenAccessDeniedHandler implements AccessDeniedHandler 
         ErrorResponse errorResponse = new ErrorResponse(accessDeniedException);
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
 
-        log.error("[Security] 엑세스가 거부됨 user: {}", request.getUserPrincipal().getName());
+        String username = request.getUserPrincipal() != null
+            ? request.getUserPrincipal().getName()
+            : "anonymous";
+
+        log.error("[Security] 엑세스가 거부됨 user: {}", username);
     }
 }
