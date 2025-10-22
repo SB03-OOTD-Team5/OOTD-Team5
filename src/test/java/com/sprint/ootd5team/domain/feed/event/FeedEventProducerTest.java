@@ -2,6 +2,7 @@ package com.sprint.ootd5team.domain.feed.event;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.sprint.ootd5team.domain.feed.event.producer.FeedEventProducer;
 import com.sprint.ootd5team.domain.feed.event.type.FeedContentUpdatedEvent;
@@ -10,6 +11,8 @@ import com.sprint.ootd5team.domain.feed.event.type.FeedIndexCreatedEvent;
 import com.sprint.ootd5team.domain.feed.event.type.FeedLikeCountUpdateEvent;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +30,12 @@ public class FeedEventProducerTest {
 
     @InjectMocks
     private FeedEventProducer producer;
+
+    @BeforeEach
+    void setUp() {
+        when(kafkaTemplate.send(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any()))
+            .thenReturn(CompletableFuture.completedFuture(null));
+    }
 
     @Test
     @DisplayName("FeedIndexCreatedEvent 발행 성공")
