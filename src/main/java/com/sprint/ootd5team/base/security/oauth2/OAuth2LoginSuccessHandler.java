@@ -63,7 +63,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 response.getWriter().write(objectMapper.writeValueAsString(jwtDto));
                 response.sendRedirect("/#/recommendations");
 
-                log.info("[Security] OAuth2 로그인 성공. userDto: {}", userDto.email());
+                log.info("[Security] OAuth2 로그인 성공. userId: {}", userDto.id());
 
             } catch (JOSEException e) {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -71,7 +71,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                     new RuntimeException("Token generation failed")
                 );
                 response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
-                log.error("[Security] OAuth2 JWT 토큰 생성 실패: {}", authentication.getName(), e);
+                log.error("[Security] OAuth2 JWT 토큰 생성 실패", e);
             }
         }else{
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -79,7 +79,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 new RuntimeException("Authentication failed: Invalid user details")
             );
             response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
-            log.error("[Security] 유효하지않은 유저정보 입니다.");
+            log.error("[Security] 유효하지 않은 유저 정보입니다. Authentication type: {}", authentication.getClass().getSimpleName());
         }
     }
 }
