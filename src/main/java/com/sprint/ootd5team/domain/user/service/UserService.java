@@ -47,7 +47,7 @@ public class UserService {
     @Transactional
     public UserDto create(UserCreateRequest request){
 
-        log.info("[user]유저 생성 시작");
+        log.debug("[User]유저 생성 시작");
         if (userRepository.existsByEmail(request.email())) {
             throw new UserAlreadyExistException();
         }
@@ -58,7 +58,7 @@ public class UserService {
         // 프로필 생성해서 저장
         Profile profile = new Profile(user,user.getName(),null,null,null,null,null);
         profileRepository.save(profile);
-        log.debug("[user]유저 생성 완료");
+        log.info("[User]유저 생성 완료 profile:{}",profile);
 
         return userMapper.toDto(user);
     }
@@ -70,11 +70,11 @@ public class UserService {
      */
     @Transactional
     public void changePassword(UUID userId, ChangePasswordRequest request) {
-        log.info("[user]비밀번호 변경 시작");
+        log.debug("[User]비밀번호 변경 시작");
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
         user.updatePassword(passwordEncoder.encode(request.password()));
         userRepository.save(user);
-        log.debug("[user]비밀번호 변경 완료 유저ID:{}",userId);
+        log.info("[User]비밀번호 변경 완료 유저ID:{}",userId);
     }
 
     /**
@@ -100,7 +100,7 @@ public class UserService {
         String roleEqual,
         Boolean locked) {
 
-        log.info("[user]유저 검색 커서 기반 페이지네이션 시작");
+        log.debug("[User]유저 검색 커서 기반 페이지네이션 시작");
         List<UserDto> allByCursor = userRepositoryCustom.findUsersWithCursor(cursor, idAfter, limit+1,
                 sortBy, sortDirection, emailLike, roleEqual, locked)
             .stream()
@@ -135,7 +135,7 @@ public class UserService {
         // 다음 페이지가 존재할 때만 limit+1을 검색했기때문에 마지막 인덱스 제거
         if(hasNext) allByCursor.remove(allByCursor.size() - 1);
 
-        log.debug("[user]유저 검색 커서 기반 페이지네이션 완료");
+        log.info("[User]유저 검색 커서 기반 페이지네이션 완료");
         return new UserDtoCursorResponse(allByCursor, nextCursor, nextIdAfter, hasNext, totalCount, sortBy,
             sortDirection);
     }
@@ -150,12 +150,12 @@ public class UserService {
     @PreAuthorize( "hasRole('ADMIN')")
     public UserDto updateUserLock(UUID userId, @Valid UserLockUpdateRequest request){
 
-        log.info("[user]계정 잠금여부 업데이트 메서드 시작 userId:{}, request:{}", userId, request);
+        log.debug("[User]계정 잠금여부 업데이트 메서드 시작 userId:{}, request:{}", userId, request);
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
         user.updateLock(request.locked());
         User save = userRepository.save(user);
         jwtRegistry.invalidateJwtInformationByUserId(userId);
-        log.debug("[user] 계정잠금 완료");
+        log.info("[User] 계정잠금 완료userId:{}, request:{}", userId, request);
         return userMapper.toDto(save);
 
     }
