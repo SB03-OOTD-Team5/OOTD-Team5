@@ -2,9 +2,7 @@ package com.sprint.ootd5team.domain.feed.event;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.ootd5team.domain.feed.event.producer.FeedEventProducer;
 import com.sprint.ootd5team.domain.feed.event.type.FeedContentUpdatedEvent;
 import com.sprint.ootd5team.domain.feed.event.type.FeedDeletedEvent;
@@ -25,10 +23,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 public class FeedEventProducerTest {
 
     @Mock
-    private KafkaTemplate<String, String> kafkaTemplate;
-
-    @Mock
-    private ObjectMapper objectMapper;
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     @InjectMocks
     private FeedEventProducer producer;
@@ -37,50 +32,40 @@ public class FeedEventProducerTest {
     @DisplayName("FeedIndexCreatedEvent 발행 성공")
     void publishFeedIndexCreatedEvent_success() throws Exception {
         // given
-        FeedIndexCreatedEvent feedIndexCreatedEvent = new FeedIndexCreatedEvent(UUID.randomUUID(), "내용", Instant.now());
-
-        when(objectMapper.writeValueAsString(feedIndexCreatedEvent))
-            .thenReturn("payload");
+        FeedIndexCreatedEvent event = new FeedIndexCreatedEvent(UUID.randomUUID(), "내용", Instant.now());
 
         // when
-        producer.publishFeedIndexCreatedEvent(feedIndexCreatedEvent);
+        producer.publishFeedIndexCreatedEvent(event);
 
         // then
-        verify(objectMapper).writeValueAsString(feedIndexCreatedEvent);
-        verify(kafkaTemplate).send(eq("ootd.Feeds.Created"), eq("payload"));
+        verify(kafkaTemplate).send(eq("ootd.Feeds.Created"), eq(event));
     }
 
     @Test
     @DisplayName("FeedContentUpdatedEvent 발행 성공")
     void publishFeedContentUpdatedEvent_success() throws Exception {
         // given
-        FeedContentUpdatedEvent feedContentUpdatedEvent = new FeedContentUpdatedEvent(UUID.randomUUID(), "새로운 내용");
-
-        when(objectMapper.writeValueAsString(feedContentUpdatedEvent))
-            .thenReturn("payload");
+        FeedContentUpdatedEvent event = new FeedContentUpdatedEvent(UUID.randomUUID(), "새로운 내용");
 
         // when
-        producer.publishFeedContentUpdatedEvent(feedContentUpdatedEvent);
+        producer.publishFeedContentUpdatedEvent(event);
 
         // then
-        verify(objectMapper).writeValueAsString(feedContentUpdatedEvent);
-        verify(kafkaTemplate).send(eq("ootd.Feeds.ContentUpdated"), eq("payload"));
+        verify(kafkaTemplate).send(eq("ootd.Feeds.ContentUpdated"), eq(event));
     }
 
     @Test
     @DisplayName("FeedLikeCountUpdateEvent 발행 성공")
     void publishLikeCountUpdatedEvent_success() throws Exception {
         // given
-        FeedLikeCountUpdateEvent event = new FeedLikeCountUpdateEvent(UUID.randomUUID(), 42);
-        when(objectMapper.writeValueAsString(event))
-            .thenReturn("payload");
+        FeedLikeCountUpdateEvent event =
+            new FeedLikeCountUpdateEvent(UUID.randomUUID(), 42);
 
         // when
         producer.publishLikeCountUpdatedEvent(event);
 
         // then
-        verify(objectMapper).writeValueAsString(event);
-        verify(kafkaTemplate).send(eq("ootd.Feeds.LikeUpdated"), eq("payload"));
+        verify(kafkaTemplate).send(eq("ootd.Feeds.LikeUpdated"), eq(event));
     }
 
     @Test
@@ -88,14 +73,11 @@ public class FeedEventProducerTest {
     void publishFeedDeletedEvent_success() throws Exception {
         // given
         FeedDeletedEvent event = new FeedDeletedEvent(UUID.randomUUID());
-        when(objectMapper.writeValueAsString(event))
-            .thenReturn("payload");
 
         // when
         producer.publishFeedDeletedEvent(event);
 
         // then
-        verify(objectMapper).writeValueAsString(event);
-        verify(kafkaTemplate).send(eq("ootd.Feeds.Deleted"), eq("payload"));
+        verify(kafkaTemplate).send(eq("ootd.Feeds.Deleted"), eq(event));
     }
 }
