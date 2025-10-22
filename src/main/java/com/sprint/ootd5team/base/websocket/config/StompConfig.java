@@ -55,7 +55,7 @@ public class StompConfig implements WebSocketMessageBrokerConfigurer {
         registration.taskExecutor(new ThreadPoolTaskExecutorBuilder()
             .corePoolSize(4)
             .maxPoolSize(16)
-            .queueCapacity(200)
+            .queueCapacity(500)
             .threadNamePrefix("stomp-in-")
             .build());
         // 클라이언트 → 서버 방향(INBOUND) 메시지를 가로채 로그
@@ -69,7 +69,7 @@ public class StompConfig implements WebSocketMessageBrokerConfigurer {
         registration.taskExecutor(new ThreadPoolTaskExecutorBuilder()
             .corePoolSize(4)
             .maxPoolSize(16)
-            .queueCapacity(200)
+            .queueCapacity(500)
             .threadNamePrefix("stomp-out-")
             .build());
     }

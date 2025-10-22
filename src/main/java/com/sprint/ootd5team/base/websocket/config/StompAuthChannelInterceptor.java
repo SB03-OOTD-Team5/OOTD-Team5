@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessageType;
@@ -70,13 +71,13 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
 		String dmKey = dest.substring(SUB_PREFIX.length());
 		UUID me = extractUserId(requireAuth(acc));
-		DirectMessageRoom room = roomRepository.findByDmKey(dmKey)
-			.orElseThrow(() -> new AccessDeniedException("채팅방을 찾을 수 없습니다."));
+		UUID[] members = parseDmKey(dmKey);
 
-		boolean member = Objects.equals(me, room.getUser1Id()) || Objects.equals(me, room.getUser2Id());
-		if (!member) {
+		if (!Objects.equals(me, members[0]) && !Objects.equals(me, members[1])) {
 			throw new AccessDeniedException("해당 채팅방의 구독 권한이 없습니다.");
 		}
+
+		ensureRoomExists(dmKey, members[0], members[1]);
 	}
 
 	private void handleSend(StompHeaderAccessor acc, Message<?> message) {
@@ -196,5 +197,36 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 			return s.substring(7).trim();
 		}
 		return s;
+	}
+
+	private UUID[] parseDmKey(String dmKey) {
+		String[] tokens = dmKey.split("_");
+		if (tokens.length != 2) {
+			throw new AccessDeniedException("잘못된 채팅방 식별자입니다.");
+		}
+		try {
+			return new UUID[]{UUID.fromString(tokens[0]), UUID.fromString(tokens[1])};
+		} catch (IllegalArgumentException e) {
+			throw new AccessDeniedException("잘못된 채팅방 식별자입니다.");
+		}
+	}
+
+	private void ensureRoomExists(String dmKey, UUID a, UUID b) {
+		if (roomRepository.findByDmKey(dmKey).isPresent()) {
+			return;
+		}
+		UUID user1 = (a.toString().compareTo(b.toString()) <= 0) ? a : b;
+		UUID user2 = (a.toString().compareTo(b.toString()) <= 0) ? b : a;
+
+		try {
+			roomRepository.save(DirectMessageRoom.builder()
+				.dmKey(dmKey)
+				.user1Id(user1)
+				.user2Id(user2)
+				.build());
+		} catch (DataIntegrityViolationException e) {
+			roomRepository.findByDmKey(dmKey)
+				.orElseThrow(() -> new AccessDeniedException("채팅방 생성에 실패했습니다."));
+		}
 	}
 }
