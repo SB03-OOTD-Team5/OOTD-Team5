@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.base.websocket.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.ootd5team.base.exception.directmessage.DirectMessageRoomCreationFailedException;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.OotdSecurityUserDetails;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageCreateRequest;
@@ -224,9 +225,10 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 				.user1Id(user1)
 				.user2Id(user2)
 				.build());
+			log.info("[WebSocket] DirectMessageRoom 생성됨: dmkey={}", dmKey);
 		} catch (DataIntegrityViolationException e) {
 			roomRepository.findByDmKey(dmKey)
-				.orElseThrow(() -> new AccessDeniedException("채팅방 생성에 실패했습니다."));
+				.orElseThrow(() -> DirectMessageRoomCreationFailedException.withDmKey(dmKey, a, b, e));
 		}
 	}
 }
