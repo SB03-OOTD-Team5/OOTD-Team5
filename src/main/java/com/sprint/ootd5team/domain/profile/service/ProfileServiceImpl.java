@@ -48,7 +48,7 @@ public class ProfileServiceImpl implements ProfileService{
         log.debug("[Profile] 프로필 검색 시작 userId:{}", userId);
         Profile profile = profileRepository.findByUserId(userId)
             .orElseThrow(ProfileNotFoundException::new);
-        log.info("[Profile] 프로필 검색 성공 profile:{}", profile);
+        log.info("[Profile] 프로필 검색 성공 profileId:{}, userId:{}", profile.getId(), userId);
         return profileMapper.toDto(profile);
     }
 
@@ -99,8 +99,7 @@ public class ProfileServiceImpl implements ProfileService{
         // 프로필 업데이트
         profile.update(request.name(), request.gender(), request.birthDate(),location, request.temperatureSensitivity());
 
-        log.info("[Profile] 프로필 업데이트 성공 profile:{}", profile);
-
+        log.info("[Profile] 프로필 업데이트 성공 profileId:{}, userId:{}", profile.getId(), userId);
         return profileMapper.toDto(profileRepository.save(profile));
 
     }
