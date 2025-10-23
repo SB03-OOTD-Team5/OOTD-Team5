@@ -83,7 +83,7 @@ public class DirectMessageWsService {
 			.build();
 
 		// 7) 구독 채널로 브로드캐스트
-		String destination = "/sub/direct-messages_" + room.getDmKey();
+		String destination = "/topic/direct-messages_" + room.getDmKey();
 		eventPublisher.publishEvent(new DirectMessageCommittedEvent(destination, dto));
 
 		// 8) 알림 이벤트 발행
