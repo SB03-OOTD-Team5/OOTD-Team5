@@ -1,0 +1,64 @@
+name: CD Reverse Proxy
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_NGINX_REPOSITORY: ${{ vars.ECR_NGINX_REPOSITORY }}
+  ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+  ECS_NGINX_SERVICE: ${{ vars.ECS_NGINX_SERVICE }}
+
+jobs:
+  deploy-nginx:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image tags
+        id: vars
+        run: |
+          SHA_TAG=${GITHUB_SHA::7}
+          echo "sha_tag=$SHA_TAG" >> "$GITHUB_OUTPUT"
+          echo "latest_tag=latest" >> "$GITHUB_OUTPUT"
+
+      - name: Build & push nginx image
+        run: |
+          set -e
+          docker buildx create --use --name reverse-proxy --driver docker-container >/dev/null 2>&1 || true
+          for i in 1 2 3; do
+            echo "Nginx build attempt #$i"
+            docker buildx build \
+              --pull \
+              --push \
+              --progress=plain \
+              --cache-from=type=gha,scope=nginx \
+              --cache-to=type=gha,mode=max,scope=nginx \
+              -t $ECR_NGINX_REPOSITORY:${{ steps.vars.outputs.latest_tag }} \
+              -t $ECR_NGINX_REPOSITORY:${{ steps.vars.outputs.sha_tag }} \
+              -f nginx/Dockerfile \
+              . && break || sleep $((10*i))
+          done
+
+      - name: Force new deployment (nginx service)
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_NGINX_SERVICE" \
+            --force-new-deployment
+          aws ecs wait services-stable \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_NGINX_SERVICE"
