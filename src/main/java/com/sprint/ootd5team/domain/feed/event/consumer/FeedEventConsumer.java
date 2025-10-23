@@ -1,7 +1,7 @@
 package com.sprint.ootd5team.domain.feed.event.consumer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.sprint.ootd5team.domain.feed.event.type.FeedContentUpdatedEvent;
 import com.sprint.ootd5team.domain.feed.event.type.FeedDeletedEvent;
 import com.sprint.ootd5team.domain.feed.event.type.FeedIndexCreatedEvent;
@@ -56,14 +56,35 @@ public class FeedEventConsumer {
      */
     private <T> void handleEvent(String message, Class<T> clazz, Consumer<T> handler) {
         try {
-            T event = objectMapper.readValue(message, clazz);
+            T event;
+            try {
+                event = objectMapper.readValue(message, clazz);
+            } catch (MismatchedInputException e) {
+                if (looksLikeDoubleEncoded(message)) {
+                    String unwrapped = objectMapper.readValue(message, String.class);
+                    log.warn("[FeedEventConsumer] 이중 직렬화 감지. clazz={}", clazz.getSimpleName());
+                    event = objectMapper.readValue(unwrapped, clazz);
+                } else {
+                    throw e;
+                }
+            }
+
             handler.accept(event);
-        } catch (JsonProcessingException e) {
-            log.error("[FeedEventConsumer] JSON 역직렬화 실패 - {}", e.getMessage(), e);
-            throw new RuntimeException("JSON 역직렬화 실패", e);
+            log.info("[FeedEventConsumer] {} 처리 완료: {}", clazz.getSimpleName(), event);
+
         } catch (Exception e) {
             log.error("[FeedEventConsumer] {} 처리 실패 - cause: {}", clazz.getSimpleName(), e.getMessage(), e);
-            throw e;
+            throw new RuntimeException("[FeedEventConsumer] Kafka 메시지 처리 실패", e);
         }
+    }
+
+    private boolean looksLikeDoubleEncoded(String s) {
+        if (s == null) return false;
+        String trimmed = s.trim();
+
+        return trimmed.length() >= 2
+            && trimmed.charAt(0) == '"'
+            && trimmed.charAt(trimmed.length() - 1) == '"'
+            && trimmed.contains("\\\"feedId\\\"");
     }
 }
