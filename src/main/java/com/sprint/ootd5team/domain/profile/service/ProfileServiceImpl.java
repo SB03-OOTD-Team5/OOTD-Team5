@@ -45,9 +45,10 @@ public class ProfileServiceImpl implements ProfileService{
     @Override
     @Transactional
     public ProfileDto getProfile(UUID userId) {
+        log.debug("[Profile] 프로필 검색 시작 userId:{}", userId);
         Profile profile = profileRepository.findByUserId(userId)
             .orElseThrow(ProfileNotFoundException::new);
-
+        log.info("[Profile] 프로필 검색 성공 profileId:{}, userId:{}", profile.getId(), userId);
         return profileMapper.toDto(profile);
     }
 
@@ -63,6 +64,8 @@ public class ProfileServiceImpl implements ProfileService{
     public ProfileDto updateProfile(UUID userId, ProfileUpdateRequest request,
         Optional<MultipartFile> profileImage) {
 
+
+        log.debug("[Profile] 프로필 업데이트 시작 userId:{}", userId);
         // 해당 userId의 프로필이 존재하는지 확인
         Profile profile = profileRepository.findByUserId(userId)
             .orElseThrow(ProfileNotFoundException::new);
@@ -96,6 +99,7 @@ public class ProfileServiceImpl implements ProfileService{
         // 프로필 업데이트
         profile.update(request.name(), request.gender(), request.birthDate(),location, request.temperatureSensitivity());
 
+        log.info("[Profile] 프로필 업데이트 성공 profileId:{}, userId:{}", profile.getId(), userId);
         return profileMapper.toDto(profileRepository.save(profile));
 
     }
