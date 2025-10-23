@@ -3,6 +3,7 @@ package com.sprint.ootd5team.base.security.oauth2;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.stereotype.Component;
@@ -87,13 +88,16 @@ public class CookieOAuth2Repository implements AuthorizationRequestRepository<OA
         String value = serialize(authorizationRequest);
 
         // 2. 쿠키 생성
-        Cookie cookie = new Cookie(COOKIE_NAME, value);
-        cookie.setPath("/");           // 모든 경로에서 접근 가능
-        cookie.setHttpOnly(true);      // JavaScript 접근 차단 (보안)
-        cookie.setMaxAge(COOKIE_EXPIRE_SECONDS);  // 180초 후 자동 만료
-
+        ResponseCookie cookie = ResponseCookie
+            .from(COOKIE_NAME, value)
+            .path("/")
+            .httpOnly(true)
+            .secure(true)
+            .sameSite("Lax")
+            .maxAge(COOKIE_EXPIRE_SECONDS)
+            .build();
         // 3. 응답에 쿠키 추가 (브라우저로 전송)
-        response.addCookie(cookie);
+        response.addHeader("Set-Cookie", cookie.toString());
 
         // 이제 브라우저가 이 쿠키를 저장하고
         // 다음 요청(Google 리다이렉트)에서 자동으로 다시 보냅니다
@@ -161,10 +165,15 @@ public class CookieOAuth2Repository implements AuthorizationRequestRepository<OA
      * @param response HTTP 응답
      */
     private void deleteCookie(HttpServletResponse response) {
-        Cookie cookie = new Cookie(COOKIE_NAME, "");  // 빈 값
-        cookie.setPath("/");
-        cookie.setMaxAge(0);  // 즉시 만료
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie.from(COOKIE_NAME, "")
+            .path("/")
+            .httpOnly(true)
+            .secure(true)
+            .maxAge(0)
+            .sameSite("Strict")
+            .build();
+
+        response.addHeader("Set-Cookie", cookie.toString());
     }
 
     /**
