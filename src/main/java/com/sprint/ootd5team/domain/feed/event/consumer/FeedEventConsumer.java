@@ -73,7 +73,10 @@ public class FeedEventConsumer {
             log.info("[FeedEventConsumer] {} 처리 완료: {}", clazz.getSimpleName(), event);
 
         } catch (Exception e) {
-            log.error("[FeedEventConsumer] {} 처리 실패 - cause: {}", clazz.getSimpleName(), e.getMessage(), e);
+            if (e.getMessage().contains("document missing")) {
+                log.warn("[FeedEventConsumer] 문서 없음 → 건너뜀 (commit): {}", message);
+                return;
+            }
             throw new RuntimeException("[FeedEventConsumer] Kafka 메시지 처리 실패", e);
         }
     }
