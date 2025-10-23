@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.base.websocket.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.ootd5team.base.exception.directmessage.DirectMessageRoomCreationFailedException;
 import com.sprint.ootd5team.base.security.JwtTokenProvider;
 import com.sprint.ootd5team.base.security.OotdSecurityUserDetails;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageCreateRequest;
@@ -14,6 +15,7 @@ import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessageType;
@@ -41,71 +43,73 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
 	@Override
 	public Message<?> preSend(Message<?> message, MessageChannel channel) {
-		StompHeaderAccessor acc = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-		if (acc == null) return message;
-
-		// 반복되는 로그 줄이기
-		if (acc.getMessageType() != SimpMessageType.HEARTBEAT) {
-			log.debug("[STOMP {}] type={}, dest={}, user={}",
-				acc.getCommand(), acc.getDestination(), (acc.getUser()!=null?acc.getUser().getName():"-"),
-				acc.getUser());
+		StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+		if (accessor == null) {
+			return message;
 		}
 
-		StompCommand cmd = acc.getCommand();
-		if (cmd == null) return message;
+		if (accessor.getMessageType() != SimpMessageType.HEARTBEAT) {
+			log.debug("[STOMP {}] dest={}, user={}",
+				accessor.getCommand(), accessor.getDestination(),
+				accessor.getUser() != null ? accessor.getUser().getName() : "-");
+		}
 
-		switch (cmd) {
-			case CONNECT -> handleConnect(acc);
-			case SUBSCRIBE -> handleSubscribe(acc);
-			case SEND      -> handleSend(acc, message);
-			default -> { /* NOP */ }
+		StompCommand command = accessor.getCommand();
+		if (command == null) {
+			return message;
+		}
+
+		switch (command) {
+			case CONNECT -> handleConnect(accessor);
+			case SUBSCRIBE -> handleSubscribe(accessor);
+			case SEND -> handleSend(accessor, message);
+			default -> { }
 		}
 		return message;
 	}
 
-	// DM 채팅방 참여자격 인증
-	private void handleSubscribe(StompHeaderAccessor acc) {
-		String dest = acc.getDestination();
-		if (dest == null || !dest.startsWith(SUB_PREFIX)) return; // 잘못된 접근
-
-		String dmKey = dest.substring(SUB_PREFIX.length());
-		UUID me = extractUserId(requireAuth(acc));
-		DirectMessageRoom room = roomRepository.findByDmKey(dmKey)
-			.orElseThrow(() -> new AccessDeniedException("채팅방을 찾을 수 없습니다."));
-
-		boolean member = Objects.equals(me, room.getUser1Id()) || Objects.equals(me, room.getUser2Id());
-		if (!member) {
-			throw new AccessDeniedException("해당 채팅방의 구독 권한이 없습니다.");
+	private void handleSubscribe(StompHeaderAccessor accessor) {
+		String destination = accessor.getDestination();
+		if (destination == null || !destination.startsWith(SUB_PREFIX)) {
+			return;
 		}
+
+		String dmKey = destination.substring(SUB_PREFIX.length());
+		UUID currentUser = extractUserId(requireAuth(accessor));
+		UUID[] members = parseDmKey(dmKey);
+
+		if (!Objects.equals(currentUser, members[0]) && !Objects.equals(currentUser, members[1])) {
+			throw new AccessDeniedException("구독 권한이 없는 채팅방입니다.");
+		}
+
+		ensureRoomExists(dmKey, members[0], members[1]);
 	}
 
-	private void handleSend(StompHeaderAccessor acc, Message<?> message) {
-		String dest = acc.getDestination();
-		if (dest == null || !dest.equals(PUB_SEND)) return; // 다른 발행은 패스(필요시 화이트리스트 확장)
+	private void handleSend(StompHeaderAccessor accessor, Message<?> message) {
+		String destination = accessor.getDestination();
+		if (destination == null || !destination.equals(PUB_SEND)) {
+			return;
+		}
 
-		UUID me = extractUserId(requireAuth(acc));
-
-		// payload(JSON) 파싱
+		UUID currentUser = extractUserId(requireAuth(accessor));
 		String json = payloadAsString(message.getPayload());
-		DirectMessageCreateRequest req;
+		DirectMessageCreateRequest request;
 		try {
-			req = objectMapper.readValue(json, DirectMessageCreateRequest.class);
+			request = objectMapper.readValue(json, DirectMessageCreateRequest.class);
 		} catch (Exception e) {
-			throw new AccessDeniedException("잘못된 메시지 포맷입니다.");
+			throw new AccessDeniedException("메시지 형식을 파싱할 수 없습니다.");
 		}
 
-		// senderId 위조 방지: payload의 senderId는 반드시 현재 사용자와 같아야 함
-		if (req.senderId() == null || !req.senderId().equals(me)) {
-			throw new AccessDeniedException("senderId가 로그인 사용자와 일치하지 않습니다.");
+		if (request.senderId() == null || !request.senderId().equals(currentUser)) {
+			throw new AccessDeniedException("현재 사용자와 다른 senderId가 전달되었습니다.");
 		}
-		if (req.receiverId() == null) throw new AccessDeniedException("receiverId는 null일 수 없습니다.");
+		if (request.receiverId() == null) {
+			throw new AccessDeniedException("receiverId는 필수입니다.");
+		}
 	}
-	/**
-	 * CONNECT 단계에서 Authorization을 읽어 access 토큰을 검증하고,
-	 * 검증되면 UsernamePasswordAuthenticationToken을 acc.setUser(...)로 설정한다.
-	 */
-	private void handleConnect(StompHeaderAccessor acc) {
-		String token = extractAccessToken(acc);
+
+	private void handleConnect(StompHeaderAccessor accessor) {
+		String token = extractAccessToken(accessor);
 		if (token == null) {
 			throw new AccessDeniedException("Authorization token is missing.");
 		}
@@ -113,88 +117,135 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 			throw new AccessDeniedException("Invalid or expired access token.");
 		}
 
-		// 토큰에서 UserId 추출
 		UUID userId = jwtTokenProvider.getUserId(token);
-
-		// (선택) 존재하는 사용자만 허용하고 싶다면 미리 확인
 		userRepository.findById(userId)
-			.orElseThrow(() -> new AccessDeniedException("User not found"));
+			.orElseThrow(() -> new AccessDeniedException("사용자 정보를 찾을 수 없습니다."));
 
-		// 권한은 굳이 필요 없으면 빈 리스트로.
-		Authentication auth =
+		Authentication authentication =
 			new UsernamePasswordAuthenticationToken(userId.toString(), "N/A", List.of());
-		acc.setUser(auth);
+		accessor.setUser(authentication);
 
 		log.debug("[STOMP CONNECT] authenticated as {}", userId);
 	}
 
-	// ==== 공용 헬퍼 ====
-
-	private Authentication requireAuth(StompHeaderAccessor acc) {
-		if (acc.getUser() instanceof Authentication auth && auth.isAuthenticated()) {
-			return auth;
+	private Authentication requireAuth(StompHeaderAccessor accessor) {
+		if (accessor.getUser() instanceof Authentication authentication && authentication.isAuthenticated()) {
+			return authentication;
 		}
 		throw new AccessDeniedException("인증되지 않은 연결입니다.");
 	}
 
-	private UUID extractUserId(Authentication auth) {
-		// principal 이 UUID 문자열로 세팅된 형태를 우선 지원
-		Object principal = auth.getPrincipal();
-		if (principal instanceof String s) {
-			try { return UUID.fromString(s); }
-			catch (Exception ignored) {}
+	private UUID extractUserId(Authentication authentication) {
+		Object principal = authentication.getPrincipal();
+		if (principal instanceof String asString) {
+			try {
+				return UUID.fromString(asString);
+			} catch (Exception ignored) { }
 		}
-		// 혹시 모를 커스텀 UserDetails 지원 (테스트/이관 대비)
-		if (principal instanceof OotdSecurityUserDetails ud) return ud.getUserId();
-
-		// 마지막 폴백: auth.getName()이 UUID 문자열이어야만 허용
-		try { return UUID.fromString(auth.getName()); }
-		catch (Exception e) {
+		if (principal instanceof OotdSecurityUserDetails details) {
+			return details.getUserId();
+		}
+		try {
+			return UUID.fromString(authentication.getName());
+		} catch (Exception e) {
 			throw new AccessDeniedException("인증 주체가 UUID 형식이 아닙니다.");
 		}
 	}
+
 	private String payloadAsString(Object payload) {
 		if (payload instanceof byte[] bytes) {
 			return new String(bytes, StandardCharsets.UTF_8);
 		}
 		return String.valueOf(payload);
 	}
-	/**
-	 * CONNECT에서 토큰을 읽는다.
-	 * 우선순위: nativeHeader.Authorization → 핸드셰이크 세션(HEADER) → 핸드셰이크 세션(QUERY)
-	 * 값이 'Bearer xxx'면 'xxx'만 반환.
-	 */
-	private String extractAccessToken(StompHeaderAccessor acc) {
-		// 1) STOMP native header
-		String h = firstNativeHeader(acc, "Authorization");
-		if (hasText(h)) return stripBearer(h);
 
-		// 2) Handshake attributes (HttpHandshakeAuthInterceptor가 저장)
-		Map<String, Object> attrs = acc.getSessionAttributes();
-		if (attrs != null) {
-			Object authHeader = attrs.get(StompConfig.ATTR_HTTP_AUTHORIZATION);
-			if (authHeader instanceof String s && hasText(s)) return stripBearer(s);
+	private String extractAccessToken(StompHeaderAccessor accessor) {
+		String header = firstNativeHeader(accessor, "Authorization");
+		if (hasText(header)) {
+			return stripBearer(header);
+		}
 
-			Object queryToken = attrs.get(StompConfig.ATTR_QUERY_ACCESS_TOKEN);
-			if (queryToken instanceof String s && hasText(s)) return s;
+		Map<String, Object> attributes = accessor.getSessionAttributes();
+		if (attributes != null) {
+			Object httpHeader = attributes.get(StompConfig.ATTR_HTTP_AUTHORIZATION);
+			if (httpHeader instanceof String s && hasText(s)) {
+				return stripBearer(s);
+			}
+			Object queryToken = attributes.get(StompConfig.ATTR_QUERY_ACCESS_TOKEN);
+			if (queryToken instanceof String s && hasText(s)) {
+				return s;
+			}
 		}
 		return null;
 	}
 
-	private static String firstNativeHeader(StompHeaderAccessor acc, String name) {
-		List<String> values = acc.getNativeHeader(name);
+	private static String firstNativeHeader(StompHeaderAccessor accessor, String name) {
+		List<String> values = accessor.getNativeHeader(name);
 		return (values != null && !values.isEmpty()) ? values.get(0) : null;
 	}
 
-	private static boolean hasText(String s) {
-		return s != null && !s.trim().isEmpty();
+	private static boolean hasText(String value) {
+		return value != null && !value.trim().isEmpty();
 	}
 
-	private static String stripBearer(String v) {
-		String s = v.trim();
-		if (s.regionMatches(true, 0, "Bearer ", 0, 7)) {
-			return s.substring(7).trim();
+	private static String stripBearer(String value) {
+		String trimmed = value.trim();
+		if (trimmed.regionMatches(true, 0, "Bearer ", 0, 7)) {
+			return trimmed.substring(7).trim();
 		}
-		return s;
+		return trimmed;
+	}
+
+	private UUID[] parseDmKey(String dmKey) {
+		String[] tokens = dmKey.split("_");
+		if (tokens.length != 2) {
+			throw new AccessDeniedException("잘못된 채팅방 식별자입니다.");
+		}
+		try {
+			return new UUID[]{UUID.fromString(tokens[0]), UUID.fromString(tokens[1])};
+		} catch (IllegalArgumentException e) {
+			throw new AccessDeniedException("잘못된 채팅방 식별자입니다.");
+		}
+	}
+
+	private void ensureRoomExists(String dmKey, UUID a, UUID b) {
+		UUID user1 = min(a, b);
+		UUID user2 = max(a, b);
+
+		DirectMessageRoom existing = roomRepository.findByDmKey(dmKey).orElse(null);
+		if (existing != null) {
+			boolean matches = Objects.equals(existing.getUser1Id(), user1)
+				&& Objects.equals(existing.getUser2Id(), user2);
+			if (!matches) {
+				throw new AccessDeniedException("채팅방 정보가 일치하지 않습니다.");
+			}
+			return;
+		}
+
+		userRepository.findById(user1)
+			.orElseThrow(() -> new AccessDeniedException("사용자 정보를 찾을 수 없습니다."));
+		if (!Objects.equals(user1, user2)) {
+			userRepository.findById(user2)
+				.orElseThrow(() -> new AccessDeniedException("사용자 정보를 찾을 수 없습니다."));
+		}
+
+		try {
+			roomRepository.save(DirectMessageRoom.builder()
+				.dmKey(dmKey)
+				.user1Id(user1)
+				.user2Id(user2)
+				.build());
+		} catch (DataIntegrityViolationException e) {
+			roomRepository.findByDmKey(dmKey)
+				.orElseThrow(() -> DirectMessageRoomCreationFailedException.withDmKey(dmKey, a, b, e));
+		}
+	}
+
+	private UUID min(UUID a, UUID b) {
+		return a.toString().compareTo(b.toString()) <= 0 ? a : b;
+	}
+
+	private UUID max(UUID a, UUID b) {
+		return a.toString().compareTo(b.toString()) <= 0 ? b : a;
 	}
 }
