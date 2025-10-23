@@ -19,6 +19,7 @@ public abstract class SingleReceiverEvent<T> extends DomainEvent<T> {
 
     @Override
     public List<UUID> getReceiverIds() {
-        return List.of(receiver);
+        return receiver == null ? java.util.Collections.emptyList()
+            : java.util.Collections.singletonList(receiver);
     }
 }

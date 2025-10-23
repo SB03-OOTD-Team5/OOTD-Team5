@@ -1,5 +1,7 @@
 package com.sprint.ootd5team.domain.notification.event.type.single;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
 import com.sprint.ootd5team.domain.notification.event.type.base.SingleReceiverEvent;
@@ -14,6 +16,14 @@ import java.util.UUID;
  */
 @JsonTypeName("feed-liked")
 public class FeedLikedEvent extends SingleReceiverEvent<FeedLikedPayload> {
+
+    @JsonCreator
+    public FeedLikedEvent(
+        @JsonProperty("data") FeedLikedPayload data,
+        @JsonProperty("receiver") UUID receiver
+    ) {
+        super(data, receiver);
+    }
 
     public FeedLikedEvent(UUID feedId, UUID ownerId, String feedContent, String likerName) {
         super(new FeedLikedPayload(feedId, feedContent, likerName), ownerId);
