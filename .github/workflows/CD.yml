@@ -125,7 +125,6 @@ jobs:
             --cluster "$ECS_CLUSTER" \
             --service "$ECS_BACKEND_SERVICE" \
             --force-new-deployment
-          aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_BACKEND_SERVICE"
 
       - name: Update nginx service (force new deployment)
         run: |
@@ -133,4 +132,3 @@ jobs:
             --cluster "$ECS_CLUSTER" \
             --service "$ECS_NGINX_SERVICE" \
             --force-new-deployment
-          aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_NGINX_SERVICE"

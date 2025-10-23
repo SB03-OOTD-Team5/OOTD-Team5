@@ -1,5 +1,7 @@
 package com.sprint.ootd5team.domain.notification.event.type.multi;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
 import com.sprint.ootd5team.domain.notification.event.type.base.MultiReceiverEvent;
@@ -16,8 +18,12 @@ import java.util.UUID;
 @JsonTypeName("feed-created")
 public class FeedCreatedEvent extends MultiReceiverEvent<FeedCreatedPayload> {
 
-    public FeedCreatedEvent() {
-        super(null, List.of());
+    @JsonCreator
+    public FeedCreatedEvent(
+        @JsonProperty("data") FeedCreatedPayload data,
+        @JsonProperty("receivers") List<UUID> receivers
+    ) {
+        super(data, receivers);
     }
 
     public FeedCreatedEvent(UUID feedId, UUID authorId, String authorName, String content,

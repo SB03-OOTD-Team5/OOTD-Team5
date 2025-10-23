@@ -1,5 +1,7 @@
 package com.sprint.ootd5team.domain.notification.event.type.single;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.sprint.ootd5team.domain.comment.dto.data.CommentDto;
 import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
@@ -16,7 +18,11 @@ import java.util.UUID;
 @JsonTypeName("comment-created")
 public class CommentCreatedEvent extends SingleReceiverEvent<CommentDto> {
 
-    public CommentCreatedEvent(CommentDto data, UUID receiverId) {
+    @JsonCreator
+    public CommentCreatedEvent(
+        @JsonProperty("data") CommentDto data,
+        @JsonProperty("receiver") UUID receiverId
+    ) {
         super(data, receiverId);
     }
 

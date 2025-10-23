@@ -1,7 +1,6 @@
 package com.sprint.ootd5team.domain.notification.event.producer;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.mockito.BDDMockito.anyString;
 import static org.mockito.BDDMockito.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -22,7 +21,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 class KafkaEventPublisherTest {
 
     @Mock
-    KafkaTemplate<String, String> kafkaTemplate;
+    KafkaTemplate<String, DomainEvent<?>> kafkaTemplate;
 
     @Mock
     ObjectMapper objectMapper;
@@ -41,7 +40,7 @@ class KafkaEventPublisherTest {
 
         // then
         then(kafkaTemplate).should()
-            .send(eq("ootd.Notifications"), anyString());
+            .send(eq("ootd.Notifications"), eq(event));
     }
 
     @Test
