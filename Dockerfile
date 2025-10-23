@@ -32,15 +32,6 @@ RUN apk add --no-cache curl
 # jar만 복사
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-# 빌드 시크릿(GEMINI_KEY_JSON)을 /tmp/gemini.json으로 받아 이미지에 복사
-RUN --mount=type=secret,id=gemini,target=/tmp/gemini.json \
-    mkdir -p /etc/secrets && \
-    cp /tmp/gemini.json /etc/secrets/gemini.json && \
-    chmod 400 /etc/secrets/gemini.json
-
-# 구글 SDK가 읽을 경로 지정
-ENV GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/gemini.json
-
 # JVM 옵션 외부 설정 가능
 ENV JVM_OPTS=""
 EXPOSE 8080
