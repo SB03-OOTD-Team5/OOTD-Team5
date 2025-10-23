@@ -33,7 +33,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
-	private static final String SUB_PREFIX = "/sub/direct-messages_";
+	private static final String CLIENT_SUB_PREFIX = "/sub/direct-messages_";
+	private static final String BROKER_TOPIC_PREFIX = "/topic/direct-messages_";
 	private static final String PUB_SEND   = "/pub/direct-messages_send";
 
 	private final DirectMessageRoomRepository roomRepository;
@@ -70,11 +71,14 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
 	private void handleSubscribe(StompHeaderAccessor accessor) {
 		String destination = accessor.getDestination();
-		if (destination == null || !destination.startsWith(SUB_PREFIX)) {
+		if (destination == null || !destination.startsWith(CLIENT_SUB_PREFIX)) {
 			return;
 		}
 
-		String dmKey = destination.substring(SUB_PREFIX.length());
+		String dmKey = destination.substring(CLIENT_SUB_PREFIX.length());
+		String brokerDestination = BROKER_TOPIC_PREFIX + dmKey;
+		accessor.setDestination(brokerDestination);
+
 		UUID currentUser = extractUserId(requireAuth(accessor));
 		UUID[] members = parseDmKey(dmKey);
 
@@ -87,7 +91,14 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
 	private void handleSend(StompHeaderAccessor accessor, Message<?> message) {
 		String destination = accessor.getDestination();
-		if (destination == null || !destination.equals(PUB_SEND)) {
+		if (destination == null) {
+			return;
+		}
+		if (destination.startsWith(CLIENT_SUB_PREFIX)) {
+			String dmKey = destination.substring(CLIENT_SUB_PREFIX.length());
+			accessor.setDestination(BROKER_TOPIC_PREFIX + dmKey);
+		}
+		if (!PUB_SEND.equals(accessor.getDestination())) {
 			return;
 		}
 
