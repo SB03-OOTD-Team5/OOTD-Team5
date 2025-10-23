@@ -115,7 +115,7 @@ public class FeedEventConsumerTest {
 
         assertThatThrownBy(() -> consumer.consumeFeedIndexCreatedEvent(payload))
             .isInstanceOf(RuntimeException.class)
-            .hasMessageContaining("역직렬화 실패");
+            .hasMessageContaining("Kafka 메시지 처리 실패");
 
         verify(indexer, never()).create(any());
     }
