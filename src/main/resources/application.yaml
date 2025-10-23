@@ -87,15 +87,14 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
   ai:
-    provider: gemini   # 현재 활성화할 LLM provider
-    vertex:
-      ai:
-        gemini:
-          project-id: grounded-jetty-473710-n3
-          location: us-central1
-          chat:
-            options:
-              model: gemini-2.5-flash-lite
+    google:
+      genai:
+        api-key: ${GENAI_API_KEY}
+        chat:
+          options:
+            model: gemini-2.5-flash-lite
+#        project-id: grounded-jetty-473710-n3
+#        location: us-central1
 
   # Elasticsearch 설정
   elasticsearch:
