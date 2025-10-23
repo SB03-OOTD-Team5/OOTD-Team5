@@ -58,27 +58,55 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                     accessToken
                 );
 
-                // 4. 본문 전송
+                // 4. 중간페이지를 통해 HTML 응답 후 자동 리다이렉트
                 response.setStatus(HttpServletResponse.SC_OK);
-                response.getWriter().write(objectMapper.writeValueAsString(jwtDto));
-                response.sendRedirect("/#/recommendations");
+                response.setContentType("text/html;charset=UTF-8");
+
+                String html = String.format("""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>로그인 성공</title>
+                </head>
+                <body>
+                    <script>
+                        const tokenData = %s;
+                        localStorage.setItem('accessToken', tokenData.accessToken);
+                        localStorage.setItem('userId', tokenData.userDto.id);
+                        window.location.href = '/#/recommendations';
+                    </script>
+                </body>
+                </html>
+                """, objectMapper.writeValueAsString(jwtDto));
+
+                response.getWriter().write(html);
 
                 log.info("[Security] OAuth2 로그인 성공. userId: {}", userDto.id());
 
             } catch (JOSEException e) {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                ErrorResponse errorResponse = new ErrorResponse(
-                    new RuntimeException("Token generation failed")
-                );
-                response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+                response.setContentType("text/html;charset=UTF-8");
+                response.getWriter().write("""
+                <html><body>
+                    <script>
+                        alert('토큰 생성에 실패했습니다.');
+                        window.location.href = '/#/login';
+                    </script>
+                </body></html>
+                """);
                 log.error("[Security] OAuth2 JWT 토큰 생성 실패", e);
             }
         }else{
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            ErrorResponse errorResponse = new ErrorResponse(
-                new RuntimeException("Authentication failed: Invalid user details")
-            );
-            response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+            response.setContentType("text/html;charset=UTF-8");
+            response.getWriter().write("""
+            <html><body>
+                <script>
+                    alert('인증에 실패했습니다.');
+                    window.location.href = '/#/login';
+                </script>
+            </body></html>
+            """);
             log.error("[Security] 유효하지 않은 유저 정보입니다. Authentication type: {}", authentication.getClass().getSimpleName());
         }
     }
