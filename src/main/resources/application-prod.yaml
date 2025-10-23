@@ -5,6 +5,9 @@ logging:
   level:
     root: info
 
+swagger:
+  server-url: https://55td.duckdns.org
+
 spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL}

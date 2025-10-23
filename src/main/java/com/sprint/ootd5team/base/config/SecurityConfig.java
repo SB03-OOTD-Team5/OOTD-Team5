@@ -142,6 +142,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/sse").authenticated()
                 // 개발 storage = local일 때(s3시 필요없음)
                 .requestMatchers("/local-files/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                 .anyRequest()
                 .authenticated()//TODO 개발환경은는 모두 허용, 빌드시에는 authenticated()으로 수정필요
             )
