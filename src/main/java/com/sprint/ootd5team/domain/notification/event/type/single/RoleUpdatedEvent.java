@@ -1,5 +1,7 @@
 package com.sprint.ootd5team.domain.notification.event.type.single;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
 import com.sprint.ootd5team.domain.notification.event.type.base.SingleReceiverEvent;
@@ -14,6 +16,14 @@ import java.util.UUID;
  */
 @JsonTypeName("role-updated")
 public class RoleUpdatedEvent extends SingleReceiverEvent<RoleUpdatedPayload> {
+
+    @JsonCreator
+    public RoleUpdatedEvent(
+        @JsonProperty("data") RoleUpdatedPayload data,
+        @JsonProperty("receiver") UUID receiver
+    ) {
+        super(data, receiver);
+    }
 
     public RoleUpdatedEvent(UUID receiverId, String oldRole, String newRole) {
         super(new RoleUpdatedPayload(oldRole, newRole), receiverId);
