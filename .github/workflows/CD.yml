@@ -84,6 +84,8 @@ jobs:
 
       # 5) Backend 이미지 빌드 & 푸시 (태그: latest, sha)
       - name: Build & push backend image (with cache & retry)
+        env:
+          GEMINI_KEY_JSON: ${{ secrets.GEMINI_KEY_JSON }}
         run: |
           set -e
           for i in 1 2 3; do
@@ -94,6 +96,7 @@ jobs:
               --progress=plain \
               --cache-from=type=gha,scope=backend \
               --cache-to=type=gha,mode=max,scope=backend \
+              --secret id=gemini,env=GEMINI_KEY_JSON \
               -t $ECR_BACKEND_REPOSITORY:${{ steps.vars.outputs.latest_tag }} \
               -t $ECR_BACKEND_REPOSITORY:${{ steps.vars.outputs.sha_tag }} \
               -f Dockerfile \
@@ -118,7 +121,7 @@ jobs:
               . && break || sleep $((10*i))
           done
 
-      # 8) 강제 배포 (태스크 정의 유지)
+      # 8) 강제 배포 (서비스 별)
       - name: Update backend service (force new deployment)
         run: |
           aws ecs update-service \
