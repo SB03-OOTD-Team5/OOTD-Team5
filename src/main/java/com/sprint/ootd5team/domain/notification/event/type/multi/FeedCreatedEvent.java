@@ -28,7 +28,8 @@ public class FeedCreatedEvent extends MultiReceiverEvent<FeedCreatedPayload> {
 
     public FeedCreatedEvent(UUID feedId, UUID authorId, String authorName, String content,
         List<UUID> receiverIds) {
-        super(new FeedCreatedPayload(feedId, authorId, authorName, content), receiverIds);
+        super(new FeedCreatedPayload(feedId, authorId, authorName, content),
+            receiverIds == null ? List.of() : receiverIds);
     }
 
     @Override

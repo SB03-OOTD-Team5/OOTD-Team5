@@ -275,6 +275,11 @@ public class FeedServiceImpl implements FeedService {
         // authorId = followeeId 로 followerIds 가져오기
         List<UUID> followerIds = followRepository.findFollowerIds(dto.author().userId());
 
+        if (followerIds == null || followerIds.isEmpty()) {
+            log.info("[FeedService] 팔로워가 없어 FeedCreatedEvent 발행 생략 - authorId={}", dto.author().userId());
+            return;
+        }
+
         eventPublisher.publishEvent(new FeedCreatedEvent(
             dto.id(),
             dto.author().userId(),
