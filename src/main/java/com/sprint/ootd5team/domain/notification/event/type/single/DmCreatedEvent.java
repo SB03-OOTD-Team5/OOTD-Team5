@@ -1,9 +1,12 @@
 package com.sprint.ootd5team.domain.notification.event.type.single;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.sprint.ootd5team.domain.directmessage.dto.DirectMessageDto;
 import com.sprint.ootd5team.domain.notification.enums.NotificationTemplateType;
 import com.sprint.ootd5team.domain.notification.event.type.base.SingleReceiverEvent;
+import java.util.UUID;
 
 /**
  * DM_RECEIVED("[DM] %s", "%s"),
@@ -13,6 +16,14 @@ import com.sprint.ootd5team.domain.notification.event.type.base.SingleReceiverEv
  */
 @JsonTypeName("dm-created")
 public class DmCreatedEvent extends SingleReceiverEvent<DirectMessageDto> {
+
+    @JsonCreator
+    public DmCreatedEvent(
+        @JsonProperty("data") DirectMessageDto data,
+        @JsonProperty("receiver") UUID receiver
+    ) {
+        super(data, receiver);
+    }
 
     public DmCreatedEvent(DirectMessageDto data) {
         super(data, data.receiver().userId());

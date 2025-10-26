@@ -1,6 +1,7 @@
 package com.sprint.ootd5team.domain.notification.event.type.base;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,6 +20,6 @@ public abstract class MultiReceiverEvent<T> extends DomainEvent<T> {
 
     @Override
     public List<UUID> getReceiverIds() {
-        return receivers;
+        return receivers == null ? Collections.emptyList() : receivers;
     }
 }

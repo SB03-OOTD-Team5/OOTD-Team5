@@ -5,6 +5,9 @@ logging:
   level:
     root: info
 
+swagger:
+  server-url: https://55td.duckdns.org
+
 spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL}
@@ -62,13 +65,25 @@ spring:
     indices:
       feed: feeds-v1
 
-# csrf 설정 비활성화/활성화 on off
-app:
-  csrf:
-    enabled: true
-
 management:
   endpoints:
     web:
       exposure:
         include: "*"
+
+app:
+  # csrf 설정 비활성화/활성화 on off
+  csrf:
+    enabled: true
+  # 웹 MessageQueue Relay 설정
+  messaging:
+    relay:
+      host: ${RABBITMQ_HOST:10.0.12.123}
+      port: ${RABBITMQ_STOMP_PORT:61613}
+      login: ${RABBITMQ_STOMP_LOGIN:admin}
+      passcode: ${RABBITMQ_STOMP_PASSCODE:password1234}
+      system-login: ${RABBITMQ_STOMP_SYSTEM_LOGIN:${RABBITMQ_STOMP_LOGIN:admin}}
+      system-passcode: ${RABBITMQ_STOMP_SYSTEM_PASSCODE:${RABBITMQ_STOMP_PASSCODE:password1234}}
+      virtual-host: ${RABBITMQ_STOMP_VHOST:/}
+      heartbeat-send-interval: ${RABBITMQ_STOMP_HEARTBEAT_SEND:10000}
+      heartbeat-receive-interval: ${RABBITMQ_STOMP_HEARTBEAT_RECV:10000}

@@ -1,7 +1,5 @@
 package com.sprint.ootd5team.domain.feed.search;
 
-import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
-import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import com.sprint.ootd5team.base.exception.feed.InvalidSortOptionException;
 import com.sprint.ootd5team.domain.feed.dto.data.FeedSearchResult;
 import com.sprint.ootd5team.domain.feed.dto.request.FeedListRequest;
@@ -74,11 +72,19 @@ public class FeedSearchService {
         );
 
         NativeQueryBuilder builder = new NativeQueryBuilder()
-            .withQuery(q -> q.multiMatch(m -> m
-                .fields(List.of("content", "content.ngram"))
-                .query(request.keywordLike())
-                .type(TextQueryType.BestFields)
-                .operator(Operator.Or)
+            .withQuery(q -> q.bool(b -> b.should(s -> s
+                    .match(m -> m
+                        .field("content")
+                        .query(request.keywordLike())
+                        .analyzer("korean_nori_custom")
+                    )
+                ).should(s -> s
+                    .match(m -> m
+                        .field("content.ngram")
+                        .query(request.keywordLike())
+                        .analyzer("ngram_analyzer")
+                    )
+                )
             ))
             .withSort(sort)
             .withPageable(PageRequest.of(0, request.limit() + 1));

@@ -65,10 +65,10 @@ public class JwtLoginSuccessHandler implements
                 response.getWriter().write(objectMapper.writeValueAsString(jwtDto));
 
 
-                log.info("JWT access and refresh tokens issued for user: {}", userDetails.getUsername());
+                log.info("[Security] JWT 엑세스토큰, 리프레쉬토큰 생성됨 user: {}", userDetails.getUsername());
 
             } catch (JOSEException e) {
-                log.error("Failed to generate JWT token for user: {}", userDetails.getUsername(), e);
+                log.error("[Security] JWT 토큰 생성 실패 user: {}", userDetails.getUsername(), e);
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 ErrorResponse errorResponse = new ErrorResponse(
                     new RuntimeException("Token generation failed")
@@ -78,7 +78,7 @@ public class JwtLoginSuccessHandler implements
         } else {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             ErrorResponse errorResponse = new ErrorResponse(
-                new RuntimeException("Authentication failed: Invalid user details")
+                new RuntimeException("유효하지않은 UserDetails 입니다.")
             );
             response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
         }

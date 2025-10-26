@@ -4,7 +4,6 @@ import com.sprint.ootd5team.domain.recommendation.dto.RecommendationInfoDto;
 import com.sprint.ootd5team.domain.recommendation.dto.WeatherInfoDto;
 import com.sprint.ootd5team.domain.weather.enums.PrecipitationType;
 import com.sprint.ootd5team.domain.weather.enums.WindspeedLevel;
-import java.util.List;
 
 /**
  * 아우터 종류 Enum
@@ -12,17 +11,23 @@ import java.util.List;
  * - 날씨(온도, 강수, 풍속) 기반 점수 계산
  */
 public enum OuterType {
-    CARDIGAN(List.of("가디건", "cardigan")),
-    COAT(List.of("코트", "coat")),
-    TRENCH_COAT(List.of("트렌치", "trench")),
-    PADDING(List.of("패딩", "다운", "점퍼", "padded")),
-    JACKET(List.of("자켓", "재킷", "블레이저", "jacket")),
-    OTHER(List.of());
+    BLAZER("블레이저", new String[]{"슈트", "수트", "정장", "blazer", "블레이저"}),
+    CARDIGAN("카디건", new String[]{"cardigan", "가디건"}),
+    TRENCH_COAT("트렌치코트", new String[]{"트렌치", "trench"}),
+    COAT("코트", new String[]{"coat"}),
+    JUMPER("점퍼", new String[]{"사파리", "야상", "항공", "parka", "헌팅", "워크", "work", "파카"}),
+    FUR_MUSTANG("무스탕", new String[]{"퍼", "뽀글이", "플리스", "폴리스", "mustang", "fleece"}),
+    PADDING("패딩", new String[]{"다운", "경량", "padding", "down"}),
+    HOOD_ZIPUP("후드집업", new String[]{"후드", "아노락", "트레이닝", "hood", "anorok", "후디", "hooded"}),
+    JACKET("재킷", new String[]{"자켓", "블루종", "레더", "가죽", "leather", "jacket"}),
+    OTHER("기타", new String[]{});
 
-    private final List<String> keywords;
+    private final String displayName;
+    private final String[] aliases;
 
-    OuterType(List<String> keywords) {
-        this.keywords = keywords;
+    OuterType(String displayName, String[] aliases) {
+        this.displayName = displayName;
+        this.aliases = aliases;
     }
 
     /** 날씨 기반 점수 계산 */
@@ -32,71 +37,61 @@ public enum OuterType {
         double feels = info.personalFeelsTemp();
 
         WeatherInfoDto w = info.weatherInfo();
-        WindspeedLevel windSpeedLevel = w.windspeedLevel();
-        double rainProb = w.precipitationProbability();
+        WindspeedLevel wind = w.windspeedLevel();
         PrecipitationType precip = w.precipitationType();
 
         switch (this) {
             case CARDIGAN -> {
-                if (feels >= 12 && feels <= 22) {
-                    score += 4;
-                } else if (feels < 10) {
-                    score -= 2;
-                }
-                if (rainProb > 0.5) {
-                    score -= 1;
-                }
-            }
-            case JACKET -> {
-                if (feels >= 9 && feels <= 17) {
-                    score += 4;
-                } else if (feels < 7) {
-                    score += 1;
-                }
-                if (precip.isRainy() || precip.isSnowy()) {
-                    score -= 2;
-                }
-            }
-            case TRENCH_COAT -> {
-                if (feels >= 8 && feels <= 12) {
-                    score += 5;
-                }
-                if (precip.isRainy() || rainProb > 0.4) {
-                    score += 2;
-                }
-            }
-            case COAT -> {
-                if (feels <= 8 && feels >= 2) {
-                    score += 4;
-                } else if (feels < 2) {
-                    score += 2;
-                } else if (feels > 15) {
-                    score -= 2;
-                }
-                if (precip.isSnowy()) {
-                    score += 1;
-                }
-            }
-            case PADDING -> {
-                if (feels < 5) {
-                    score += 6;
-                } else if (feels < 10) {
-                    score += 3;
-                } else {
-                    score -= 3;
-                }
-                if (precip.isSnowy() || precip.isRainy()) {
-                    score += 1;
-                }
-                if (WindspeedLevel.STRONG.equals(windSpeedLevel)) {
-                    score += 1;
-                }
+                // 간절기용 (봄·가을)
+                if (feels >= 14 && feels <= 22) score += 3.5;
+                else if (feels >= 10 && feels < 14) score += 2;
+                else if (feels < 8) score -= 2;
+                if (wind == WindspeedLevel.STRONG) score -= 1;
             }
 
-            default -> {
+            case JACKET, HOOD_ZIPUP -> {
+                // 봄·가을 초입 (바람 불 때 안정적)
+                if (feels >= 10 && feels <= 18) score += 4;
+                else if (feels >= 7 && feels < 10) score += 2.5;
+                else if (feels > 20) score -= 1.5;
+                if (wind == WindspeedLevel.STRONG) score += 0.5;
             }
+
+            case TRENCH_COAT -> {
+                // 비 오는 날, 봄·가을 초입
+                if (feels >= 9 && feels <= 18) score += 4.5;
+                else if (feels >= 7 && feels < 9) score += 2;
+                else if (feels > 22) score -= 2;
+                if (wind == WindspeedLevel.STRONG) score += 0.5;
+            }
+
+            case COAT, JUMPER -> {
+                // 늦가을~겨울
+                if (feels <= 10 && feels >= 3) score += 4;
+                else if (feels <= 2) score += 5;
+                else if (feels > 15) score -= 2;
+                if (precip.isSnowy()) score += 2;
+                if (wind == WindspeedLevel.STRONG) score += 1;
+            }
+
+            case PADDING -> {
+                // 한겨울
+                if (feels < 0) score += 5;
+                else if (feels <= 5) score += 4;
+                else if (feels <= 10) score += 2;
+                else score -= 3;
+                if (precip.isSnowy() || precip.isRainy()) score += 1.5;
+                if (wind == WindspeedLevel.STRONG) score += 1.5;
+            }
+
+            default -> score += 0.0;
         }
 
-        return score;
+        if (info.profileInfo().temperatureSensitivity() <= 3) {
+            score += 1.0;
+        }
+
+        // 점수 제한 (-3 ~ +5)
+        return Math.max(-3, Math.min(5, score));
     }
 }

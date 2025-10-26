@@ -24,19 +24,16 @@ public enum ClothesStyle {
         if (this == OTHER || other == OTHER) {
             return 0.0;
         }
-        if (this == other) {
-            return 2.5;
-        }
 
         // 유사 계열
         if (isPair(this, other, CASUAL, STREET) ||
             isPair(this, other, CASUAL, SPORTY) ||
             isPair(this, other, CLASSIC, FORMAL)) {
-            return 1.5;
+            return 1;
         }
 
         // 중간
-        if (isPair(this, other, CASUAL, FORMAL) ||
+        if (isPair(this, other, CASUAL, CLASSIC) ||
             isPair(this, other, STREET, VINTAGE)) {
             return 0.5;
         }

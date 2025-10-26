@@ -60,6 +60,7 @@ public class AuthService {
         User save = userRepository.save(user);
         jwtRegistry.invalidateJwtInformationByUserId(userId);
         eventPublisher.publishEvent(new RoleUpdatedEvent(user.getId(), oldRole.name(), newRole.name()));
+        log.info("[Auth] 사용자 역할 업데이트 userId:{}, role:{}", userId, newRole.name());
         return userMapper.toDto(save);
     }
 
@@ -80,6 +81,7 @@ public class AuthService {
         eventPublisher.publishEvent(
             new TemporaryPasswordCreatedEvent(user.getTempPassword(), user.getEmail(),
                 user.getName(), user.getTempPasswordExpireAt()));
+        log.info("[Auth] 사용자 비밀번호 초기화 userId:{}", user.getId());
     }
 
     /**
@@ -90,10 +92,13 @@ public class AuthService {
      */
     @Transactional
     public JwtInformation refreshToken(String refreshToken) {
-        log.info("refreshToken : {}", refreshToken);
         // Validate refresh token
         if (!tokenProvider.validateRefreshToken(refreshToken)
             || !jwtRegistry.hasActiveJwtInformationByRefreshToken(refreshToken)) {
+            log.error("[Auth] 유효하지않은 리프레쉬 토큰 refreshToken(last 4): {}",
+                refreshToken != null && refreshToken.length() > 4
+                    ? refreshToken.substring(refreshToken.length() - 4)
+                    : "null");
             throw new OotdException(ErrorCode.INVALID_TOKEN);
         }
 
@@ -101,6 +106,7 @@ public class AuthService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
         if (!(userDetails instanceof OotdSecurityUserDetails ootdSecurityUserDetails)) {
+            log.error("[Auth] 유효하지않은 UserDetails :{}",userDetails);
             throw new OotdException(ErrorCode.INVALID_USER_DETAILS);
         }
 
@@ -117,10 +123,12 @@ public class AuthService {
                 refreshToken,
                 newJwtInformation
             );
+            log.info("[Auth] 리프레쉬토큰 재발급 성공 userId: {}", ootdSecurityUserDetails.getUserId());
 
             return newJwtInformation;
 
         } catch (JOSEException e) {
+            log.error("[Auth] 알수없는 오류가 발생했습니다");
             throw new OotdException(ErrorCode.INTERNAL_SERVER_ERROR, e);
         }
     }

@@ -279,7 +279,6 @@ class ClothesServiceTest {
             .isInstanceOf(AttributeValueNotAllowedException.class);
     }
 
-
     @Test
     void 의상_생성시_속성값을_찾지못하면_예외를_던진다() {
         // given

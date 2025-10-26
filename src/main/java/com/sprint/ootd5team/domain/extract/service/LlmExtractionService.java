@@ -84,12 +84,18 @@ public class LlmExtractionService {
             - "본문(bodyText)"을 최우선 근거로 추출, 없으면 상품명(name) 참고
             - 후보 목록에 없는 값은 "기타"로 출력하세요
             - 값이 없으면 반드시 "" (빈 문자열)로 출력
+            - typeRaw는 아래 목록 중 하나여야 합니다:
+                [TOP, BOTTOM, OUTER, DRESS, UNDERWEAR, ACCESSORY, SHOES, SOCKS, HAT, BAG, SCARF]
+            - 하위 표현(예: 가디건, 자켓, 코트, 패딩, 베스트 등)은 상위 카테고리(OUTER)로 일반화하세요.
+            - 후드티, 셔츠, 니트, 맨투맨 등은 상의(TOP)로 일반화하세요.
+            - 반바지, 청바지, 슬랙스, 스커트 등은 하의(BOTTOM)로 일반화하세요.
+            - 정확히 일치하지 않아도 의미상 비슷하면 가장 가까운 상위 분류를 선택하세요.
             </instruction>
             
             <expected_output>
             {
               "name": "제품명",
-              "typeRaw": "상의",
+              "typeRaw": "TOP",
               "attributes": {
                 "속성1" : ""
               }

@@ -16,14 +16,24 @@ java {
     }
 }
 
+springBoot {
+    buildInfo()
+}
+
 configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
+
+    configureEach {
+        exclude group: 'io.swagger.core.v3', module: 'swagger-annotations'
+        exclude group: 'io.swagger.core.v3', module: 'swagger-models'
+        exclude group: 'io.swagger.core.v3', module: 'swagger-core'
+    }
 }
 
 ext {
-    set('springAiVersion', "1.0.0-M6")
+    set('springAiVersion', "1.1.0-M3")
 }
 
 repositories {
@@ -76,7 +86,7 @@ dependencies {
     implementation 'software.amazon.awssdk:s3:2.31.7'
 
     //Swagger
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
 
     // Spring Batch
     implementation 'org.springframework.boot:spring-boot-starter-batch'
@@ -102,7 +112,7 @@ dependencies {
     implementation 'org.jsoup:jsoup:1.18.1'
 
     // Gemini
-    implementation "org.springframework.ai:spring-ai-vertex-ai-gemini-spring-boot-starter"
+    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai'
 
     // Elasticsearch
     implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
@@ -110,8 +120,9 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
-//    ignoreFailures = true  // 실패해도 다음 task 진행
     systemProperty "file.encoding", "UTF-8"
+    systemProperty "spring.profiles.active", "test"
+
     finalizedBy jacocoTestReport
     String jnaPath = System.getenv("JNA_PATH")
     if (jnaPath) {
@@ -139,5 +150,24 @@ jacocoTestReport {
     reports {
         xml.required = true
         html.required = true
+    }
+
+    // 커버리지에서 제외할 클래스
+    afterEvaluate {
+        classDirectories.setFrom(
+                files(classDirectories.files.collect {
+                    fileTree(dir: it, exclude: [
+//                            '**/dto/**',
+//                            '**/entity/**',
+//                            '**/exception/**',
+//                            '**/mapper/**
+                            '**/config/**',
+                            '**/client/**',
+                            '**/cache/**',
+                            '**/recommendation/enums/**',
+                            '**/llm/**',
+                    ])
+                })
+        )
     }
 }
