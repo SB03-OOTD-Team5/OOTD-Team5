@@ -119,11 +119,11 @@
   - 관리자 페이지에서 사용자 계정잠금, 관리자 권한수정 구현
   - 관리자 페이지의 유저 목록 조건에 따른 커서페이지네이션 구현
 
-  <img width="2048" height="1046" alt="image" src="https://github.com/user-attachments/assets/e6d36eb7-34e6-4c3d-80af-8b6ce34c51b7" />
+  <img width="1000" height="500" alt="image" src="https://github.com/user-attachments/assets/e6d36eb7-34e6-4c3d-80af-8b6ce34c51b7" />
 
 
 
-  <img width="2046" height="1037" alt="image" src="https://github.com/user-attachments/assets/b4ecbd6d-3616-4751-bfff-129f3deb2e64" />
+  <img width="1000" height="500" alt="image" src="https://github.com/user-attachments/assets/b4ecbd6d-3616-4751-bfff-129f3deb2e64" />
 
 
 - **OAuth2 로그인 구현**
@@ -134,12 +134,12 @@
 
   - 구글 계정을 통한 OAuth 로그인 구현
 
-    <img width="2294" height="1221" alt="image" src="https://github.com/user-attachments/assets/f27d0f30-0ec3-445a-9f3c-4a567b6ead86" />
+    <img width="1000" height="500" alt="image" src="https://github.com/user-attachments/assets/f27d0f30-0ec3-445a-9f3c-4a567b6ead86" />
 
 
 - 사용자 프로필 설정 구현
 
-  <img width="2494" height="1264" alt="image" src="https://github.com/user-attachments/assets/ee41c48e-1a86-438f-ba0b-127d757c815b" />
+  <img width="1000" height="500" alt="image" src="https://github.com/user-attachments/assets/ee41c48e-1a86-438f-ba0b-127d757c815b" />
 
 
 - SMTP를 이용한 임시 비밀번호 발급 구현
@@ -149,17 +149,17 @@
 
 - AWS 분산 배포 구현
 
-   <img width="2297" height="260" alt="image" src="https://github.com/user-attachments/assets/f7fb608c-47e6-42d9-b6fd-09825ce8b402" />
+   <img width="1148" height="130" alt="image" src="https://github.com/user-attachments/assets/f7fb608c-47e6-42d9-b6fd-09825ce8b402" />
 
 
   탄력적 IP
 
-  <img width="2296" height="129" alt="image" src="https://github.com/user-attachments/assets/47b74ca2-5c1c-41c8-9169-3180a782f4c0" />
+  <img width="1148" height="60" alt="image" src="https://github.com/user-attachments/assets/47b74ca2-5c1c-41c8-9169-3180a782f4c0" />
 
 
   NAT Gateway
 
-  <img width="2271" height="92" alt="image" src="https://github.com/user-attachments/assets/c97bd7f5-db77-48f3-af51-a0d70b7daa63" />
+  <img width="1148" height="46" alt="image" src="https://github.com/user-attachments/assets/c97bd7f5-db77-48f3-af51-a0d70b7daa63" />
 
 
   AWS Cloud Map
@@ -169,12 +169,12 @@
 
   AWS Elastic Cache
 
-  <img width="1801" height="1082" alt="image" src="https://github.com/user-attachments/assets/5b7d9331-afa8-4e20-a443-beafa758eeae" />
+  <img width="900" height="500" alt="image" src="https://github.com/user-attachments/assets/5b7d9331-afa8-4e20-a443-beafa758eeae" />
 
 
   Confluent Cloud(Message Broker)
 
-  <img width="2111" height="755" alt="image" src="https://github.com/user-attachments/assets/d4f4f64e-4c94-4627-afdc-e9016a255882" />
+  <img width="1000" height="360" alt="image" src="https://github.com/user-attachments/assets/d4f4f64e-4c94-4627-afdc-e9016a255882" />
 
 
 ### 김유빈
@@ -382,4 +382,4 @@ src/
 
 
 ---
-추가 자료(ERD, API 상세 명세, 운영 Runbook)는 Notion 문서에 정리되어 있으며, README2는 팀 소개 및 기능 하이라이트에 초점을 맞춘 홍보형 문서입니다.
+추가 자료(ERD, API 상세 명세, 운영 Runbook)는 Notion 문서에 정리되어 있습니다.
