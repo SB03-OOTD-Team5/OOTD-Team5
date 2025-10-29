@@ -57,7 +57,7 @@
 ## ✅ 테스트 커버리지
 - Jacoco 리포트를 기준으로 **80% 이상 커버리지**를 유지
 - PR 머지 조건
-  - 필수 리뷰 2명 이상 승인
+    - 필수 리뷰 2명 이상 승인
 
 ## 🖐 브랜치 보호 규칙
 - `main` : 배포 브랜치, CI + 리뷰 필수
@@ -70,54 +70,54 @@
 ### 박인규
 
 - **Github Actions CI/CD**
-  - Repository에 Pull Request Open 시 Gradle 기반의 Build 및 Test 진행으로 프로젝트 정합성 확보
-  - Main 브랜치에 병합 성공 혹은 별도의 ReverseProxy, Backend 배포Action요청 시 AWS로 이미지 푸시 및 강제배포하는 CD 파이프라인 구성
-  <img width="1431" height="768" alt="image" src="https://github.com/user-attachments/assets/05dae565-773e-4353-baec-d6eb04fb76de" />
+    - Repository에 Pull Request Open 시 Gradle 기반의 Build 및 Test 진행으로 프로젝트 정합성 확보
+    - Main 브랜치에 병합 성공 혹은 별도의 ReverseProxy, Backend 배포Action요청 시 AWS로 이미지 푸시 및 강제배포하는 CD 파이프라인 구성
+      <img width="1431" height="768" alt="image" src="https://github.com/user-attachments/assets/05dae565-773e-4353-baec-d6eb04fb76de" />
 
 
 - **의상속성관리**
-  - 관리자 권한으로 접속 시 의상의 성격을 정의하는 속성 카테고리를 관리
-  - 속성 관리 탭을 통하여 등록된 속성을 키워드 검색, 페이지네이션으로 정렬하여 조회.
+    - 관리자 권한으로 접속 시 의상의 성격을 정의하는 속성 카테고리를 관리
+    - 속성 관리 탭을 통하여 등록된 속성을 키워드 검색, 페이지네이션으로 정렬하여 조회.
 
-    <img width="1245" height="466" alt="image" src="https://github.com/user-attachments/assets/162db978-58c3-42fe-ad24-6841f20c1ff1" />
+      <img width="1245" height="466" alt="image" src="https://github.com/user-attachments/assets/162db978-58c3-42fe-ad24-6841f20c1ff1" />
 
 
-  - 새로운 속성을 부여하거나 수정,삭제
+- 새로운 속성을 부여하거나 수정,삭제
 
-    <img width="569" height="456" alt="image" src="https://github.com/user-attachments/assets/bfb721d4-c6e6-4299-9385-4b3304012402" />
+  <img width="569" height="456" alt="image" src="https://github.com/user-attachments/assets/bfb721d4-c6e6-4299-9385-4b3304012402" />
 
 
     <img width="526" height="463" alt="image" src="https://github.com/user-attachments/assets/3ac4864f-078e-493c-803b-a15c988cb64c" />
 
-  - 등록된 속성은 의상 등록 시 카테고리에 즉시 반영
+- 등록된 속성은 의상 등록 시 카테고리에 즉시 반영
 
-    <img width="528" height="736" alt="image" src="https://github.com/user-attachments/assets/3d0b4595-a5ab-4c96-9b26-6f205e590339" />
+  <img width="528" height="736" alt="image" src="https://github.com/user-attachments/assets/3d0b4595-a5ab-4c96-9b26-6f205e590339" />
 
 
 
 - **DirectMessage (Websocket) 기능**
-  - 피드를 작성한 유저 페이지에서 DirectMessage 송신
+    - 피드를 작성한 유저 페이지에서 DirectMessage 송신
 
-    <img width="1166" height="575" alt="image" src="https://github.com/user-attachments/assets/dd5c8ae7-584a-4d92-a459-b8b58ef3ba6a" />
+      <img width="1166" height="575" alt="image" src="https://github.com/user-attachments/assets/dd5c8ae7-584a-4d92-a459-b8b58ef3ba6a" />
 
-    <img width="1177" height="723" alt="image" src="https://github.com/user-attachments/assets/2698913d-f0e9-4d94-8e5a-5b06fc5e8134" />
+      <img width="1177" height="723" alt="image" src="https://github.com/user-attachments/assets/2698913d-f0e9-4d94-8e5a-5b06fc5e8134" />
 
 
-  - 분산환경에서 RabbitMQ를 활용해 메세지 처리
+- 분산환경에서 RabbitMQ를 활용해 메세지 처리
 - **날씨조회 보조 API OpenMeteo**
-  - 날씨조회 주 API인 Open-weather의 Interface에 맞추어 해당 서버 및 KMA 서버 장애 시 대체 API로 활용 가능.
+    - 날씨조회 주 API인 Open-weather의 Interface에 맞추어 해당 서버 및 KMA 서버 장애 시 대체 API로 활용 가능.
 - **Let’sEncrypt 기반 HTTPS 인증서 발급,재발급**
-  - 대표 도메인인 [https://55td.duckdns.org에](https://55td.duckdns.org에) 대하여 nginx 컨테이너에서 Let’sEncrypt로부터 certbot을 활용한 인증서 취득
-  - 취득한 인증서는 AWS S3에 저장 및 인증 실패시 자체인증서 발급하여 HTTP프로토콜로 서비스
-  - 30일 미만의 인증서는 자동 갱신
+    - 대표 도메인인 [https://55td.duckdns.org에](https://55td.duckdns.org에) 대하여 nginx 컨테이너에서 Let’sEncrypt로부터 certbot을 활용한 인증서 취득
+    - 취득한 인증서는 AWS S3에 저장 및 인증 실패시 자체인증서 발급하여 HTTP프로토콜로 서비스
+    - 30일 미만의 인증서는 자동 갱신
 
 ### 강문구
 
 - **Security 보안 설정**
-  - Spring Security를 활용하여 사용자 역할에 따른 권한 설정
-  - 관리자 페이지와 일반 사용자 페이지를 위한 조건부 라우팅 처리
-  - 관리자 페이지에서 사용자 계정잠금, 관리자 권한수정 구현
-  - 관리자 페이지의 유저 목록 조건에 따른 커서페이지네이션 구현
+    - Spring Security를 활용하여 사용자 역할에 따른 권한 설정
+    - 관리자 페이지와 일반 사용자 페이지를 위한 조건부 라우팅 처리
+    - 관리자 페이지에서 사용자 계정잠금, 관리자 권한수정 구현
+    - 관리자 페이지의 유저 목록 조건에 따른 커서페이지네이션 구현
 
   <img width="1000" height="500" alt="image" src="https://github.com/user-attachments/assets/e6d36eb7-34e6-4c3d-80af-8b6ce34c51b7" />
 
@@ -127,14 +127,14 @@
 
 
 - **OAuth2 로그인 구현**
-  - 카카오 계정을 통한 OAuth 로그인 구현
+    - 카카오 계정을 통한 OAuth 로그인 구현
 
-    <img width="1153" height="762" alt="image" src="https://github.com/user-attachments/assets/3e5de5f9-4844-497e-a518-293ad9b92aa7" />
+      <img width="1153" height="762" alt="image" src="https://github.com/user-attachments/assets/3e5de5f9-4844-497e-a518-293ad9b92aa7" />
 
 
-  - 구글 계정을 통한 OAuth 로그인 구현
+- 구글 계정을 통한 OAuth 로그인 구현
 
-    <img width="1000" height="500" alt="image" src="https://github.com/user-attachments/assets/f27d0f30-0ec3-445a-9f3c-4a567b6ead86" />
+  <img width="1000" height="500" alt="image" src="https://github.com/user-attachments/assets/f27d0f30-0ec3-445a-9f3c-4a567b6ead86" />
 
 
 - 사용자 프로필 설정 구현
@@ -152,27 +152,27 @@
    <img width="1148" height="130" alt="image" src="https://github.com/user-attachments/assets/f7fb608c-47e6-42d9-b6fd-09825ce8b402" />
 
 
-  탄력적 IP
+탄력적 IP
 
   <img width="1148" height="60" alt="image" src="https://github.com/user-attachments/assets/47b74ca2-5c1c-41c8-9169-3180a782f4c0" />
 
 
-  NAT Gateway
+NAT Gateway
 
   <img width="1148" height="46" alt="image" src="https://github.com/user-attachments/assets/c97bd7f5-db77-48f3-af51-a0d70b7daa63" />
 
 
-  AWS Cloud Map
+AWS Cloud Map
 
   <img width="1650" height="1061" alt="image" src="https://github.com/user-attachments/assets/5de9af60-92b4-4862-ad0e-15dae7c659ba" />
 
 
-  AWS Elastic Cache
+AWS Elastic Cache
 
   <img width="900" height="500" alt="image" src="https://github.com/user-attachments/assets/5b7d9331-afa8-4e20-a443-beafa758eeae" />
 
 
-  Confluent Cloud(Message Broker)
+Confluent Cloud(Message Broker)
 
   <img width="1000" height="360" alt="image" src="https://github.com/user-attachments/assets/d4f4f64e-4c94-4627-afdc-e9016a255882" />
 
@@ -180,30 +180,30 @@
 ### 김유빈
 
 - **피드 목록 조회**
-  - 키워드 여부에 따른 조회 로직 분기 처리, 페이지네이션 구현
-  - 키워드 없이 피드 조회
+    - 키워드 여부에 따른 조회 로직 분기 처리, 페이지네이션 구현
+    - 키워드 없이 피드 조회
 
-    <img width="1579" height="1290" alt="image" src="https://github.com/user-attachments/assets/32548630-fd69-4b9c-a6e5-cf60a3e52a3a" />
+      <img width="1579" height="1290" alt="image" src="https://github.com/user-attachments/assets/32548630-fd69-4b9c-a6e5-cf60a3e52a3a" />
 
 
-  - 키워드 포함 피드 조회 시, Elasticsearch를 이용한 고급 검색
-    - 
+- 키워드 포함 피드 조회 시, Elasticsearch를 이용한 고급 검색
+  - 
 
-    <img width="1584" height="559" alt="image" src="https://github.com/user-attachments/assets/eafed897-42bd-4be5-a76c-5b16f6936c3f" />
+  <img width="1584" height="559" alt="image" src="https://github.com/user-attachments/assets/eafed897-42bd-4be5-a76c-5b16f6936c3f" />
 
 
 - **피드 등록**
-  - 날씨 정보와 추천된 OOTD 정보들을 포함한 피드 생성
-  - 피드 생성 시, Elasticsearch 인덱스에 데이터 반영
-    - Kafka를 이용한 비동기 메세지 처리
-  <img width="1584" height="958" alt="image" src="https://github.com/user-attachments/assets/85fb0b34-16da-4273-b81f-c0ef088d236e" />
+    - 날씨 정보와 추천된 OOTD 정보들을 포함한 피드 생성
+    - 피드 생성 시, Elasticsearch 인덱스에 데이터 반영
+        - Kafka를 이용한 비동기 메세지 처리
+          <img width="1584" height="958" alt="image" src="https://github.com/user-attachments/assets/85fb0b34-16da-4273-b81f-c0ef088d236e" />
 
 
   <img width="1694" height="950" alt="image" src="https://github.com/user-attachments/assets/c142efca-218f-49fc-98d1-9a4ec0f71d8f" />
 
 
 - **피드 수정**
-   - Kafka를 이용한 비동기 메세지 처리
+    - Kafka를 이용한 비동기 메세지 처리
 
   <img width="1583" height="1186" alt="image" src="https://github.com/user-attachments/assets/9ab2ed68-6934-4ee0-87ba-c2e378c74c96" />
 
@@ -227,7 +227,7 @@
 - **피드 댓글 조회**
     - 페이지네이션으로 최신순 정렬
 - **피드 댓글 등록/삭제**
-  
+
 - **팔로우 등록/취소**
 
   <img width="1498" height="942" alt="image" src="https://github.com/user-attachments/assets/ff20a96a-4e0f-45bf-a0c5-3d8f1a855b9f" />
@@ -253,68 +253,68 @@
 ### 안여경
 
 - **관리자 API**
-  - `@PathVariable`을 사용한 동적 라우팅 기능 구현
-  - `PATCH`, `DELETE` 요청을 사용하여 학생 정보를 수정하고 탈퇴하는 API 엔드포인트 개발
+    - `@PathVariable`을 사용한 동적 라우팅 기능 구현
+    - `PATCH`, `DELETE` 요청을 사용하여 학생 정보를 수정하고 탈퇴하는 API 엔드포인트 개발
 - **CRUD 기능**
-  - 학생 정보의 CRUD 기능을 제공하는 API 구현 (Spring Data JPA)
+    - 학생 정보의 CRUD 기능을 제공하는 API 구현 (Spring Data JPA)
 - **회원관리 슬라이더**
-  - 학생별 정보 목록을 `Carousel` 형식으로 조회하는 API 구현
+    - 학생별 정보 목록을 `Carousel` 형식으로 조회하는 API 구현
 
 ### 조현아
 
 - 의상 관리 (Clothes CRUD)
-  - 의상 구매링크로 정보 추출
-    - `jsoup`을 활용한 OG 태그및 이미지 파싱
-    - `llm(Gemini)`을 이용해 타입, 속성 등을 구조화된 `json`으로 변환
+    - 의상 구매링크로 정보 추출
+        - `jsoup`을 활용한 OG 태그및 이미지 파싱
+        - `llm(Gemini)`을 이용해 타입, 속성 등을 구조화된 `json`으로 변환
 
-    <img width="674" height="448" alt="image" src="https://github.com/user-attachments/assets/e8bcd16b-3885-4be2-95c2-542f8be30b82" />
+      <img width="674" height="448" alt="image" src="https://github.com/user-attachments/assets/e8bcd16b-3885-4be2-95c2-542f8be30b82" />
 
 
     <img width="1208" height="912" alt="image" src="https://github.com/user-attachments/assets/e985c579-a5c2-4e2f-a4ff-91c350a45991" />
 
 
-  - 의상 등록
+- 의상 등록
     - 파일 스토리지 (Local / AWS S3)
-      - `LocalStorage`: 개발 환경에서 이미지 및 파일 저장
-      - `S3Storage`: 운영 환경에서 AWS S3를 통한 안정적 파일 관리(타입추론으로 바로보기지원)
-      - `Presigned` URL 기반 다운로드 지원 (보안 강화 및 트래픽 절감)
+        - `LocalStorage`: 개발 환경에서 이미지 및 파일 저장
+        - `S3Storage`: 운영 환경에서 AWS S3를 통한 안정적 파일 관리(타입추론으로 바로보기지원)
+        - `Presigned` URL 기반 다운로드 지원 (보안 강화 및 트래픽 절감)
 
   <img width="1208" height="912" alt="image" src="https://github.com/user-attachments/assets/be8ef591-5afe-4d3e-8bcd-44d8b4942836" />
 
 
-  - 의상 목록 조회
+- 의상 목록 조회
     - `CacheEvictHelper`별도 구현: 특정 사용자(`ownerId`)의 의상 목록 캐시(`clothesByUser`)만 선택적으로 삭제, 캐시 동기화 시점(의상 등록, 수정, 삭제 등)에서 호출되어 최신 데이터 보장
 
-    <img width="1739" height="871" alt="image" src="https://github.com/user-attachments/assets/f6f25a4c-772e-45b5-ac61-ef3f60de5139" />
+  <img width="1739" height="871" alt="image" src="https://github.com/user-attachments/assets/f6f25a4c-772e-45b5-ac61-ef3f60de5139" />
 
 
-  - 의상 삭제
+- 의상 삭제
     - 이미지도 함께 삭제
 
-    <img width="893" height="655" alt="image" src="https://github.com/user-attachments/assets/e89886ff-7f9e-4afd-915d-74cfaeef84cd" />
+  <img width="893" height="655" alt="image" src="https://github.com/user-attachments/assets/e89886ff-7f9e-4afd-915d-74cfaeef84cd" />
 
 
     <img width="870" height="904" alt="image" src="https://github.com/user-attachments/assets/2ade961c-1686-4b1d-8826-067125849a86" />
 
 
-  - 의상 추천(내부 알고리즘, ai 사용 추천)
+- 의상 추천(내부 알고리즘, ai 사용 추천)
     - 사용자의 프로필에 날씨 민감도로 체감온도 계산
-      - 옷의 계절 속성으로 연관 옷 필터링 → 없으면 전체 의상 중 랜덤 추천
-      - 사용자가 ai 사용 선택시 → 필터링된 의상 목록에서 llm 프롬프트 호출 → 추천
-      - 미 선택시 → 내부 알고리즘에 의해 추천
+        - 옷의 계절 속성으로 연관 옷 필터링 → 없으면 전체 의상 중 랜덤 추천
+        - 사용자가 ai 사용 선택시 → 필터링된 의상 목록에서 llm 프롬프트 호출 → 추천
+        - 미 선택시 → 내부 알고리즘에 의해 추천
 
-    <img width="1556" height="949" alt="image" src="https://github.com/user-attachments/assets/3cf2a18b-9460-483f-a1ee-490ac7420904" />
+  <img width="1556" height="949" alt="image" src="https://github.com/user-attachments/assets/3cf2a18b-9460-483f-a1ee-490ac7420904" />
 
 
     <img width="1607" height="998" alt="image" src="https://github.com/user-attachments/assets/60a9c768-c4bb-4146-b8ea-a09fc986afd0" />
 
 
 - 알림
-  - **Kafka**를 이용한 비동기 알림 이벤트 전송
-    - 예: 팔로우, 댓글, 좋아요 등의 알림 이벤트 발행
-  - **SSE (Server-Sent Events)** 기반 실시간 연결
-    - 클라이언트가 SSE 스트림을 통해 실시간 알림 수신
-    - 연결 복구 및 재시도 로직 포함
+    - **Kafka**를 이용한 비동기 알림 이벤트 전송
+        - 예: 팔로우, 댓글, 좋아요 등의 알림 이벤트 발행
+    - **SSE (Server-Sent Events)** 기반 실시간 연결
+        - 클라이언트가 SSE 스트림을 통해 실시간 알림 수신
+        - 연결 복구 및 재시도 로직 포함
 
 <img width="474" height="568" alt="image" src="https://github.com/user-attachments/assets/a1ea12ab-c3a1-4b4f-9f02-df3203fe51bf" />
 
