@@ -5,7 +5,7 @@
 [55TD-옷장을 부탁해]는 날씨·위치·사용자 옷장을 결합해 실시간 추천과 소셜 피드를 제공하는 서비스입니다.
 - 사용자가 등록한 의상과 날씨 데이터를 조합해 맞춤형 OOTD를 추천
 - AI 기반 코멘트, Kafka→Elasticsearch 검색, WebSocket/SSE 실시간 경험 제공
-- 프로젝트 기간: 2025.01.06 ~ 2025.02.28 (2개월)
+- 프로젝트 기간: 2025.09.09 ~ 2025. 10. 24
 
 ### \<팀 문서\>
 🔗 [팀 협업 문서 바로가기](https://www.notion.so/ohgiraffers/55TD-207649136c1180288dabfeb1877485d6?source=copy_link)
@@ -14,11 +14,11 @@
 
 | 이름  | 역할                                  | Github                                    |
 |-----|-------------------------------------|-------------------------------------------|
-| 박인규 | 의상속성 API · DM 서비스 · DNS,HTTPS       | [Github](https://github.com/Leichtstar) |
-| 강문구 | 사용자/인증 · AWS배포 · 분산환경 구축            | [Github](https://github.com/Kangmoongu) |
-| 김유빈 | 피드 API · ElasticSearch · 댓글/좋아요/팔로우 | [Github](https://github.com/Im-Ubin) |
-| 안여경 | 날씨/위치 · Batch · 의상 추천 · 스키마 작성      | [Github](https://github.com/yeokyeong)      |
-| 조현아 | 의상 API · SpringAI 기능 전반 · SSE 알림    | [Github](https://github.com/hyohyo-zz)   |
+| 박인규 | 의상속성 API · DM 서비스 · DNS,HTTPS       | [Leichtstar](https://github.com/Leichtstar) |
+| 강문구 | 사용자/인증 · AWS배포 · 분산환경 구축            | [Kangmoongu](https://github.com/Kangmoongu) |
+| 김유빈 | 피드 API · ElasticSearch · 댓글/좋아요/팔로우 | [Im-Ubin](https://github.com/Im-Ubin) |
+| 안여경 | 날씨/위치 · Batch · 의상 추천 · 스키마 작성      | [yeokyeong](https://github.com/yeokyeong)      |
+| 조현아 | 의상 API · SpringAI 기능 전반 · SSE 알림    | [hyohyo-zz](https://github.com/hyohyo-zz)   |
 
 ## 🛠️ 기술 스택
 

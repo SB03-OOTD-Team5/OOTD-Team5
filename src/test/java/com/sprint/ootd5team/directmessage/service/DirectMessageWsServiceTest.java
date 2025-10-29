@@ -139,7 +139,7 @@ class DirectMessageWsServiceTest {
         verify(eventPublisher).publishEvent(eventCaptor.capture());
 
         DirectMessageCommittedEvent event = eventCaptor.getValue();
-        assertThat(event.destination()).isEqualTo("/sub/direct-messages_" + dmKey);
+        assertThat(event.destination()).isEqualTo("/topic/direct-messages_" + dmKey);
         assertThat(event.payload().id()).isEqualTo(messageId);
         assertThat(event.payload().createdAt()).isEqualTo(createdAt);
         assertThat(event.payload().content()).isEqualTo(content);

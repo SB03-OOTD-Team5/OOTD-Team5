@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
@@ -51,5 +52,10 @@ public class TestConfig {
     @Primary
     public LlmProvider llmProvider() {
         return mock(LlmProvider.class);
+    }
+
+    @Bean
+    public StringRedisTemplate stringRedisTemplate() {
+        return mock(StringRedisTemplate.class);
     }
 }
