@@ -28,7 +28,6 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
       - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
-      - org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration
   data:
     redis:
       repositories:
@@ -46,6 +45,14 @@ spring:
   mail:
     username: test
     password: test1234
+
+  ai:
+    google:
+      genai:
+        api-key: test
+        chat:
+          options:
+            model: gemini-2.5-flash-lite
 
 # 테스트환경에서 SecurityConfig 비활성화
 app:
