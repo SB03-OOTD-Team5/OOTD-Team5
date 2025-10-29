@@ -1,4 +1,4 @@
-# [옷장을 부탁해] 프로젝트 [![codecov](https://graph/badge.svg)](https://codecov.io/sb03-ootd-team5)
+# [옷장을 부탁해] 프로젝트 [![codecov](https://codecov.io/gh/SB03-OOTD-Team5/OOTD-Team5/branch/main/graph/badge.svg?token=REVC6INGQO)](https://codecov.io/gh/SB03-OOTD-Team5/OOTD-Team5)
 
 ## 🌤 프로젝트 개요
 
