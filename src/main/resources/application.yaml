@@ -83,8 +83,12 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     producer:
+      retries: 3
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        max.in.flight.requests.per.connection: 5
+        enable.idempotence: true
 
   ai:
     google:
@@ -186,3 +190,11 @@ management:
   info:
     env:
       enabled: true
+
+failed-events:
+  path: ./logs/failed-events
+  backup-path: ./logs/failed-events-backup
+  memory-queue-size: 1000
+
+  retention-days: 7
+  max-files: 10000
