@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -151,5 +152,80 @@ public class FeedSearchServiceTest {
         // when & then
         assertThatThrownBy(() -> service.searchByKeyword(badRequest))
             .isInstanceOf(InvalidSortOptionException.class);
+    }
+
+    @Test
+    @DisplayName("hasNext=true(createdAt)면 nextCursor/nextIdAfter가 채워짐")
+    void searchByKeyword_hasNext_createdAt_cursorExtracted() {
+        // given
+        FeedListRequest req = new FeedListRequest(
+            null, null, 2, "createdAt",
+            SortDirection.DESCENDING, "피드", null, null, null
+        );
+
+        SearchHit<FeedDocument> h1 = mock(SearchHit.class);
+        SearchHit<FeedDocument> h2 = mock(SearchHit.class);
+        SearchHit<FeedDocument> h3 = mock(SearchHit.class);
+
+        UUID id1 = UUID.randomUUID();
+        UUID id2 = UUID.randomUUID();
+        UUID nextIdAfter = UUID.randomUUID();
+
+        when(h1.getContent()).thenReturn(FeedDocument.builder().feedId(id1).build());
+        when(h2.getContent()).thenReturn(FeedDocument.builder().feedId(id2).build());
+
+        long cursorMillis = Instant.parse("2025-12-16T00:00:05Z").toEpochMilli();
+        when(h2.getSortValues())
+            .thenReturn(List.of(cursorMillis, nextIdAfter.toString()));
+
+        SearchHits<FeedDocument> hits = mock(SearchHits.class);
+        when(hits.getSearchHits())
+            .thenReturn(List.of(h1, h2, h3));
+        when(hits.getTotalHits())
+            .thenReturn(3L);
+
+        when(operations.search(any(NativeQuery.class), eq(FeedDocument.class)))
+            .thenReturn(hits);
+
+        // when
+        FeedSearchResult result = service.searchByKeyword(req);
+
+        // then
+        assertThat(result.feedIds()).containsExactly(id1, id2);
+        assertThat(result.hasNext()).isTrue();
+        assertThat(result.nextCursor()).isEqualTo(Instant.ofEpochMilli(cursorMillis).toString());
+        assertThat(result.nextIdAfter()).isEqualTo(nextIdAfter);
+    }
+
+    @Test
+    @DisplayName("cursor+idAfter가 있으면 likeCount 커서가 Long으로 파싱")
+    void searchByKeyword_withCursor_likeCount_parsed() {
+        // given
+        FeedListRequest req = new FeedListRequest(
+            "42", UUID.randomUUID(), 2, "likeCount",
+            SortDirection.DESCENDING, "피드", null, null, null
+        );
+
+        SearchHit<FeedDocument> hit = mock(SearchHit.class);
+        UUID id1 = UUID.randomUUID();
+
+        when(hit.getContent())
+            .thenReturn(FeedDocument.builder().feedId(id1).build());
+
+        SearchHits<FeedDocument> hits = mock(SearchHits.class);
+        when(hits.getSearchHits())
+            .thenReturn(List.of(hit));
+        when(hits.getTotalHits())
+            .thenReturn(1L);
+
+        when(operations.search(any(NativeQuery.class), eq(FeedDocument.class)))
+            .thenReturn(hits);
+
+        // when
+        FeedSearchResult result = service.searchByKeyword(req);
+
+        // then
+        assertThat(result.feedIds()).containsExactly(id1);
+        assertThat(result.hasNext()).isFalse();
     }
 }

@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
-import com.sprint.ootd5team.base.exception.ErrorResponse;
 import com.sprint.ootd5team.base.security.JwtDto;
 import com.sprint.ootd5team.base.security.JwtInformation;
 import com.sprint.ootd5team.base.security.JwtRegistry;
@@ -120,7 +119,7 @@ class OAuth2LoginSuccessHandlerTest {
         verify(tokenProvider).generateRefreshTokenCookie(refreshToken);
         verify(response).addHeader("Set-Cookie", refreshCookie.toString());
         verify(response).setStatus(HttpServletResponse.SC_OK);
-        verify(response).sendRedirect("/#/recommendations");
+        verify(response).setContentType("text/html;charset=UTF-8");
 
         // 응답 본문 검증
         String responseBody = responseWriter.toString();
@@ -158,12 +157,9 @@ class OAuth2LoginSuccessHandlerTest {
     void onAuthenticationSuccess_JwtGenerationFailed() throws Exception {
         // Given
         when(authentication.getPrincipal()).thenReturn(oauthUserDetails);
+        when(oauthUserDetails.getUserDto()).thenReturn(testUserDto);
         when(tokenProvider.generateAccessToken(testUserDto))
             .thenThrow(new JOSEException("JWT generation failed"));
-
-        String errorJson = "{\"error\":\"Token generation failed\"}";
-        when(oauthUserDetails.getUserDto()).thenReturn(testUserDto);
-        when(objectMapper.writeValueAsString(any(ErrorResponse.class))).thenReturn(errorJson);
 
         // When
         successHandler.onAuthenticationSuccess(request, response, authentication);
@@ -174,7 +170,8 @@ class OAuth2LoginSuccessHandlerTest {
         verify(response, never()).sendRedirect(anyString());
 
         String responseBody = responseWriter.toString();
-        assertThat(responseBody).contains("Token generation failed");
+        assertThat(responseBody).contains("alert('토큰 생성에 실패했습니다.')");
+        assertThat(responseBody).contains("window.location.href = '/#/login'");
     }
 
     @Test
@@ -188,9 +185,6 @@ class OAuth2LoginSuccessHandlerTest {
         when(tokenProvider.generateRefreshToken(testUserDto))
             .thenThrow(new JOSEException("Refresh token generation failed"));
 
-        String errorJson = "{\"error\":\"Token generation failed\"}";
-        when(objectMapper.writeValueAsString(any(ErrorResponse.class))).thenReturn(errorJson);
-
         // When
         successHandler.onAuthenticationSuccess(request, response, authentication);
 
@@ -199,7 +193,8 @@ class OAuth2LoginSuccessHandlerTest {
         verify(jwtRegistry, never()).registerJwtInformation(any());
 
         String responseBody = responseWriter.toString();
-        assertThat(responseBody).contains("Token generation failed");
+        assertThat(responseBody).contains("alert('토큰 생성에 실패했습니다.')");
+        assertThat(responseBody).contains("window.location.href = '/#/login'");
     }
 
     @Test
@@ -208,9 +203,6 @@ class OAuth2LoginSuccessHandlerTest {
         // Given
         Object invalidPrincipal = new Object();
         when(authentication.getPrincipal()).thenReturn(invalidPrincipal);
-
-        String errorJson = "{\"error\":\"Authentication failed: Invalid user details\"}";
-        when(objectMapper.writeValueAsString(any(ErrorResponse.class))).thenReturn(errorJson);
 
         // When
         successHandler.onAuthenticationSuccess(request, response, authentication);
@@ -222,6 +214,7 @@ class OAuth2LoginSuccessHandlerTest {
         verify(jwtRegistry, never()).registerJwtInformation(any());
 
         String responseBody = responseWriter.toString();
-        assertThat(responseBody).contains("Invalid user details");
+        assertThat(responseBody).contains("alert('인증에 실패했습니다.')");
+        assertThat(responseBody).contains("window.location.href = '/#/login'");
     }
 }

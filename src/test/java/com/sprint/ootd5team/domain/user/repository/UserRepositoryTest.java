@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.user.repository;
+package com.sprint.ootd5team.domain.user.repository;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -6,8 +6,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.sprint.ootd5team.base.config.QuerydslConfig;
 import com.sprint.ootd5team.domain.user.entity.Role;
 import com.sprint.ootd5team.domain.user.entity.User;
-import com.sprint.ootd5team.domain.user.repository.UserRepository;
-import com.sprint.ootd5team.domain.user.repository.UserRepositoryCustom;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

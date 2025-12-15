@@ -1,10 +1,9 @@
-package com.sprint.ootd5team.directmessage.controller;
+package com.sprint.ootd5team.domain.directmessage.controller;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-import com.sprint.ootd5team.domain.directmessage.controller.DirectMessageWsController;
 import com.sprint.ootd5team.domain.directmessage.service.DirectMessageWsService;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.DisplayName;
