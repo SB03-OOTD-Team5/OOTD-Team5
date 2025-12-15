@@ -73,7 +73,9 @@ public class FeedEventConsumer {
             log.info("[FeedEventConsumer] {} 처리 완료: {}", clazz.getSimpleName(), event);
 
         } catch (Exception e) {
-            if (e.getMessage().contains("document missing")) {
+            String errorMessage = e.getMessage();
+
+            if (errorMessage != null && errorMessage.contains("document missing")) {
                 log.warn("[FeedEventConsumer] 문서 없음 → 건너뜀 (commit): {}", message);
                 return;
             }
