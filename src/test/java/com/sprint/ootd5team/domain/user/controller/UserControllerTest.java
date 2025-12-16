@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.user.controller;
+package com.sprint.ootd5team.domain.user.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -23,7 +23,6 @@ import com.sprint.ootd5team.domain.location.dto.data.WeatherAPILocationDto;
 import com.sprint.ootd5team.domain.profile.dto.data.ProfileUpdateRequest;
 import com.sprint.ootd5team.domain.profile.dto.request.ProfileDto;
 import com.sprint.ootd5team.domain.profile.service.ProfileService;
-import com.sprint.ootd5team.domain.user.controller.UserController;
 import com.sprint.ootd5team.domain.user.dto.UserDto;
 import com.sprint.ootd5team.domain.user.dto.request.ChangePasswordRequest;
 import com.sprint.ootd5team.domain.user.dto.request.UserCreateRequest;

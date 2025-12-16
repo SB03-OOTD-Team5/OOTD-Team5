@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.directmessage.service;
+package com.sprint.ootd5team.domain.directmessage.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -17,7 +17,6 @@ import com.sprint.ootd5team.domain.directmessage.entity.DirectMessage;
 import com.sprint.ootd5team.domain.directmessage.entity.DirectMessageRoom;
 import com.sprint.ootd5team.domain.directmessage.repository.DirectMessageRepository;
 import com.sprint.ootd5team.domain.directmessage.repository.DirectMessageRoomRepository;
-import com.sprint.ootd5team.domain.directmessage.service.DirectMessageWsService;
 import com.sprint.ootd5team.domain.notification.event.type.single.DmCreatedEvent;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
@@ -35,7 +34,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -148,7 +146,6 @@ class DirectMessageWsServiceTest {
         assertThat(event.payload().receiver().userId()).isEqualTo(receiverId);
         assertThat(event.payload().receiver().profileImageUrl()).isEqualTo("http://receiver");
 
-        // 알림 이벤트 발행
         verify(eventPublisher).publishEvent(any(DmCreatedEvent.class));
     }
 

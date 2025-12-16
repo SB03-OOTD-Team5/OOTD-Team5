@@ -1,4 +1,4 @@
-package com.sprint.ootd5team.user.service;
+package com.sprint.ootd5team.domain.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -37,7 +37,6 @@ import com.sprint.ootd5team.domain.user.entity.User;
 import com.sprint.ootd5team.domain.user.mapper.UserMapper;
 import com.sprint.ootd5team.domain.user.repository.UserRepository;
 import com.sprint.ootd5team.domain.user.repository.UserRepositoryCustom;
-import com.sprint.ootd5team.domain.user.service.UserService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;

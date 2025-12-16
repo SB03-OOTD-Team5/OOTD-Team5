@@ -157,15 +157,21 @@ jacocoTestReport {
         classDirectories.setFrom(
                 files(classDirectories.files.collect {
                     fileTree(dir: it, exclude: [
-//                            '**/dto/**',
-//                            '**/entity/**',
-//                            '**/exception/**',
-//                            '**/mapper/**
+                            '**/*Application.class',
+                            '**/dto/**',
+                            '**/entity/**',
+                            '**/enums/**',
+                            '**/event/type/**',
+                            '**/dto/**',
+                            '**/exception/**',
+                            '**/eventlistener/**',
+                            '**/mapper/**',
                             '**/config/**',
                             '**/client/**',
                             '**/cache/**',
-                            '**/recommendation/enums/**',
-                            '**/llm/**',
+                            '**/batch/**',
+                            '**/external/**',
+                            '**/aop/**'
                     ])
                 })
         )

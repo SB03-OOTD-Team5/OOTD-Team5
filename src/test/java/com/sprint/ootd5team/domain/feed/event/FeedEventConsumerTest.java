@@ -1,12 +1,12 @@
 package com.sprint.ootd5team.domain.feed.event;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.sprint.ootd5team.domain.feed.event.consumer.FeedEventConsumer;
 import com.sprint.ootd5team.domain.feed.event.type.FeedContentUpdatedEvent;
 import com.sprint.ootd5team.domain.feed.event.type.FeedDeletedEvent;
@@ -47,76 +47,142 @@ public class FeedEventConsumerTest {
     @DisplayName("FeedIndexCreatedEvent 수신 시 인덱서 호출")
     void consumeFeedIndexCreatedEvent_success() throws Exception {
         // given
-        FeedIndexCreatedEvent feedIndexCreatedEvent = new FeedIndexCreatedEvent(UUID.randomUUID(), "내용", Instant.now());
-
-        when(objectMapper.readValue(payload, FeedIndexCreatedEvent.class))
-            .thenReturn(feedIndexCreatedEvent);
+        FeedIndexCreatedEvent event =
+            new FeedIndexCreatedEvent(UUID.randomUUID(), "내용", Instant.now());
 
         // when
-        consumer.consumeFeedIndexCreatedEvent(payload);
+        when(objectMapper.readValue(payload, FeedIndexCreatedEvent.class))
+            .thenReturn(event);
 
         // then
-        verify(indexer).create(feedIndexCreatedEvent);
+        consumer.consumeFeedIndexCreatedEvent(payload);
+
+        verify(indexer).create(event);
     }
 
     @Test
     @DisplayName("FeedContentUpdatedEvent 수신 시 ES update 호출")
     void consumeFeedContentUpdatedEvent_success() throws Exception {
         // given
-        FeedContentUpdatedEvent feedContentUpdatedEvent = new FeedContentUpdatedEvent(UUID.randomUUID(), "새로운 내용");
-
-        when(objectMapper.readValue(payload, FeedContentUpdatedEvent.class))
-            .thenReturn(feedContentUpdatedEvent);
+        FeedContentUpdatedEvent event =
+            new FeedContentUpdatedEvent(UUID.randomUUID(), "새로운 내용");
 
         // when
-        consumer.consumeFeedContentUpdatedEvent(payload);
+        when(objectMapper.readValue(payload, FeedContentUpdatedEvent.class))
+            .thenReturn(event);
 
         // then
-        verify(indexer).updateContent(feedContentUpdatedEvent);
+        consumer.consumeFeedContentUpdatedEvent(payload);
+
+        verify(indexer).updateContent(event);
     }
 
     @Test
     @DisplayName("FeedLikeCountUpdateEvent 수신 시 ES update 호출")
     void consumeFeedLikeCountUpdatedEvent_success() throws Exception {
         // given
-        FeedLikeCountUpdateEvent feedLikeCountUpdateEvent = new FeedLikeCountUpdateEvent(UUID.randomUUID(), 42);
-
-        when(objectMapper.readValue(payload, FeedLikeCountUpdateEvent.class))
-            .thenReturn(feedLikeCountUpdateEvent);
+        FeedLikeCountUpdateEvent event =
+            new FeedLikeCountUpdateEvent(UUID.randomUUID(), 42);
 
         // when
-        consumer.consumeFeedLikeCountUpdatedEvent(payload);
+        when(objectMapper.readValue(payload, FeedLikeCountUpdateEvent.class))
+            .thenReturn(event);
 
         // then
-        verify(indexer).updateLikeCount(feedLikeCountUpdateEvent);
+        consumer.consumeFeedLikeCountUpdatedEvent(payload);
+
+        verify(indexer).updateLikeCount(event);
     }
 
     @Test
     @DisplayName("FeedDeletedEvent 수신 시 ES delete 호출")
     void consumeFeedDeletedEvent_success() throws Exception {
         // given
-        FeedDeletedEvent feedDeletedEvent = new FeedDeletedEvent(UUID.randomUUID());
-
-        when(objectMapper.readValue(payload, FeedDeletedEvent.class))
-            .thenReturn(feedDeletedEvent);
+        FeedDeletedEvent event = new FeedDeletedEvent(UUID.randomUUID());
 
         // when
-        consumer.consumeFeedDeletedEvent(payload);
+        when(objectMapper.readValue(payload, FeedDeletedEvent.class))
+            .thenReturn(event);
 
         // then
-        verify(indexer).delete(feedDeletedEvent);
+        consumer.consumeFeedDeletedEvent(payload);
+
+        verify(indexer).delete(event);
     }
 
     @Test
     @DisplayName("역직렬화 실패 시 RuntimeException 발생")
     void handleEvent_deserializationFailure_throwsException() throws Exception {
+        // when
         when(objectMapper.readValue(payload, FeedIndexCreatedEvent.class))
             .thenThrow(new RuntimeException("역직렬화 실패"));
 
+        // then
         assertThatThrownBy(() -> consumer.consumeFeedIndexCreatedEvent(payload))
             .isInstanceOf(RuntimeException.class)
             .hasMessageContaining("Kafka 메시지 처리 실패");
 
         verify(indexer, never()).create(any());
+    }
+
+    @Test
+    @DisplayName("이중 직렬화 감지 시 unwrap 후 재역직렬화")
+    void handleEvent_doubleEncodedJson_unwrapAndProcess() throws Exception {
+        // given
+        String unwrapped = "{\"feedId\":\"" + UUID.randomUUID() + "\",\"content\":\"내용\",\"createdAt\":\"" + Instant.now() + "\"}";
+        String doubleEncoded = "\"" + unwrapped.replace("\"", "\\\"") + "\"";
+
+        FeedIndexCreatedEvent event =
+            new FeedIndexCreatedEvent(UUID.randomUUID(), "내용", Instant.now());
+
+        // when
+        when(objectMapper.readValue(doubleEncoded, FeedIndexCreatedEvent.class))
+            .thenThrow(mock(MismatchedInputException.class));
+
+        when(objectMapper.readValue(doubleEncoded, String.class))
+            .thenReturn(unwrapped);
+
+        when(objectMapper.readValue(unwrapped, FeedIndexCreatedEvent.class))
+            .thenReturn(event);
+
+        // then
+        consumer.consumeFeedIndexCreatedEvent(doubleEncoded);
+
+        verify(indexer).create(event);
+    }
+
+    @Test
+    @DisplayName("MismatchedInputException이지만 double-encoded가 아니면 실패 처리")
+    void handleEvent_mismatchedButNotDoubleEncoded_throwsException() throws Exception {
+        // when
+        when(objectMapper.readValue(payload, FeedIndexCreatedEvent.class))
+            .thenThrow(mock(MismatchedInputException.class));
+
+        // then
+        assertThatThrownBy(() -> consumer.consumeFeedIndexCreatedEvent(payload))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessageContaining("Kafka 메시지 처리 실패");
+
+        verify(indexer, never()).create(any());
+    }
+
+    @Test
+    @DisplayName("document missing 예외 시 예외를 삼키고 정상 종료")
+    void handleEvent_documentMissing_shouldReturnWithoutThrowing() throws Exception {
+        // given
+        FeedDeletedEvent event = new FeedDeletedEvent(UUID.randomUUID());
+
+        // when
+        when(objectMapper.readValue(payload, FeedDeletedEvent.class))
+            .thenReturn(event);
+
+        doThrow(new RuntimeException("document missing"))
+            .when(indexer).delete(event);
+
+        // then
+        assertThatCode(() -> consumer.consumeFeedDeletedEvent(payload))
+            .doesNotThrowAnyException();
+
+        verify(indexer).delete(event);
     }
 }
