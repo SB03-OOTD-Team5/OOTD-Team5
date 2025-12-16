@@ -19,19 +19,19 @@ ignore:
   - "**/config/**"
   - "**/dto/**"
   - "**/entity/**"
-  - '**/enums/**',
-  - '**/event/type/**',
-  - '**/dto/**',
-  - '**/request/**',
-  - '**/response/**',
+  - '**/enums/**'
+  - '**/event/type/**'
+  - '**/dto/**'
+  - '**/request/**'
+  - '**/response/**'
   - "**/exception/**"
-  - '**/eventlistener/**',
-  - '**/mapper/**',
-  - '**/config/**',
-  - '**/client/**',
-  - '**/cache/**',
-  - '**/batch/**',
-  - '**/external/**',
+  - '**/eventlistener/**'
+  - '**/mapper/**'
+  - '**/config/**'
+  - '**/client/**'
+  - '**/cache/**'
+  - '**/batch/**'
+  - '**/external/**'
   - '**/aop/**'
   - "**/*Constants.java"
 
