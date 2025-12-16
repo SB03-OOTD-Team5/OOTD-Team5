@@ -22,18 +22,14 @@ ignore:
   - '**/enums/**'
   - '**/event/type/**'
   - '**/dto/**'
-  - '**/request/**'
-  - '**/response/**'
   - "**/exception/**"
   - '**/eventlistener/**'
   - '**/mapper/**'
-  - '**/config/**'
   - '**/client/**'
   - '**/cache/**'
   - '**/batch/**'
   - '**/external/**'
   - '**/aop/**'
-  - "**/*Constants.java"
 
 comment:
   layout: "reach, diff, flags, files"
