@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
+import com.sprint.ootd5team.base.exception.ErrorResponse;
 import com.sprint.ootd5team.base.security.JwtDto;
 import com.sprint.ootd5team.base.security.JwtInformation;
 import com.sprint.ootd5team.base.security.JwtRegistry;
@@ -98,8 +99,6 @@ class OAuth2LoginSuccessHandlerTest {
             .path("/")
             .maxAge(7 * 24 * 60 * 60)
             .build();
-
-        JwtDto expectedJwtDto = new JwtDto(testUserDto, accessToken);
         String expectedJson = "{\"userDto\":{},\"accessToken\":\"" + accessToken + "\"}";
 
         when(oauthUserDetails.getUserDto()).thenReturn(testUserDto);
@@ -119,11 +118,12 @@ class OAuth2LoginSuccessHandlerTest {
         verify(tokenProvider).generateRefreshTokenCookie(refreshToken);
         verify(response).addHeader("Set-Cookie", refreshCookie.toString());
         verify(response).setStatus(HttpServletResponse.SC_OK);
-        verify(response).setContentType("text/html;charset=UTF-8");
 
         // 응답 본문 검증
+        verify(response, never()).sendRedirect(any());
         String responseBody = responseWriter.toString();
-        assertThat(responseBody).contains(accessToken);
+        assertThat(responseBody)
+            .contains("window.location.href = '/#/recommendations'");
     }
 
     @Test
@@ -157,9 +157,9 @@ class OAuth2LoginSuccessHandlerTest {
     void onAuthenticationSuccess_JwtGenerationFailed() throws Exception {
         // Given
         when(authentication.getPrincipal()).thenReturn(oauthUserDetails);
-        when(oauthUserDetails.getUserDto()).thenReturn(testUserDto);
         when(tokenProvider.generateAccessToken(testUserDto))
             .thenThrow(new JOSEException("JWT generation failed"));
+        when(oauthUserDetails.getUserDto()).thenReturn(testUserDto);
 
         // When
         successHandler.onAuthenticationSuccess(request, response, authentication);
@@ -170,8 +170,7 @@ class OAuth2LoginSuccessHandlerTest {
         verify(response, never()).sendRedirect(anyString());
 
         String responseBody = responseWriter.toString();
-        assertThat(responseBody).contains("alert('토큰 생성에 실패했습니다.')");
-        assertThat(responseBody).contains("window.location.href = '/#/login'");
+        assertThat(responseBody).contains("토큰 생성에 실패했습니다.");
     }
 
     @Test
@@ -193,8 +192,7 @@ class OAuth2LoginSuccessHandlerTest {
         verify(jwtRegistry, never()).registerJwtInformation(any());
 
         String responseBody = responseWriter.toString();
-        assertThat(responseBody).contains("alert('토큰 생성에 실패했습니다.')");
-        assertThat(responseBody).contains("window.location.href = '/#/login'");
+        assertThat(responseBody).contains("토큰 생성에 실패했습니다.");
     }
 
     @Test
@@ -214,7 +212,6 @@ class OAuth2LoginSuccessHandlerTest {
         verify(jwtRegistry, never()).registerJwtInformation(any());
 
         String responseBody = responseWriter.toString();
-        assertThat(responseBody).contains("alert('인증에 실패했습니다.')");
-        assertThat(responseBody).contains("window.location.href = '/#/login'");
+        assertThat(responseBody).contains("인증에 실패했습니다.");
     }
 }

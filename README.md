@@ -1,11 +1,11 @@
-# [옷장을 부탁해] 프로젝트 [![codecov](https://graph/badge.svg)](https://codecov.io/sb03-ootd-team5)
+# [옷장을 부탁해] 프로젝트 [![codecov](https://codecov.io/gh/SB03-OOTD-Team5/OOTD-Team5/branch/main/graph/badge.svg?token=REVC6INGQO)](https://codecov.io/gh/SB03-OOTD-Team5/OOTD-Team5)
 
 ## 🌤 프로젝트 개요
 
 [55TD-옷장을 부탁해]는 날씨·위치·사용자 옷장을 결합해 실시간 추천과 소셜 피드를 제공하는 서비스입니다.
 - 사용자가 등록한 의상과 날씨 데이터를 조합해 맞춤형 OOTD를 추천
 - AI 기반 코멘트, Kafka→Elasticsearch 검색, WebSocket/SSE 실시간 경험 제공
-- 프로젝트 기간: 2025.01.06 ~ 2025.02.28 (2개월)
+- 프로젝트 기간: 2025.09.09 ~ 2025. 10. 24
 
 ### \<팀 문서\>
 🔗 [팀 협업 문서 바로가기](https://www.notion.so/ohgiraffers/55TD-207649136c1180288dabfeb1877485d6?source=copy_link)
@@ -14,11 +14,11 @@
 
 | 이름  | 역할                                  | Github                                    |
 |-----|-------------------------------------|-------------------------------------------|
-| 박인규 | 의상속성 API · DM 서비스 · DNS,HTTPS       | [Github](https://github.com/Leichtstar) |
-| 강문구 | 사용자/인증 · AWS배포 · 분산환경 구축            | [Github](https://github.com/Kangmoongu) |
-| 김유빈 | 피드 API · ElasticSearch · 댓글/좋아요/팔로우 | [Github](https://github.com/Im-Ubin) |
-| 안여경 | 날씨/위치 · Batch · 의상 추천 · 스키마 작성      | [Github](https://github.com/yeokyeong)      |
-| 조현아 | 의상 API · SpringAI 기능 전반 · SSE 알림    | [Github](https://github.com/hyohyo-zz)   |
+| 박인규 | 의상속성 API · DM 서비스 · DNS,HTTPS       | [Leichtstar](https://github.com/Leichtstar) |
+| 강문구 | 사용자/인증 · AWS배포 · 분산환경 구축            | [Kangmoongu](https://github.com/Kangmoongu) |
+| 김유빈 | 피드 API · ElasticSearch · 댓글/좋아요/팔로우 | [Im-Ubin](https://github.com/Im-Ubin) |
+| 안여경 | 날씨/위치 · Batch · 의상 추천 · 스키마 작성      | [yeokyeong](https://github.com/yeokyeong)      |
+| 조현아 | 의상 API · SpringAI 기능 전반 · SSE 알림    | [hyohyo-zz](https://github.com/hyohyo-zz)   |
 
 ## 🛠️ 기술 스택
 
@@ -251,14 +251,33 @@ Confluent Cloud(Message Broker)
 
 
 ### 안여경
+<img width="1449" height="757" alt="iShot_2025-09-30_16 28 38" src="https://github.com/user-attachments/assets/57bd9e5c-ace5-4286-90e6-40821e8539b5" />
 
-- **관리자 API**
-    - `@PathVariable`을 사용한 동적 라우팅 기능 구현
-    - `PATCH`, `DELETE` 요청을 사용하여 학생 정보를 수정하고 탈퇴하는 API 엔드포인트 개발
-- **CRUD 기능**
-    - 학생 정보의 CRUD 기능을 제공하는 API 구현 (Spring Data JPA)
-- **회원관리 슬라이더**
-    - 학생별 정보 목록을 `Carousel` 형식으로 조회하는 API 구현
+
+- **날씨 도메인 초기 설계**
+  
+기상 정보 저장용 스키마 정의와 Weather·Location 엔터티·DTO·열거형 구성
+기본 애플리케이션 설정 및 프로필 필드 확장으로 초기 환경 구축
+- **외부 기상 API 통합 및 리팩토링**
+  
+WeatherAdapter·Factory 인터페이스 도입으로 KMA·OpenWeather·OpenMeteo 연동 구조 모듈화
+배치용 WeatherService 리팩토링과 테스트 보강으로 다중 외부 API 처리 흐름 일원화
+- **기상 데이터 배치·스케줄링**
+  
+Spring Batch 잡과 스케줄러로 기상 데이터 수집·정리 및 날씨 비교 알림 생성 로직 구현
+배치 전용 테이블 제약 설정, 근사값 계산, 로그 관리로 데이터 품질 및 공백 대응력 강화
+- **기상 서비스 안정화**
+  
+위경도 기본값 적용, 타임존·NPE 이슈 해결 등 예외 상황 방어 로직 정비
+피드 연동 불필요 기상 데이터 정리와 페이지네이션 오류 수정으로 사용자 경험 개선
+- **추천 서비스 초기 설계**
+  
+추천 DTO·컨트롤러·매퍼 및 핵심 추천 로직 추가로 코디 추천 API 완성
+파라미터 검증, 에러 코드 정비, 랜덤 추천 Fallback, 테스트 코드 작성으로 신뢰성 확보
+- **플랫폼 인프라 보강**
+  
+스케줄러·배치 관련 테스트와 리팩토링으로 유지보수성 향상
+
 
 ### 조현아
 
