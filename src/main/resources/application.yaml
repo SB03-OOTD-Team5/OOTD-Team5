@@ -155,7 +155,7 @@ ootd:
       secret: ${JWT_REFRESH_TOKEN_SECRET:change-me-refresh-secret-for-dev-only}
 
   storage:
-    type: ${STORAGE_TYPE:s3}
+    type: ${STORAGE_TYPE:local}
     s3:
       access-key: ${AWS_ACCESS_KEY_ID:dummy-access-key}
       secret-key: ${AWS_SECRET_ACCESS_KEY:dummy-secret-key}

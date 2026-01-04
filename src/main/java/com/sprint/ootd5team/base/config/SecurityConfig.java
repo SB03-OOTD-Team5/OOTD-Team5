@@ -34,6 +34,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -142,6 +143,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/sse").authenticated()
                 // 개발 storage = local일 때(s3시 필요없음)
                 .requestMatchers("/local-files/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()  //
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                 .anyRequest()
                 .authenticated()//TODO 개발환경은는 모두 허용, 빌드시에는 authenticated()으로 수정필요
@@ -231,6 +233,27 @@ public class SecurityConfig {
         RedisLockProvider redisLockProvider
     ) {
         return new RedisJwtRegistry(1, jwtTokenProvider, publisher, redisTemplate, redisLockProvider);
+    }
+
+    /**
+     * 정적리소스들은 security 필터를 거치지않고 바로 serving
+     * @return
+     */
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring()
+            .requestMatchers(
+                "/",
+                "/index.html",
+                "/static/**",
+                "/assets/**",
+                "/logo_symbol.svg",
+                "/css/**",
+                "/js/**",
+                "/images/**",
+                "/favicon.ico",
+                "/error"
+            );
     }
 
 }

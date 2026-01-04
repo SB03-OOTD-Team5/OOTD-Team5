@@ -13,6 +13,7 @@ public class CorsConfig {
 
     private static final List<String> ALLOWED_ORIGINS = List.of(
         "http://localhost:8080",
+        "http://localhost:3000",
         "http://localhost:5173",
         "http://ootd-today.duckdns.org",
         "https://ootd-today.duckdns.org",
