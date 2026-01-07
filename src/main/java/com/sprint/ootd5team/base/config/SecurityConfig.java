@@ -16,6 +16,7 @@ import com.sprint.ootd5team.base.security.handler.LoginFailureHandler;
 import com.sprint.ootd5team.base.security.oauth2.CookieOAuth2Repository;
 import com.sprint.ootd5team.base.security.oauth2.OAuth2LoginSuccessHandler;
 import com.sprint.ootd5team.domain.user.entity.Role;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
@@ -49,6 +50,7 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 @EnableWebSecurity
 @EnableMethodSecurity
 @ConditionalOnProperty(name = "app.security.enabled", matchIfMissing = true, havingValue = "true")
+@Slf4j
 public class SecurityConfig {
 
     @Value("${app.csrf.enabled:true}")
@@ -56,6 +58,7 @@ public class SecurityConfig {
 
     /**
      * 비밀번호를 BCrypt로 암호화
+     *
      * @return 암호화된 비밀번호
      */
     @Bean
@@ -66,12 +69,13 @@ public class SecurityConfig {
 
     /**
      * 시큐리티 필터체인
+     *
      * @param http
-     * @param jwtLoginSuccessHandler 로그인 성공 핸들러
-     * @param loginFailureHandler 로그인 실패 핸들러
-     * @param objectMapper 직렬화
+     * @param jwtLoginSuccessHandler  로그인 성공 핸들러
+     * @param loginFailureHandler     로그인 실패 핸들러
+     * @param objectMapper            직렬화
      * @param jwtAuthenticationFilter 커스텀 인증 필터
-     * @param jwtLogoutHandler 로그아웃 핸들러
+     * @param jwtLogoutHandler        로그아웃 핸들러
      * @return 다음 시큐리티 필터체인
      */
     @Bean
@@ -92,18 +96,17 @@ public class SecurityConfig {
 
             // csrf 설정
             .csrf(csrf -> {
-                if(csrfEnabled){
+                if (csrfEnabled) {
                     CookieCsrfTokenRepository tokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
 
                     tokenRepository.setCookieCustomizer(cookie -> cookie
                             .path("/")
-                            .sameSite("Lax")  // 또는 "Strict", "None"
-                            .secure(true)  // HTTP 환경에서 테스트 시 (개발용)
-                        // .domain("yourdomain.com")  // 필요시 도메인 지정
+                            .sameSite("Lax")
+                            .secure(false)  // HTTP 환경에서 테스트 시 (개발용)
                     );
                     csrf.csrfTokenRepository(tokenRepository)
                         .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler());
-                    } else {
+                } else {
                     csrf.disable();
                 }
             })
@@ -114,7 +117,7 @@ public class SecurityConfig {
                 .failureHandler(loginFailureHandler)
             )
             // oauth 로그인 설정
-            .oauth2Login(auth-> auth
+            .oauth2Login(auth -> auth
                 .authorizationEndpoint(authorization -> authorization
                     .authorizationRequestRepository(cookieOAuth2Repository) //OAuth2 인증 정보를 저장하는 저장소
                 )
@@ -144,7 +147,8 @@ public class SecurityConfig {
                 // 개발 storage = local일 때(s3시 필요없음)
                 .requestMatchers("/local-files/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()  //
-                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
+                .permitAll()
                 .anyRequest()
                 .authenticated()//TODO 개발환경은는 모두 허용, 빌드시에는 authenticated()으로 수정필요
             )
@@ -165,10 +169,11 @@ public class SecurityConfig {
 
     /**
      * ADMIN은 USER 역할을 포함한다.
+     *
      * @return 역할 계층구조
      */
     @Bean
-    public RoleHierarchy roleHierarchy(){
+    public RoleHierarchy roleHierarchy() {
         return RoleHierarchyImpl.withDefaultRolePrefix()
             .role(Role.ADMIN.name())
             .implies(Role.USER.name())
@@ -177,6 +182,7 @@ public class SecurityConfig {
 
     /**
      * roleHierarchy 등록
+     *
      * @param roleHierarchy 등록
      * @return 결과
      */
@@ -190,6 +196,7 @@ public class SecurityConfig {
 
     /**
      * 커스텀 인증필터를 Bean으로 등록
+     *
      * @param tokenProvider
      * @param userDetailsService
      * @param registry
@@ -200,18 +207,21 @@ public class SecurityConfig {
     JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider tokenProvider,
         UserDetailsService userDetailsService, JwtRegistry registry,
         ObjectMapper objectMapper) {
-        return new JwtAuthenticationFilter(tokenProvider,userDetailsService,registry,objectMapper);
+        return new JwtAuthenticationFilter(tokenProvider, userDetailsService, registry,
+            objectMapper);
     }
 
     /**
      * 커스텀 로그인 인증 방식을 Bean으로 등록(임시 비밀번호도 확인하기 위해서)
+     *
      * @param http
      * @param provider
      * @return
      * @throws Exception
      */
     @Bean
-    public AuthenticationManager authManager(HttpSecurity http, CustomAuthenticationProvider provider) throws Exception {
+    public AuthenticationManager authManager(HttpSecurity http,
+        CustomAuthenticationProvider provider) throws Exception {
         return http.getSharedObject(AuthenticationManagerBuilder.class)
             .authenticationProvider(provider)
             .build();
@@ -219,6 +229,7 @@ public class SecurityConfig {
 
     /**
      * Redis를 통해 멀티 서버 인스턴스 환경에서 jwt 토큰을 클러스터링
+     *
      * @param jwtTokenProvider
      * @param publisher
      * @param redisTemplate
@@ -232,11 +243,13 @@ public class SecurityConfig {
         RedisTemplate<String, Object> redisTemplate,
         RedisLockProvider redisLockProvider
     ) {
-        return new RedisJwtRegistry(1, jwtTokenProvider, publisher, redisTemplate, redisLockProvider);
+        return new RedisJwtRegistry(1, jwtTokenProvider, publisher, redisTemplate,
+            redisLockProvider);
     }
 
     /**
      * 정적리소스들은 security 필터를 거치지않고 바로 serving
+     *
      * @return
      */
     @Bean

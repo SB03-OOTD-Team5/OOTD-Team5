@@ -106,6 +106,8 @@ spring:
 app:
   security:
     enabled: true
+  csrf:
+    enabled: true
 
 #외부 API key 설정
 weather:
