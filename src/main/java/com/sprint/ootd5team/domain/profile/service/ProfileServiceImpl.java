@@ -10,6 +10,7 @@ import com.sprint.ootd5team.domain.location.repository.LocationRepository;
 import com.sprint.ootd5team.domain.profile.dto.data.ProfileUpdateRequest;
 import com.sprint.ootd5team.domain.profile.dto.request.ProfileDto;
 import com.sprint.ootd5team.domain.profile.entity.Profile;
+import com.sprint.ootd5team.domain.profile.event.ImageFileUploadEvent;
 import com.sprint.ootd5team.domain.profile.mapper.ProfileMapper;
 import com.sprint.ootd5team.domain.profile.repository.ProfileRepository;
 import java.io.IOException;
@@ -19,6 +20,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,6 +34,7 @@ public class ProfileServiceImpl implements ProfileService{
     private final ProfileMapper profileMapper;
     private final FileStorage fileStorage;
     private final LocationRepository locationRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${ootd.storage.s3.prefix.profiles}")
     private String profilesPrefix;
@@ -64,7 +67,6 @@ public class ProfileServiceImpl implements ProfileService{
     public ProfileDto updateProfile(UUID userId, ProfileUpdateRequest request,
         Optional<MultipartFile> profileImage) {
 
-
         log.debug("[Profile] 프로필 업데이트 시작 userId:{}", userId);
         // 해당 userId의 프로필이 존재하는지 확인
         Profile profile = profileRepository.findByUserId(userId)
@@ -72,18 +74,15 @@ public class ProfileServiceImpl implements ProfileService{
 
         profileImage.ifPresent(image -> {
             String previousImageUrl = profile.getProfileImageUrl();
-
             try (InputStream in = image.getInputStream()) {
+                // 스토리지에 업로드
                 String profileImageUrl = fileStorage.upload(
                     image.getOriginalFilename(), in, image.getContentType(), profilesPrefix
                 );
+                // 프로필 이미지 url 업데이트
                 profile.updateProfileImageUrl(profileImageUrl);
                 log.debug("[Profile] 이미지 업로드 완료: url={}", profileImageUrl);
-
-                // DB 저장 성공 후 이전 파일 삭제
-                if (previousImageUrl != null) {
-                    fileStorage.delete(previousImageUrl);
-                }
+                eventPublisher.publishEvent(new ImageFileUploadEvent(previousImageUrl));
             } catch (IOException e) {
                 log.warn("[Profile] 이미지 업로드 실패 {}", e.getMessage());
                 throw FileSaveFailedException.withFileName(image.getOriginalFilename());

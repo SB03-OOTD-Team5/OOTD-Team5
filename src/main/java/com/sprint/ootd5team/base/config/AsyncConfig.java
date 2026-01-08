@@ -42,6 +42,24 @@ public class AsyncConfig {
         return executor;
     }
 
+    /**
+     * 이미지를 s3에 비동기로 저장하기 위한 스레드풀 Bean
+     * @return
+     */
+    @Bean(name = "imageUploadExecutor")
+    public TaskExecutor imageUploadExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);        // 기본 스레드 수
+        executor.setMaxPoolSize(50);         // 최대 스레드 수
+        executor.setQueueCapacity(100);      // 대기 큐 크기
+        executor.setKeepAliveSeconds(60);    // 유휴 스레드 유지 시간
+        executor.setThreadNamePrefix("image-upload-");
+        executor.setTaskDecorator(
+            // 여러 TaskDecorator를 묶어서 적용 (MDC, SecurityContext)
+            new CompositeTaskDecorator(List.of(mdcTaskDecorator(), securityContextTaskDecorator())));
+        executor.initialize();
+        return executor;
+    }
 
     /**
      * 로깅 정보를 실행 스레드에 전달하기 위한 TaskDecorator
